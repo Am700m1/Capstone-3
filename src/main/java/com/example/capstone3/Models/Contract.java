@@ -1,0 +1,51 @@
+package com.example.capstone3.Models;
+
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.time.LocalDate;
+
+@Entity
+@Table(name = "contracts")
+@Getter
+@Setter
+@NoArgsConstructor
+public class Contract {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reservation_id", nullable = false, unique = true)
+    private Reservation reservation;
+
+    @Column(name = "contract_number", nullable = false, unique = true)
+    private String contractNumber;
+
+    @Column(name = "start_date", nullable = false)
+    private LocalDate startDate;
+
+    @Column(name = "end_date", nullable = false)
+    private LocalDate endDate;
+
+    @Column(name = "monthly_rent", nullable = false)
+    private Double monthlyRent;
+
+    @Column(name = "security_deposit")
+    private Double securityDeposit;
+
+    @Column(name = "signed", nullable = false)
+    private Boolean signed;
+
+    @Column(name = "signed_date")
+    private LocalDate signedDate;
+
+    @Column(name = "contract_status", nullable = false, length = 20)
+    private String contractStatus;
+
+    @Column(name = "pdf_path", length = 500)
+    private String pdfPath;
+}
