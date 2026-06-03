@@ -31,7 +31,7 @@ public class ReservationService {
         return reservationDTOOuts;
     }
 
-    public ReservationDTOOut getReservation(Integer id) {
+    public ReservationDTOOut getReservation(Integer id) { // add user id validation
         Reservation reservation = reservationRepository.findReservationById(id);
         if (reservation == null) {
             throw new ApiException("Reservation not found");
