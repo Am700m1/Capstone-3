@@ -1,0 +1,130 @@
+Index: src/main/java/com/example/capstone3/Repository/ApartmentRepository.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.capstone3.Repository;\r\n\r\nimport com.example.capstone3.Models.Apartment;\r\nimport org.springframework.data.jpa.repository.JpaRepository;\r\nimport org.springframework.stereotype.Repository;\r\n\r\n@Repository\r\npublic interface ApartmentRepository extends JpaRepository<Apartment, Integer> {\r\n\r\n    Apartment findApartmentById(Integer id);\r\n}\r\n
+===================================================================
+diff --git a/src/main/java/com/example/capstone3/Repository/ApartmentRepository.java b/src/main/java/com/example/capstone3/Repository/ApartmentRepository.java
+--- a/src/main/java/com/example/capstone3/Repository/ApartmentRepository.java	(revision 8755421ba999a13e4e521abbebdfd6df479ca462)
++++ b/src/main/java/com/example/capstone3/Repository/ApartmentRepository.java	(date 1780506685733)
+@@ -4,8 +4,14 @@
+ import org.springframework.data.jpa.repository.JpaRepository;
+ import org.springframework.stereotype.Repository;
+ 
++import java.util.List;
++
+ @Repository
+ public interface ApartmentRepository extends JpaRepository<Apartment, Integer> {
+ 
+     Apartment findApartmentById(Integer id);
++
++    List<Apartment> findApartmentsByStatus(String status);
++
++    List<Apartment> findApartmentsByBuilding_Address(String buildingAddress);
+ }
+Index: src/main/java/com/example/capstone3/Service/ReservationService.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.capstone3.Service;\r\n\r\nimport com.example.capstone3.Api.ApiException;\r\nimport com.example.capstone3.DTO.In.ReservationDTOIn;\r\nimport com.example.capstone3.DTO.Out.ReservationDTOOut;\r\nimport com.example.capstone3.Models.Apartment;\r\nimport com.example.capstone3.Models.Reservation;\r\nimport com.example.capstone3.Models.User;\r\nimport com.example.capstone3.Repository.ApartmentRepository;\r\nimport com.example.capstone3.Repository.ReservationRepository;\r\nimport com.example.capstone3.Repository.UserRepository;\r\nimport lombok.RequiredArgsConstructor;\r\nimport org.springframework.stereotype.Service;\r\n\r\nimport java.util.ArrayList;\r\nimport java.util.List;\r\n\r\n@Service\r\n@RequiredArgsConstructor\r\npublic class ReservationService {\r\n\r\n    private final ReservationRepository reservationRepository;\r\n    private final ApartmentRepository apartmentRepository;\r\n    private final UserRepository userRepository;\r\n\r\n    public List<ReservationDTOOut> getAll() {\r\n        List<ReservationDTOOut> reservationDTOOuts = new ArrayList<>();\r\n        for (Reservation reservation : reservationRepository.findAll()) {\r\n            reservationDTOOuts.add(convertToDTO(reservation));\r\n        }\r\n        return reservationDTOOuts;\r\n    }\r\n\r\n    public ReservationDTOOut getReservation(Integer id) { // add user id validation\r\n        Reservation reservation = reservationRepository.findReservationById(id);\r\n        if (reservation == null) {\r\n            throw new ApiException(\"Reservation not found\");\r\n        }\r\n        return convertToDTO(reservation);\r\n    }\r\n\r\n    public void addReservation(ReservationDTOIn reservationDTOIn) {\r\n        Apartment apartment = apartmentRepository.findApartmentById(reservationDTOIn.getApartmentId());\r\n        if (apartment == null) {\r\n            throw new ApiException(\"Apartment not found\");\r\n        }\r\n        User user = userRepository.findUserById(reservationDTOIn.getUserId());\r\n        if (user == null) {\r\n            throw new ApiException(\"User not found\");\r\n        }\r\n        Reservation reservation = new Reservation();\r\n        reservation.setApartment(apartment);\r\n        reservation.setUser(user);\r\n        reservation.setReservationDate(reservationDTOIn.getReservationDate());\r\n        reservation.setStatus(\"PENDING\");\r\n        reservationRepository.save(reservation);\r\n    }\r\n\r\n    public void updateReservation(Integer id, ReservationDTOIn reservationDTOIn) {\r\n        Reservation reservation = reservationRepository.findReservationById(id);\r\n        if (reservation == null) {\r\n            throw new ApiException(\"Reservation not found\");\r\n        }\r\n        Apartment apartment = apartmentRepository.findApartmentById(reservationDTOIn.getApartmentId());\r\n        if (apartment == null) {\r\n            throw new ApiException(\"Apartment not found\");\r\n        }\r\n        User user = userRepository.findUserById(reservationDTOIn.getUserId());\r\n        if (user == null) {\r\n            throw new ApiException(\"User not found\");\r\n        }\r\n        reservation.setApartment(apartment);\r\n        reservation.setUser(user);\r\n        reservation.setReservationDate(reservationDTOIn.getReservationDate());\r\n        reservationRepository.save(reservation);\r\n    }\r\n\r\n    public void deleteReservation(Integer id) {\r\n        Reservation reservation = reservationRepository.findReservationById(id);\r\n        if (reservation == null) {\r\n            throw new ApiException(\"Reservation not found\");\r\n        }\r\n        reservationRepository.deleteById(id);\r\n    }\r\n\r\n    public ReservationDTOOut convertToDTO(Reservation reservation) {\r\n        ReservationDTOOut reservationDTOOut = new ReservationDTOOut();\r\n        reservationDTOOut.setId(reservation.getId());\r\n        reservationDTOOut.setApartmentId(reservation.getApartment().getId());\r\n        reservationDTOOut.setUserId(reservation.getUser().getId());\r\n        reservationDTOOut.setReservationDate(reservation.getReservationDate());\r\n        reservationDTOOut.setStatus(reservation.getStatus());\r\n        return reservationDTOOut;\r\n    }\r\n}\r\n
+===================================================================
+diff --git a/src/main/java/com/example/capstone3/Service/ReservationService.java b/src/main/java/com/example/capstone3/Service/ReservationService.java
+--- a/src/main/java/com/example/capstone3/Service/ReservationService.java	(revision 8755421ba999a13e4e521abbebdfd6df479ca462)
++++ b/src/main/java/com/example/capstone3/Service/ReservationService.java	(date 1780506685739)
+@@ -92,4 +92,26 @@
+         reservationDTOOut.setStatus(reservation.getStatus());
+         return reservationDTOOut;
+     }
++
++    public void acceptReservation(Integer reservationId){
++        Reservation reservation = reservationRepository.findReservationById(reservationId);
++
++        if (reservation == null) {
++            throw new ApiException("Reservation not found!");
++        }
++
++        reservation.setStatus("CONFIRMED");
++        reservationRepository.save(reservation);
++    }
++
++    public void rejectReservation(Integer reservationId){
++        Reservation reservation = reservationRepository.findReservationById(reservationId);
++
++        if (reservation == null) {
++            throw new ApiException("Reservation not found!");
++        }
++
++        reservation.setStatus("CANCELLED");
++        reservationRepository.save(reservation);
++    }
+ }
+Index: src/main/java/com/example/capstone3/Service/ApartmentService.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.capstone3.Service;\r\n\r\nimport com.example.capstone3.Api.ApiException;\r\nimport com.example.capstone3.DTO.In.ApartmentDTOIn;\r\nimport com.example.capstone3.DTO.Out.ApartmentDTOOut;\r\nimport com.example.capstone3.DTO.Out.ApartmentImageDTOOut;\r\nimport com.example.capstone3.Models.Apartment;\r\nimport com.example.capstone3.Models.ApartmentImage;\r\nimport com.example.capstone3.Models.Building;\r\nimport com.example.capstone3.Repository.ApartmentRepository;\r\nimport com.example.capstone3.Repository.BuildingRepository;\r\nimport lombok.RequiredArgsConstructor;\r\nimport org.springframework.stereotype.Service;\r\n\r\nimport java.util.ArrayList;\r\nimport java.util.List;\r\n\r\n@Service\r\n@RequiredArgsConstructor\r\npublic class ApartmentService {\r\n\r\n    private final ApartmentRepository apartmentRepository;\r\n    private final BuildingRepository buildingRepository;\r\n\r\n    public List<ApartmentDTOOut> getAll() {\r\n        List<ApartmentDTOOut> apartmentDTOOuts = new ArrayList<>();\r\n        for (Apartment apartment : apartmentRepository.findAll()) {\r\n            apartmentDTOOuts.add(convertToDTO(apartment));\r\n        }\r\n        return apartmentDTOOuts;\r\n    }\r\n\r\n    public ApartmentDTOOut getApartment(Integer id) {\r\n        Apartment apartment = apartmentRepository.findApartmentById(id);\r\n        if (apartment == null) {\r\n            throw new ApiException(\"Apartment not found\");\r\n        }\r\n        return convertToDTO(apartment);\r\n    }\r\n\r\n    public void addApartment(ApartmentDTOIn apartmentDTOIn) {\r\n        Building building = buildingRepository.findBuildingById(apartmentDTOIn.getBuildingId());\r\n        if (building == null) {\r\n            throw new ApiException(\"Building not found\");\r\n        }\r\n        Apartment apartment = new Apartment();\r\n        apartment.setBuilding(building);\r\n        apartment.setTitle(apartmentDTOIn.getTitle());\r\n        apartment.setDescription(apartmentDTOIn.getDescription());\r\n        apartment.setMonthlyRent(apartmentDTOIn.getMonthlyRent());\r\n        apartment.setBedrooms(apartmentDTOIn.getBedrooms());\r\n        apartment.setBathrooms(apartmentDTOIn.getBathrooms());\r\n        apartment.setArea(apartmentDTOIn.getArea());\r\n        apartment.setStatus(\"AVAILABLE\");\r\n        apartmentRepository.save(apartment);\r\n    }\r\n\r\n    public void updateApartment(Integer id, ApartmentDTOIn apartmentDTOIn) {\r\n        Apartment apartment = apartmentRepository.findApartmentById(id);\r\n        if (apartment == null) {\r\n            throw new ApiException(\"Apartment not found\");\r\n        }\r\n        Building building = buildingRepository.findBuildingById(apartmentDTOIn.getBuildingId());\r\n        if (building == null) {\r\n            throw new ApiException(\"Building not found\");\r\n        }\r\n        apartment.setBuilding(building);\r\n        apartment.setTitle(apartmentDTOIn.getTitle());\r\n        apartment.setDescription(apartmentDTOIn.getDescription());\r\n        apartment.setMonthlyRent(apartmentDTOIn.getMonthlyRent());\r\n        apartment.setBedrooms(apartmentDTOIn.getBedrooms());\r\n        apartment.setBathrooms(apartmentDTOIn.getBathrooms());\r\n        apartment.setArea(apartmentDTOIn.getArea());\r\n        apartmentRepository.save(apartment);\r\n    }\r\n\r\n    public void deleteApartment(Integer id) {\r\n        Apartment apartment = apartmentRepository.findApartmentById(id);\r\n        if (apartment == null) {\r\n            throw new ApiException(\"Apartment not found\");\r\n        }\r\n        apartmentRepository.deleteById(id);\r\n    }\r\n\r\n    public ApartmentDTOOut convertToDTO(Apartment apartment) {\r\n        ApartmentDTOOut apartmentDTOOut = new ApartmentDTOOut();\r\n        apartmentDTOOut.setId(apartment.getId());\r\n        apartmentDTOOut.setBuildingId(apartment.getBuilding().getId());\r\n        apartmentDTOOut.setDistrict(apartment.getBuilding().getDistrict());\r\n        apartmentDTOOut.setTitle(apartment.getTitle());\r\n        apartmentDTOOut.setDescription(apartment.getDescription());\r\n        apartmentDTOOut.setMonthlyRent(apartment.getMonthlyRent());\r\n        apartmentDTOOut.setBedrooms(apartment.getBedrooms());\r\n        apartmentDTOOut.setBathrooms(apartment.getBathrooms());\r\n        apartmentDTOOut.setArea(apartment.getArea());\r\n        apartmentDTOOut.setStatus(apartment.getStatus());\r\n\r\n        List<ApartmentImageDTOOut> imageDTOOuts = new ArrayList<>();\r\n        for (ApartmentImage image : apartment.getImages()) {\r\n            ApartmentImageDTOOut imageDTOOut = new ApartmentImageDTOOut();\r\n            imageDTOOut.setId(image.getId());\r\n            imageDTOOut.setApartmentId(apartment.getId());\r\n            imageDTOOut.setImageUrl(image.getImageUrl());\r\n            imageDTOOut.setIsPrimary(image.getIsPrimary());\r\n            imageDTOOut.setDisplayOrder(image.getDisplayOrder());\r\n            imageDTOOuts.add(imageDTOOut);\r\n        }\r\n        apartmentDTOOut.setImages(imageDTOOuts);\r\n\r\n        return apartmentDTOOut;\r\n    }\r\n}\r\n
+===================================================================
+diff --git a/src/main/java/com/example/capstone3/Service/ApartmentService.java b/src/main/java/com/example/capstone3/Service/ApartmentService.java
+--- a/src/main/java/com/example/capstone3/Service/ApartmentService.java	(revision 8755421ba999a13e4e521abbebdfd6df479ca462)
++++ b/src/main/java/com/example/capstone3/Service/ApartmentService.java	(date 1780506685735)
+@@ -109,4 +109,39 @@
+ 
+         return apartmentDTOOut;
+     }
++
++    public List<ApartmentDTOOut> searchApartment(){
++        List<Apartment> apartments = apartmentRepository.findApartmentsByStatus("AVAILABLE");
++
++        if(apartments.isEmpty()){
++            throw new ApiException("No Apartments were found!");
++        }
++
++        List<ApartmentDTOOut> apartmentDTOOuts = new ArrayList<>();
++
++        for (Apartment apartment : apartments) {
++            apartmentDTOOuts.add(convertToDTO(apartment));
++        }
++
++        return apartmentDTOOuts;
++    }
++
++
++    public List<ApartmentDTOOut> searchApartmentByAddress(String address){
++        List<Apartment> apartments = apartmentRepository.findApartmentsByBuilding_Address(address);
++
++        if(apartments.isEmpty()){
++            throw new ApiException("No Apartments were found!");
++        }
++
++        List<ApartmentDTOOut> apartmentDTOOuts = new ArrayList<>();
++
++        for (Apartment apartment : apartments) {
++            apartmentDTOOuts.add(convertToDTO(apartment));
++        }
++
++        return apartmentDTOOuts;
++    }
++
++
+ }
+Index: src/main/java/com/example/capstone3/Service/ContractService.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.capstone3.Service;\r\n\r\nimport com.example.capstone3.Api.ApiException;\r\nimport com.example.capstone3.DTO.In.ContractDTOIn;\r\nimport com.example.capstone3.DTO.Out.ContractDTOOut;\r\nimport com.example.capstone3.Models.Contract;\r\nimport com.example.capstone3.Models.Reservation;\r\nimport com.example.capstone3.Repository.ContractRepository;\r\nimport com.example.capstone3.Repository.ReservationRepository;\r\nimport lombok.RequiredArgsConstructor;\r\nimport org.springframework.stereotype.Service;\r\n\r\nimport java.util.ArrayList;\r\nimport java.util.List;\r\n\r\n@Service\r\n@RequiredArgsConstructor\r\npublic class ContractService {\r\n\r\n    private final ContractRepository contractRepository;\r\n    private final ReservationRepository reservationRepository;\r\n\r\n    public List<ContractDTOOut> getAll() {\r\n        List<ContractDTOOut> contractDTOOuts = new ArrayList<>();\r\n        for (Contract contract : contractRepository.findAll()) {\r\n            contractDTOOuts.add(convertToDTO(contract));\r\n        }\r\n        return contractDTOOuts;\r\n    }\r\n\r\n    public ContractDTOOut getContract(Integer id) {\r\n        Contract contract = contractRepository.findContractById(id);\r\n        if (contract == null) {\r\n            throw new ApiException(\"Contract not found\");\r\n        }\r\n        return convertToDTO(contract);\r\n    }\r\n\r\n    public void addContract(ContractDTOIn contractDTOIn) {\r\n        Reservation reservation = reservationRepository.findReservationById(contractDTOIn.getReservationId());\r\n        if (reservation == null) {\r\n            throw new ApiException(\"Reservation not found\");\r\n        }\r\n        Contract contract = new Contract();\r\n        contract.setReservation(reservation);\r\n        contract.setStartDate(contractDTOIn.getStartDate());\r\n        contract.setEndDate(contractDTOIn.getEndDate());\r\n        contract.setRentAmount(contractDTOIn.getRentAmount());\r\n        contract.setContractFilePath(contractDTOIn.getContractFilePath());\r\n        contract.setStatus(\"ACTIVE\");\r\n        contractRepository.save(contract);\r\n    }\r\n\r\n    public void updateContract(Integer id, ContractDTOIn contractDTOIn) {\r\n        Contract contract = contractRepository.findContractById(id);\r\n        if (contract == null) {\r\n            throw new ApiException(\"Contract not found\");\r\n        }\r\n        Reservation reservation = reservationRepository.findReservationById(contractDTOIn.getReservationId());\r\n        if (reservation == null) {\r\n            throw new ApiException(\"Reservation not found\");\r\n        }\r\n        contract.setReservation(reservation);\r\n        contract.setStartDate(contractDTOIn.getStartDate());\r\n        contract.setEndDate(contractDTOIn.getEndDate());\r\n        contract.setRentAmount(contractDTOIn.getRentAmount());\r\n        contract.setContractFilePath(contractDTOIn.getContractFilePath());\r\n        contractRepository.save(contract);\r\n    }\r\n\r\n    public void deleteContract(Integer id) {\r\n        Contract contract = contractRepository.findContractById(id);\r\n        if (contract == null) {\r\n            throw new ApiException(\"Contract not found\");\r\n        }\r\n        contractRepository.deleteById(id);\r\n    }\r\n\r\n    public ContractDTOOut convertToDTO(Contract contract) {\r\n        ContractDTOOut contractDTOOut = new ContractDTOOut();\r\n        contractDTOOut.setId(contract.getId());\r\n        contractDTOOut.setReservationId(contract.getReservation().getId());\r\n        contractDTOOut.setApartmentId(contract.getReservation().getApartment().getId());\r\n        contractDTOOut.setUserId(contract.getReservation().getUser().getId());\r\n        contractDTOOut.setStartDate(contract.getStartDate());\r\n        contractDTOOut.setEndDate(contract.getEndDate());\r\n        contractDTOOut.setRentAmount(contract.getRentAmount());\r\n        contractDTOOut.setContractFilePath(contract.getContractFilePath());\r\n        contractDTOOut.setStatus(contract.getStatus());\r\n        return contractDTOOut;\r\n    }\r\n}\r\n
+===================================================================
+diff --git a/src/main/java/com/example/capstone3/Service/ContractService.java b/src/main/java/com/example/capstone3/Service/ContractService.java
+--- a/src/main/java/com/example/capstone3/Service/ContractService.java	(revision 8755421ba999a13e4e521abbebdfd6df479ca462)
++++ b/src/main/java/com/example/capstone3/Service/ContractService.java	(date 1780506685737)
+@@ -89,4 +89,15 @@
+         contractDTOOut.setStatus(contract.getStatus());
+         return contractDTOOut;
+     }
++
++
++    public Contract generateContract(Integer reservationId){
++        Reservation reservation = reservationRepository.findReservationById(reservationId);
++
++        if(reservation == null){
++            throw new ApiException("Reservation not found!");
++        }
++
++        O
++    }
+ }

@@ -1,0 +1,183 @@
+Index: ../.idea/Capstone-3.iml
+===================================================================
+diff --git a/../.idea/Capstone-3.iml b/../.idea/Capstone-3.iml
+deleted file mode 100644
+--- a/../.idea/Capstone-3.iml	(revision 8755421ba999a13e4e521abbebdfd6df479ca462)
++++ /dev/null	(revision 8755421ba999a13e4e521abbebdfd6df479ca462)
+@@ -1,9 +0,0 @@
+-<?xml version="1.0" encoding="UTF-8"?>
+-<module type="JAVA_MODULE" version="4">
+-  <component name="NewModuleRootManager" inherit-compiler-output="true">
+-    <exclude-output />
+-    <content url="file://$MODULE_DIR$" />
+-    <orderEntry type="inheritedJdk" />
+-    <orderEntry type="sourceFolder" forTests="false" />
+-  </component>
+-</module>
+\ No newline at end of file
+Index: ../.idea/misc.xml
+===================================================================
+diff --git a/../.idea/misc.xml b/../.idea/misc.xml
+deleted file mode 100644
+--- a/../.idea/misc.xml	(revision 8755421ba999a13e4e521abbebdfd6df479ca462)
++++ /dev/null	(revision 8755421ba999a13e4e521abbebdfd6df479ca462)
+@@ -1,14 +0,0 @@
+-<?xml version="1.0" encoding="UTF-8"?>
+-<project version="4">
+-  <component name="ExternalStorageConfigurationManager" enabled="true" />
+-  <component name="MavenProjectsManager">
+-    <option name="originalFiles">
+-      <list>
+-        <option value="$PROJECT_DIR$/capstone-3/pom.xml" />
+-      </list>
+-    </option>
+-  </component>
+-  <component name="ProjectRootManager" version="2" project-jdk-name="openjdk-26" project-jdk-type="JavaSDK">
+-    <output url="file://$PROJECT_DIR$/out" />
+-  </component>
+-</project>
+\ No newline at end of file
+Index: ../.idea/modules.xml
+===================================================================
+diff --git a/../.idea/modules.xml b/../.idea/modules.xml
+deleted file mode 100644
+--- a/../.idea/modules.xml	(revision 8755421ba999a13e4e521abbebdfd6df479ca462)
++++ /dev/null	(revision 8755421ba999a13e4e521abbebdfd6df479ca462)
+@@ -1,8 +0,0 @@
+-<?xml version="1.0" encoding="UTF-8"?>
+-<project version="4">
+-  <component name="ProjectModuleManager">
+-    <modules>
+-      <module fileurl="file://$PROJECT_DIR$/.idea/Capstone-3.iml" filepath="$PROJECT_DIR$/.idea/Capstone-3.iml" />
+-    </modules>
+-  </component>
+-</project>
+\ No newline at end of file
+Index: ../.idea/jarRepositories.xml
+===================================================================
+diff --git a/../.idea/jarRepositories.xml b/../.idea/jarRepositories.xml
+deleted file mode 100644
+--- a/../.idea/jarRepositories.xml	(revision 8755421ba999a13e4e521abbebdfd6df479ca462)
++++ /dev/null	(revision 8755421ba999a13e4e521abbebdfd6df479ca462)
+@@ -1,20 +0,0 @@
+-<?xml version="1.0" encoding="UTF-8"?>
+-<project version="4">
+-  <component name="RemoteRepositoriesConfiguration">
+-    <remote-repository>
+-      <option name="id" value="central" />
+-      <option name="name" value="Central Repository" />
+-      <option name="url" value="https://repo.maven.apache.org/maven2" />
+-    </remote-repository>
+-    <remote-repository>
+-      <option name="id" value="central" />
+-      <option name="name" value="Maven Central repository" />
+-      <option name="url" value="https://repo1.maven.org/maven2" />
+-    </remote-repository>
+-    <remote-repository>
+-      <option name="id" value="jboss.community" />
+-      <option name="name" value="JBoss Community repository" />
+-      <option name="url" value="https://repository.jboss.org/nexus/content/repositories/public/" />
+-    </remote-repository>
+-  </component>
+-</project>
+\ No newline at end of file
+Index: ../.idea/compiler.xml
+===================================================================
+diff --git a/../.idea/compiler.xml b/../.idea/compiler.xml
+deleted file mode 100644
+--- a/../.idea/compiler.xml	(revision 8755421ba999a13e4e521abbebdfd6df479ca462)
++++ /dev/null	(revision 8755421ba999a13e4e521abbebdfd6df479ca462)
+@@ -1,22 +0,0 @@
+-<?xml version="1.0" encoding="UTF-8"?>
+-<project version="4">
+-  <component name="CompilerConfiguration">
+-    <annotationProcessing>
+-      <profile default="true" name="Default" enabled="true" />
+-      <profile name="Annotation profile for capstone-3" enabled="true">
+-        <sourceOutputDir name="target/generated-sources/annotations" />
+-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+-        <outputRelativeToContentRoot value="true" />
+-        <processorPath useClasspath="false">
+-          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.46/lombok-1.18.46.jar" />
+-        </processorPath>
+-        <module name="capstone-3" />
+-      </profile>
+-    </annotationProcessing>
+-  </component>
+-  <component name="JavacSettings">
+-    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+-      <module name="capstone-3" options="-parameters" />
+-    </option>
+-  </component>
+-</project>
+\ No newline at end of file
+Index: ../.idea/.gitignore
+===================================================================
+diff --git a/../.idea/.gitignore b/../.idea/.gitignore
+deleted file mode 100644
+--- a/../.idea/.gitignore	(revision 8755421ba999a13e4e521abbebdfd6df479ca462)
++++ /dev/null	(revision 8755421ba999a13e4e521abbebdfd6df479ca462)
+@@ -1,10 +0,0 @@
+-# Default ignored files
+-/shelf/
+-/workspace.xml
+-# Editor-based HTTP Client requests
+-/httpRequests/
+-# Ignored default folder with query files
+-/queries/
+-# Datasource local storage ignored files
+-/dataSources/
+-/dataSources.local.xml
+Index: ../.idea/encodings.xml
+===================================================================
+diff --git a/../.idea/encodings.xml b/../.idea/encodings.xml
+deleted file mode 100644
+--- a/../.idea/encodings.xml	(revision 8755421ba999a13e4e521abbebdfd6df479ca462)
++++ /dev/null	(revision 8755421ba999a13e4e521abbebdfd6df479ca462)
+@@ -1,6 +0,0 @@
+-<?xml version="1.0" encoding="UTF-8"?>
+-<project version="4">
+-  <component name="Encoding">
+-    <file url="file://$PROJECT_DIR$/capstone-3/src/main/java" charset="UTF-8" />
+-  </component>
+-</project>
+\ No newline at end of file
+Index: ../.idea/dataSources.xml
+===================================================================
+diff --git a/../.idea/dataSources.xml b/../.idea/dataSources.xml
+deleted file mode 100644
+--- a/../.idea/dataSources.xml	(revision 8755421ba999a13e4e521abbebdfd6df479ca462)
++++ /dev/null	(revision 8755421ba999a13e4e521abbebdfd6df479ca462)
+@@ -1,17 +0,0 @@
+-<?xml version="1.0" encoding="UTF-8"?>
+-<project version="4">
+-  <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
+-    <data-source source="LOCAL" name="@localhost" uuid="311e9e04-b534-44a1-b474-39fac961cbf9">
+-      <driver-ref>mysql.8</driver-ref>
+-      <synchronize>true</synchronize>
+-      <jdbc-driver>com.mysql.cj.jdbc.Driver</jdbc-driver>
+-      <jdbc-url>jdbc:mysql://localhost:3306</jdbc-url>
+-      <jdbc-additional-properties>
+-        <property name="com.intellij.clouds.kubernetes.db.host.port" />
+-        <property name="com.intellij.clouds.kubernetes.db.enabled" value="false" />
+-        <property name="com.intellij.clouds.kubernetes.db.container.port" />
+-      </jdbc-additional-properties>
+-      <working-dir>$ProjectFileDir$</working-dir>
+-    </data-source>
+-  </component>
+-</project>
+\ No newline at end of file
+Index: ../.idea/vcs.xml
+===================================================================
+diff --git a/../.idea/vcs.xml b/../.idea/vcs.xml
+deleted file mode 100644
+--- a/../.idea/vcs.xml	(revision 8755421ba999a13e4e521abbebdfd6df479ca462)
++++ /dev/null	(revision 8755421ba999a13e4e521abbebdfd6df479ca462)
+@@ -1,6 +0,0 @@
+-<?xml version="1.0" encoding="UTF-8"?>
+-<project version="4">
+-  <component name="VcsDirectoryMappings">
+-    <mapping directory="" vcs="Git" />
+-  </component>
+-</project>
+\ No newline at end of file
