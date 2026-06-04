@@ -25,9 +25,9 @@ public class ApartmentImageController {
         return ResponseEntity.status(200).body(apartmentImageService.getApartmentImage(id));
     }
 
-    @PostMapping("/add")
-    public ResponseEntity<?> addApartmentImage(@RequestBody @Valid ApartmentImageDTOIn apartmentImageDTOIn) {
-        apartmentImageService.addApartmentImage(apartmentImageDTOIn);
+    @PostMapping("/add/{apartment_id}")
+    public ResponseEntity<?> addApartmentImage(@RequestBody @Valid ApartmentImageDTOIn apartmentImageDTOIn, @PathVariable Integer apartment_id) {
+        apartmentImageService.addApartmentImage(apartmentImageDTOIn, apartment_id);
         return ResponseEntity.status(200).body(new ApiResponse("Apartment image added successfully"));
     }
 

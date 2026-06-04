@@ -42,4 +42,13 @@ public class ApartmentController {
         apartmentService.deleteApartment(id);
         return ResponseEntity.status(200).body(new ApiResponse("Apartment deleted successfully"));
     }
+
+
+    //^^^^^^^CRUD^^^^^^^^
+
+
+    @GetMapping("/get/underpriced")
+    public ResponseEntity<?> getUnderpricedApartments() {
+        return ResponseEntity.status(200).body(apartmentService.getUnderpricedApartments());
+    }
 }

@@ -8,8 +8,6 @@ import lombok.Data;
 @Data
 public class ApartmentImageDTOIn {
 
-    @NotNull(message = "Apartment ID is required")
-    private Integer apartmentId;
 
     @NotEmpty(message = "Image URL is required")
     @Size(max = 500, message = "Image URL must not exceed 500 characters")

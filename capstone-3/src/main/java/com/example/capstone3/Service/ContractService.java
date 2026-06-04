@@ -42,8 +42,8 @@ public class ContractService {
         return convertToDTO(contract);
     }
 
-    public void addContract(ContractDTOIn contractDTOIn) {
-        Reservation reservation = reservationRepository.findReservationById(contractDTOIn.getReservationId());
+    public void addContract(ContractDTOIn contractDTOIn, Integer reservation_id) {
+        Reservation reservation = reservationRepository.findReservationById(reservation_id);
         if (reservation == null) {
             throw new ApiException("Reservation not found");
         }
@@ -66,7 +66,7 @@ public class ContractService {
         if (contract == null) {
             throw new ApiException("Contract not found");
         }
-        Reservation reservation = reservationRepository.findReservationById(contractDTOIn.getReservationId());
+        Reservation reservation = contract.getReservation();
         if (reservation == null) {
             throw new ApiException("Reservation not found");
         }
@@ -107,6 +107,9 @@ public class ContractService {
         contractDTOOut.setContractStatus(contract.getContractStatus());
         return contractDTOOut;
     }
+
+
+    //^^^^^^^CRUD^^^^^^^^
 
 
     @Transactional

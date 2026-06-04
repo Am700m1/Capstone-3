@@ -4,18 +4,18 @@ import com.example.capstone3.Api.ApiException;
 import com.example.capstone3.DTO.In.ApartmentDTOIn;
 import com.example.capstone3.DTO.Out.ApartmentDTOOut;
 import com.example.capstone3.DTO.Out.ApartmentImageDTOOut;
+import com.example.capstone3.DTO.Out.UnderpricedApartmentDTOOut;
 import com.example.capstone3.Enums.ApartmentStatus;
-import com.example.capstone3.Models.Apartment;
-import com.example.capstone3.Models.ApartmentImage;
-import com.example.capstone3.Models.Building;
-import com.example.capstone3.Models.Owner;
+import com.example.capstone3.Models.*;
 import com.example.capstone3.Repository.ApartmentRepository;
 import com.example.capstone3.Repository.BuildingRepository;
 import com.example.capstone3.Repository.OwnerRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -154,4 +154,68 @@ public class ApartmentService {
 
         return apartmentDTOOut;
     }
-}
+
+
+    //^^^^^^^CRUD^^^^^^^^
+
+
+    public List<UnderpricedApartmentDTOOut> getUnderpricedApartments() {
+        List<Apartment> apartments = apartmentRepository.findAll();
+        List<UnderpricedApartmentDTOOut> result = new ArrayList<>();
+
+        for (Apartment apartment : apartments) {
+
+            // --- Average days to get reserved (Speed) ---
+            List<Reservation> reservations = apartment.getReservations();
+            double avgDaysToReserve = 0;
+            if (!reservations.isEmpty()) {
+                long totalDays = 0;
+                for (Reservation reservation : reservations) {
+                    totalDays += ChronoUnit.DAYS.between(reservation.getCreatedAt().toLocalDate(), reservation.getReservationDate());
+                }
+                avgDaysToReserve = (double) totalDays / reservations.size();
+            }
+
+            // --- Average rating (Reviews) ---
+            List<Review> reviews = apartment.getReviews();
+            double avgRating = 0;
+            if (!reviews.isEmpty()) {
+                double totalRating = 0;
+                for (Review review : reviews) {
+                    totalRating += review.getRating();
+                }
+                avgRating = totalRating / reviews.size();
+            }
+
+            // --- Filter: must have reservations and good reviews ---
+            if (reservations.isEmpty() || avgRating < 4.0) continue;
+
+            // --- Weighted score: Speed(20%) + Rating(50%) + Demand(30%) ---
+            double speedScore   = 1.0 / (1.0 + avgDaysToReserve);   // fewer days = higher score
+            double ratingScore  = avgRating / 5.0;                   // normalize to 0-1
+            double demandScore  = Math.min(reservations.size() / 10.0, 1.0); // cap at 10 reservations
+
+            double finalScore = (speedScore * 0.20) + (ratingScore * 0.50) + (demandScore * 0.30);
+
+            UnderpricedApartmentDTOOut dto = new UnderpricedApartmentDTOOut();
+            dto.setId(apartment.getId());
+            dto.setTitle(apartment.getTitle());
+            dto.setDistrict(apartment.getBuilding().getDistrict());
+            dto.setMonthlyRent(apartment.getMonthlyRent());
+            dto.setBedrooms(apartment.getBedrooms());
+            dto.setBathrooms(apartment.getBathrooms());
+            dto.setArea(apartment.getArea());
+            dto.setTotalReservations(reservations.size());
+            dto.setAvgDaysToReserve(Math.round(avgDaysToReserve * 100.0) / 100.0);
+            dto.setAverageRating(Math.round(avgRating * 100.0) / 100.0);
+            dto.setScore(Math.round(finalScore * 100.0) / 100.0);
+            result.add(dto);
+        }
+
+        if (result.isEmpty()) {
+            throw new ApiException("No underpriced apartments found");
+        }
+
+        result.sort(Comparator.comparingDouble(UnderpricedApartmentDTOOut::getScore).reversed());
+        return result;
+    }}

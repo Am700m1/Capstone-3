@@ -80,4 +80,9 @@ public class UserService {
         userDTOOut.setCreatedAt(user.getCreatedAt());
         return userDTOOut;
     }
+
+
+    //^^^^^^^CRUD^^^^^^^^
+
+
 }

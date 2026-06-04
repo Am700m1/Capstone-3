@@ -123,6 +123,11 @@ public class UserPreferenceService {
         return userPreferenceDTOOut;
     }
 
+
+    //^^^^^^^CRUD^^^^^^^^
+
+
+
     private PreferenceLevel parsePreferenceLevel(String value) {
         if (value == null || value.isBlank()) {
             return PreferenceLevel.NOT_IMPORTANT;

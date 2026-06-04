@@ -11,9 +11,6 @@ import java.time.LocalDate;
 @Data
 public class ContractDTOIn {
 
-    @NotNull(message = "Reservation ID is required")
-    private Integer reservationId;
-
     @NotNull(message = "Contract number is required")
     private String contractNumber;
 

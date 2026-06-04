@@ -36,8 +36,8 @@ public class ApartmentImageService {
         return convertToDTO(image);
     }
 
-    public void addApartmentImage(ApartmentImageDTOIn apartmentImageDTOIn) {
-        Apartment apartment = apartmentRepository.findApartmentById(apartmentImageDTOIn.getApartmentId());
+    public void addApartmentImage(ApartmentImageDTOIn apartmentImageDTOIn, Integer apartment_id) {
+        Apartment apartment = apartmentRepository.findApartmentById(apartment_id);
         if (apartment == null) {
             throw new ApiException("Apartment not found");
         }
@@ -53,7 +53,7 @@ public class ApartmentImageService {
         if (image == null) {
             throw new ApiException("Apartment image not found");
         }
-        Apartment apartment = apartmentRepository.findApartmentById(apartmentImageDTOIn.getApartmentId());
+        Apartment apartment = image.getApartment();
         if (apartment == null) {
             throw new ApiException("Apartment not found");
         }
@@ -80,4 +80,10 @@ public class ApartmentImageService {
         apartmentImageDTOOut.setDisplayOrder(image.getDisplayOrder());
         return apartmentImageDTOOut;
     }
+
+
+    //^^^^^^^CRUD^^^^^^^^
+
+
+
 }

@@ -70,4 +70,9 @@ public class OwnerService {
         ownerDTOOut.setPhoneNumber(owner.getPhoneNumber());
         return ownerDTOOut;
     }
+
+
+    //^^^^^^^CRUD^^^^^^^^
+
+
 }
