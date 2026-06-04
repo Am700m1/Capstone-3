@@ -1,5 +1,6 @@
 package com.example.capstone3.DTO.Out;
 
+import com.example.capstone3.Enums.ContractStatus;
 import lombok.Data;
 
 import java.time.LocalDate;
@@ -19,5 +20,5 @@ public class ContractDTOOut {
     private Boolean signed;
     private LocalDate signedDate;
     private String pdfPath;
-    private String contractStatus;            // ACTIVE EXPIRED TERMINATED
+    private ContractStatus contractStatus;            // ACTIVE EXPIRED TERMINATED
 }

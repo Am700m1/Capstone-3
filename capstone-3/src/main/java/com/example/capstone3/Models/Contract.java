@@ -1,5 +1,6 @@
 package com.example.capstone3.Models;
 
+import com.example.capstone3.Enums.ContractStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -44,7 +45,7 @@ public class Contract {
     private LocalDate signedDate;
 
     @Column(name = "contract_status", nullable = false, length = 20)
-    private String contractStatus;
+    private ContractStatus contractStatus;
 
     @Column(name = "pdf_path", length = 500)
     private String pdfPath;
