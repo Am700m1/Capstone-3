@@ -8,4 +8,6 @@ import org.springframework.stereotype.Repository;
 public interface UserPreferenceRepository extends JpaRepository<UserPreference, Integer> {
 
     UserPreference findUserPreferenceById(Integer id);
+
+    UserPreference findUserPreferenceByUserId(Integer userId);
 }

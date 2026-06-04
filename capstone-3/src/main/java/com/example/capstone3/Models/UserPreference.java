@@ -61,10 +61,6 @@ public class UserPreference {
     private PreferenceLevel schoolPreference;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "mosque_preference", length = 20)
-    private PreferenceLevel mosquePreference;
-
-    @Enumerated(EnumType.STRING)
     @Column(name = "public_transport_preference", length = 20)
     private PreferenceLevel publicTransportPreference;
 

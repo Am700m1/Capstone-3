@@ -2,11 +2,19 @@ package com.example.capstone3.Service;
 
 import com.example.capstone3.Api.ApiException;
 import com.example.capstone3.DTO.In.ReviewDTOIn;
+import com.example.capstone3.DTO.Out.OwnerReviewAnalysisDTOOut;
 import com.example.capstone3.DTO.Out.ReviewDTOOut;
-import com.example.capstone3.Enums.ContractStatus;
 import com.example.capstone3.Enums.ReservationStatus;
-import com.example.capstone3.Models.*;
-import com.example.capstone3.Repository.*;
+import com.example.capstone3.Models.Apartment;
+import com.example.capstone3.Models.Owner;
+import com.example.capstone3.Models.Reservation;
+import com.example.capstone3.Models.Review;
+import com.example.capstone3.Models.User;
+import com.example.capstone3.Repository.ApartmentRepository;
+import com.example.capstone3.Repository.OwnerRepository;
+import com.example.capstone3.Repository.ReservationRepository;
+import com.example.capstone3.Repository.ReviewRepository;
+import com.example.capstone3.Repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -20,7 +28,9 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final UserRepository userRepository;
     private final ApartmentRepository apartmentRepository;
-    private final ContractRepository contractRepository;
+    private final OwnerRepository ownerRepository;
+    private final ReservationRepository reservationRepository;
+    private final AiService aiService;
 
     public List<ReviewDTOOut> getAll() {
         List<ReviewDTOOut> reviewDTOOuts = new ArrayList<>();
@@ -38,46 +48,36 @@ public class ReviewService {
         return convertToDTO(review);
     }
 
-    public void addReview(ReviewDTOIn reviewDTOIn, Integer user_id) {
-        User user = userRepository.findUserById(user_id);
-        if (user == null) {
-            throw new ApiException("User not found");
+    public void addReview(ReviewDTOIn dto) {
+        if (dto.getReservationId() == null) {
+            throw new ApiException("Reservation ID is required");
         }
-
-        Apartment apartment = apartmentRepository.findApartmentById(reviewDTOIn.getApartmentId());
-        if (apartment == null) {
-            throw new ApiException("Apartment not found");
+        Reservation reservation = reservationRepository.findReservationById(dto.getReservationId());
+        if (reservation == null) {
+            throw new ApiException("Reservation not found");
         }
-        Contract contract = contractRepository.findContractByReservation_User_IdAndReservation_Apartment_IdAndStatus(
-                user_id, reviewDTOIn.getApartmentId(), ContractStatus.ENDED);
-        if (contract == null) {
-            throw new ApiException("You can only review an apartment after your contract has ended");
+        if (reservation.getStatus() != ReservationStatus.COMPLETED) {
+            throw new ApiException("You can only review apartments from completed reservations");
+        }
+        if (reviewRepository.existsByReservation_Id(dto.getReservationId())) {
+            throw new ApiException("You have already submitted a review for this reservation");
         }
         Review review = new Review();
-        review.setUser(user);
-        review.setApartment(apartment);
-        review.setRating(reviewDTOIn.getRating());
-        review.setComment(reviewDTOIn.getComment());
+        review.setUser(reservation.getUser());
+        review.setApartment(reservation.getApartment());
+        review.setReservation(reservation);
+        review.setRating(dto.getRating());
+        review.setComment(dto.getComment());
         reviewRepository.save(review);
     }
 
-    public void updateReview(Integer id, ReviewDTOIn reviewDTOIn) {
+    public void updateReview(Integer id, ReviewDTOIn dto) {
         Review review = reviewRepository.findReviewById(id);
         if (review == null) {
             throw new ApiException("Review not found");
         }
-        User user = review.getUser();
-        if (user == null) {
-            throw new ApiException("User not found");
-        }
-        Apartment apartment = review.getApartment();
-        if (apartment == null) {
-            throw new ApiException("Apartment not found");
-        }
-        review.setUser(user);
-        review.setApartment(apartment);
-        review.setRating(reviewDTOIn.getRating());
-        review.setComment(reviewDTOIn.getComment());
+        review.setRating(dto.getRating());
+        review.setComment(dto.getComment());
         reviewRepository.save(review);
     }
 
@@ -88,6 +88,67 @@ public class ReviewService {
         }
         reviewRepository.deleteById(id);
     }
+
+
+    //^^^^^^^CRUD^^^^^^^^
+
+
+    public List<ReviewDTOOut> getReviewByApartment(Integer apartmentId) {
+        Apartment apartment = apartmentRepository.findApartmentById(apartmentId);
+        if (apartment == null) {
+            throw new ApiException("Apartment not found");
+        }
+        List<ReviewDTOOut> reviewDTOOuts = new ArrayList<>();
+        for (Review review : reviewRepository.findReviewByApartmentId(apartmentId)) {
+            reviewDTOOuts.add(convertToDTO(review));
+        }
+        return reviewDTOOuts;
+    }
+
+    public List<ReviewDTOOut> getReviewsByUserId(Integer userId) {
+        User user = userRepository.findUserById(userId);
+        if (user == null) {
+            throw new ApiException("User not found");
+        }
+        List<ReviewDTOOut> reviewDTOOuts = new ArrayList<>();
+        for (Review review : reviewRepository.findReviewsByUserId(userId)) {
+            reviewDTOOuts.add(convertToDTO(review));
+        }
+        return reviewDTOOuts;
+    }
+
+    public List<ReviewDTOOut> getOwnerReviews(Integer ownerId) {
+        Owner owner = ownerRepository.findOwnerById(ownerId);
+        if (owner == null) {
+            throw new ApiException("Owner not found");
+        }
+        List<ReviewDTOOut> reviewDTOOuts = new ArrayList<>();
+        for (Review review : loadOwnerReviews(ownerId)) {
+            reviewDTOOuts.add(convertToDTO(review));
+        }
+        return reviewDTOOuts;
+    }
+
+    public OwnerReviewAnalysisDTOOut generateOwnerAnalysis(Integer ownerId) {
+        Owner owner = ownerRepository.findOwnerById(ownerId);
+        if (owner == null) {
+            throw new ApiException("Owner not found");
+        }
+        List<Review> reviews = loadOwnerReviews(ownerId);
+        if (reviews.isEmpty()) {
+            throw new ApiException("No reviews found for this owner");
+        }
+        String analysis = aiService.generateOwnerReviewAnalysis(owner, reviews);
+
+        OwnerReviewAnalysisDTOOut dto = new OwnerReviewAnalysisDTOOut();
+        dto.setOwnerId(owner.getId());
+        dto.setOwnerName(owner.getFullName());
+        dto.setAverageRating(calcAvgRating(reviews));
+        dto.setTotalReviews(reviews.size());
+        dto.setAnalysis(analysis);
+        return dto;
+    }
+
 
     public ReviewDTOOut convertToDTO(Review review) {
         ReviewDTOOut reviewDTOOut = new ReviewDTOOut();
@@ -100,8 +161,16 @@ public class ReviewService {
         return reviewDTOOut;
     }
 
+    private List<Review> loadOwnerReviews(Integer ownerId) {
+        return reviewRepository.findByApartment_Building_Owner_Id(ownerId);
+    }
 
-    //^^^^^^^CRUD^^^^^^^^
-
-
+    private double calcAvgRating(List<Review> reviews) {
+        if (reviews.isEmpty()) return 0;
+        int sum = 0;
+        for (Review r : reviews) {
+            sum += r.getRating();
+        }
+        return Math.round((double) sum / reviews.size() * 10.0) / 10.0;
+    }
 }

@@ -55,7 +55,6 @@ public class UserPreferenceService {
         preference.setCafesPreference(parsePreferenceLevel(userPreferenceDTOIn.getCafesPreference()));
         preference.setHospitalPreference(parsePreferenceLevel(userPreferenceDTOIn.getHospitalPreference()));
         preference.setSchoolPreference(parsePreferenceLevel(userPreferenceDTOIn.getSchoolPreference()));
-        preference.setMosquePreference(parsePreferenceLevel(userPreferenceDTOIn.getMosquePreference()));
         preference.setPublicTransportPreference(parsePreferenceLevel(userPreferenceDTOIn.getPublicTransportPreference()));
         preference.setPreferredBedrooms(userPreferenceDTOIn.getPreferredBedrooms());
         preference.setPreferredBathrooms(userPreferenceDTOIn.getPreferredBathrooms());
@@ -84,7 +83,6 @@ public class UserPreferenceService {
         preference.setCafesPreference(parsePreferenceLevel(userPreferenceDTOIn.getCafesPreference()));
         preference.setHospitalPreference(parsePreferenceLevel(userPreferenceDTOIn.getHospitalPreference()));
         preference.setSchoolPreference(parsePreferenceLevel(userPreferenceDTOIn.getSchoolPreference()));
-        preference.setMosquePreference(parsePreferenceLevel(userPreferenceDTOIn.getMosquePreference()));
         preference.setPublicTransportPreference(parsePreferenceLevel(userPreferenceDTOIn.getPublicTransportPreference()));
         preference.setPreferredBedrooms(userPreferenceDTOIn.getPreferredBedrooms());
         preference.setPreferredBathrooms(userPreferenceDTOIn.getPreferredBathrooms());
@@ -115,7 +113,6 @@ public class UserPreferenceService {
         userPreferenceDTOOut.setCafesPreference(preference.getCafesPreference() == null ? null : preference.getCafesPreference().name());
         userPreferenceDTOOut.setHospitalPreference(preference.getHospitalPreference() == null ? null : preference.getHospitalPreference().name());
         userPreferenceDTOOut.setSchoolPreference(preference.getSchoolPreference() == null ? null : preference.getSchoolPreference().name());
-        userPreferenceDTOOut.setMosquePreference(preference.getMosquePreference() == null ? null : preference.getMosquePreference().name());
         userPreferenceDTOOut.setPublicTransportPreference(preference.getPublicTransportPreference() == null ? null : preference.getPublicTransportPreference().name());
         userPreferenceDTOOut.setPreferredBedrooms(preference.getPreferredBedrooms());
         userPreferenceDTOOut.setPreferredBathrooms(preference.getPreferredBathrooms());
@@ -125,7 +122,6 @@ public class UserPreferenceService {
 
 
     //^^^^^^^CRUD^^^^^^^^
-
 
 
     private PreferenceLevel parsePreferenceLevel(String value) {
