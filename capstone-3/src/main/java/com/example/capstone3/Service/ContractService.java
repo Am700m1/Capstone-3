@@ -3,15 +3,24 @@ package com.example.capstone3.Service;
 import com.example.capstone3.Api.ApiException;
 import com.example.capstone3.DTO.In.ContractDTOIn;
 import com.example.capstone3.DTO.Out.ContractDTOOut;
+import com.example.capstone3.Enums.ApartmentStatus;
+import com.example.capstone3.Enums.ContractStatus;
+import com.example.capstone3.Enums.ReservationStatus;
+import com.example.capstone3.Models.Apartment;
 import com.example.capstone3.Models.Contract;
 import com.example.capstone3.Models.Reservation;
+import com.example.capstone3.Models.User;
+import com.example.capstone3.Repository.ApartmentRepository;
 import com.example.capstone3.Repository.ContractRepository;
 import com.example.capstone3.Repository.ReservationRepository;
+import com.example.capstone3.Repository.UserRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -19,6 +28,8 @@ public class ContractService {
 
     private final ContractRepository contractRepository;
     private final ReservationRepository reservationRepository;
+    private final UserRepository userRepository;
+    private final ApartmentRepository apartmentRepository;
 
     public List<ContractDTOOut> getAll() {
         List<ContractDTOOut> contractDTOOuts = new ArrayList<>();
@@ -51,7 +62,7 @@ public class ContractService {
         contract.setSigned(contractDTOIn.getSigned() == null ? false : contractDTOIn.getSigned());
         contract.setSignedDate(contractDTOIn.getSignedDate());
         contract.setPdfPath(contractDTOIn.getPdfPath());
-        contract.setContractStatus("ACTIVE");
+        contract.setContractStatus(ContractStatus.PENDING);
         contractRepository.save(contract);
     }
 
@@ -101,4 +112,70 @@ public class ContractService {
         contractDTOOut.setContractStatus(contract.getContractStatus());
         return contractDTOOut;
     }
+
+
+    @Transactional
+    public void acceptContract(Integer userId, Integer contractId){
+        User user = userRepository.findUserById(userId);
+        Contract contract = contractRepository.findContractById(contractId);
+
+        if(user == null){
+            throw new ApiException("User not found!");
+        }
+
+        if (contract == null) {
+            throw new ApiException("Contract was not found!");
+        }
+
+        if(!userId.equals(contract.getReservation().getUser().getId())){
+            throw new ApiException("You are not authorized to do this action");
+        }
+
+        Reservation reservation = contract.getReservation();
+
+        contract.setSigned(true);
+        contract.setContractStatus(ContractStatus.ACTIVE);
+        reservation.setStatus(ReservationStatus.COMPLETED);
+        reservationRepository.save(reservation);
+        contractRepository.save(contract);
+
+
+        Apartment apartment = apartmentRepository.findApartmentById(contract.getReservation().getApartment().getId());
+        apartment.setStatus(ApartmentStatus.RENTED);
+        apartmentRepository.save(apartment);
+    }
+
+
+    @Transactional
+    public void rejectContract(Integer userId, Integer contractId){
+        User user = userRepository.findUserById(userId);
+        Contract contract = contractRepository.findContractById(contractId);
+
+        if(user == null){
+            throw new ApiException("User not found!");
+        }
+
+        if (contract == null) {
+            throw new ApiException("Contract was not found!");
+        }
+
+        if(!userId.equals(contract.getReservation().getUser().getId())){
+            throw new ApiException("You are not authorized to do this action");
+        }
+
+        Reservation reservation = contract.getReservation();
+
+        contract.setSigned(false);
+        contract.setContractStatus(ContractStatus.CANCELLED);
+        reservation.setStatus(ReservationStatus.CANCELLED);
+        reservationRepository.save(reservation);
+        contractRepository.save(contract);
+
+        Apartment apartment = apartmentRepository.findApartmentById(contract.getReservation().getApartment().getId());
+        apartment.setStatus(ApartmentStatus.AVAILABLE);
+        apartmentRepository.save(apartment);
+    }
+
+
+
 }
