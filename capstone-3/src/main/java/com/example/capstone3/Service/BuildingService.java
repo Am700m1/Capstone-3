@@ -36,8 +36,8 @@ public class BuildingService {
         return convertToDTO(building);
     }
 
-    public void addBuilding(BuildingDTOIn buildingDTOIn) {
-        Owner owner = ownerRepository.findOwnerById(buildingDTOIn.getOwnerId());
+    public void addBuilding(BuildingDTOIn buildingDTOIn, Integer owner_id) {
+        Owner owner = ownerRepository.findOwnerById(owner_id);
         if (owner == null) {
             throw new ApiException("Owner not found");
         }

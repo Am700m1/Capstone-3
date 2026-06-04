@@ -42,4 +42,39 @@ public class ReservationController {
         reservationService.deleteReservation(id);
         return ResponseEntity.status(200).body(new ApiResponse("Reservation deleted successfully"));
     }
+
+
+
+    @GetMapping("/get/pending")
+    public ResponseEntity<?> getPendingReservations() {
+        return ResponseEntity.status(200).body(reservationService.getPendingReservations());
+    }
+
+    @GetMapping("/get/owner/{ownerId}/pending")
+    public ResponseEntity<?> getOwnerPendingReservations(@PathVariable Integer ownerId) {
+        return ResponseEntity.status(200).body(reservationService.getOwnerPendingReservations(ownerId));
+    }
+
+    @GetMapping("/get/user/{userId}")
+    public ResponseEntity<?> getReservationsByUserId(@PathVariable Integer userId) {
+        return ResponseEntity.status(200).body(reservationService.getReservationsByUserId(userId));
+    }
+
+    @PutMapping("/accept/{ownerId}/{reservationId}")
+    public ResponseEntity<?> acceptReservation(@PathVariable Integer ownerId, @PathVariable Integer reservationId) {
+        reservationService.acceptReservation(ownerId, reservationId);
+        return ResponseEntity.status(200).body(new ApiResponse("Reservation accepted successfully"));
+    }
+
+    @PutMapping("/reject/{ownerId}/{reservationId}")
+    public ResponseEntity<?> rejectReservation(@PathVariable Integer ownerId, @PathVariable Integer reservationId) {
+        reservationService.rejectReservation(ownerId, reservationId);
+        return ResponseEntity.status(200).body(new ApiResponse("Reservation rejected successfully"));
+    }
+
+    @PutMapping("/end/{userId}/{reservationId}")
+    public ResponseEntity<?> endReservation(@PathVariable Integer userId, @PathVariable Integer reservationId) {
+        reservationService.endReservation(userId, reservationId);
+        return ResponseEntity.status(200).body(new ApiResponse("Reservation cancelled successfully"));
+    }
 }

@@ -10,8 +10,6 @@ import lombok.Data;
 @Data
 public class ReviewDTOIn {
 
-    @NotNull(message = "User ID is required")
-    private Integer userId;
 
     @NotNull(message = "Apartment ID is required")
     private Integer apartmentId;

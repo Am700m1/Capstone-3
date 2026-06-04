@@ -8,8 +8,6 @@ import lombok.Data;
 @Data
 public class BuildingDTOIn {
 
-    @NotNull(message = "Owner ID is required")
-    private Integer ownerId;
 
     @NotEmpty(message = "Building name is required")
     @Size(max = 150, message = "Building name must not exceed 150 characters")

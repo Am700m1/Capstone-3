@@ -3,12 +3,9 @@ package com.example.capstone3.Service;
 import com.example.capstone3.Api.ApiException;
 import com.example.capstone3.DTO.In.ReviewDTOIn;
 import com.example.capstone3.DTO.Out.ReviewDTOOut;
-import com.example.capstone3.Models.Apartment;
-import com.example.capstone3.Models.Review;
-import com.example.capstone3.Models.User;
-import com.example.capstone3.Repository.ApartmentRepository;
-import com.example.capstone3.Repository.ReviewRepository;
-import com.example.capstone3.Repository.UserRepository;
+import com.example.capstone3.Enums.ReservationStatus;
+import com.example.capstone3.Models.*;
+import com.example.capstone3.Repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +19,7 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final UserRepository userRepository;
     private final ApartmentRepository apartmentRepository;
+    private final ContractRepository contractRepository;
 
     public List<ReviewDTOOut> getAll() {
         List<ReviewDTOOut> reviewDTOOuts = new ArrayList<>();
@@ -39,15 +37,24 @@ public class ReviewService {
         return convertToDTO(review);
     }
 
-    public void addReview(ReviewDTOIn reviewDTOIn) {
-        User user = userRepository.findUserById(reviewDTOIn.getUserId());
+    public void addReview(ReviewDTOIn reviewDTOIn, Integer user_id) {
+        User user = userRepository.findUserById(user_id);
         if (user == null) {
             throw new ApiException("User not found");
         }
+
         Apartment apartment = apartmentRepository.findApartmentById(reviewDTOIn.getApartmentId());
         if (apartment == null) {
             throw new ApiException("Apartment not found");
         }
+
+        Contract contract = contractRepository.findContractByReservation_User_IdAndReservation_Apartment_IdAndStatus(
+                user_id, reviewDTOIn.getApartmentId(), ContractStatus.ENDED
+        );
+        if (contract == null) {
+            throw new ApiException("You can only review an apartment after your contract has ended");
+        }
+
         Review review = new Review();
         review.setUser(user);
         review.setApartment(apartment);

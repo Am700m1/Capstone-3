@@ -25,9 +25,9 @@ public class BuildingController {
         return ResponseEntity.status(200).body(buildingService.getBuilding(id));
     }
 
-    @PostMapping("/add")
-    public ResponseEntity<?> addBuilding(@RequestBody @Valid BuildingDTOIn buildingDTOIn) {
-        buildingService.addBuilding(buildingDTOIn);
+    @PostMapping("/add/{owner_id}")
+    public ResponseEntity<?> addBuilding(@RequestBody @Valid BuildingDTOIn buildingDTOIn, @PathVariable Integer owner_id) {
+        buildingService.addBuilding(buildingDTOIn, owner_id);
         return ResponseEntity.status(200).body(new ApiResponse("Building added successfully"));
     }
 
