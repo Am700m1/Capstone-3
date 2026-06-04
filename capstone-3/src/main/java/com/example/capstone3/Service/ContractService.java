@@ -12,6 +12,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -183,7 +184,7 @@ public class ContractService {
             throw new ApiException("User not found!");
         }
 
-        List<Contract> contracts = user.getContracts();
+        List<Contract> contracts = contractRepository.findContractsByReservation_User_Id(userId);
 
         if (contracts.isEmpty()) {
             throw new ApiException("No contracts were found for this user!");
@@ -206,7 +207,7 @@ public class ContractService {
             throw new ApiException("Owner not found!");
         }
 
-        List<Contract> contracts = owner.getContracts();
+        List<Contract> contracts = contractRepository.findContractsByReservation_Apartment_Owner_Id(ownerId);
 
         if (contracts.isEmpty()) {
             throw new ApiException("No contracts for this user were found!");
@@ -234,7 +235,7 @@ public class ContractService {
             throw new ApiException("Contract not found!");
         }
 
-        if(!contract.getOwner().getId().equals(ownerId)){
+        if(!contract.getReservation().getApartment().getOwner().getId().equals(ownerId)){
             throw new ApiException("You are not authorized to do this action");
         }
 
@@ -249,7 +250,45 @@ public class ContractService {
         reservation.setStatus(ReservationStatus.COMPLETED);
         reservationRepository.save(reservation);
 
-//        Apartment apartment = contract.getA
+        Apartment apartment = contract.getReservation().getApartment();
+        apartment.setStatus(ApartmentStatus.UNDER_MAINTENANCE);
+        apartment.setAvailable(false);
+        apartmentRepository.save(apartment);
+    }
+
+
+    @Transactional
+    public void renewContract(Integer userId, Integer contractId, Integer extraMonths) {
+        User user = userRepository.findUserById(userId);
+        Contract contract = contractRepository.findContractById(contractId);
+
+        if (user == null) {
+            throw new ApiException("User not found!");
+        }
+        if (contract == null) {
+            throw new ApiException("Contract was not found!");
+        }
+
+        // 1. Check if the user is the one on the contract
+        if (!userId.equals(contract.getReservation().getUser().getId())) {
+            throw new ApiException("You are not authorized to renew this contract.");
+        }
+
+        // 2. Check if the contract is currently ACTIVE
+        if (!ContractStatus.ACTIVE.equals(contract.getContractStatus())) {
+            throw new ApiException("Only active contracts can be renewed.");
+        }
+
+        if (extraMonths <= 0) {
+            throw new ApiException("Extra months must be greater than zero.");
+        }
+
+        // 3. Update the endDate of the contract by adding the extraMonths
+        LocalDate currentEndDate = contract.getEndDate();
+        LocalDate newEndDate = currentEndDate.plusMonths(extraMonths);
+
+        contract.setEndDate(newEndDate);
+        contractRepository.save(contract);
     }
 
 

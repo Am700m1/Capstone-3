@@ -11,12 +11,11 @@ import com.example.capstone3.Repository.ApartmentRepository;
 import com.example.capstone3.Repository.BuildingRepository;
 import com.example.capstone3.Repository.OwnerRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -218,4 +217,73 @@ public class ApartmentService {
 
         result.sort(Comparator.comparingDouble(UnderpricedApartmentDTOOut::getScore).reversed());
         return result;
-    }}
+    }
+
+
+    public void toggleMaintenanceMode(Integer ownerId, Integer apartmentId){
+        Owner owner = ownerRepository.findOwnerById(ownerId);
+        Apartment apartment = apartmentRepository.findApartmentById(apartmentId);
+
+        if(owner == null){
+            throw new ApiException("Owner not found");
+        }
+
+        if (apartment == null) {
+            throw new ApiException("Apartment not found!");
+        }
+
+        if(!apartment.getOwner().getId().equals(ownerId)){
+            throw new ApiException("You are not authorized to this action!");
+        }
+
+        apartment.setAvailable(false);
+        apartment.setStatus(ApartmentStatus.UNDER_MAINTENANCE);
+        apartmentRepository.save(apartment);
+    }
+
+
+    public void toggleAvailableMode(Integer ownerId, Integer apartmentId){
+        Owner owner = ownerRepository.findOwnerById(ownerId);
+        Apartment apartment = apartmentRepository.findApartmentById(apartmentId);
+
+        if(owner == null){
+            throw new ApiException("Owner not found");
+        }
+
+        if (apartment == null) {
+            throw new ApiException("Apartment not found!");
+        }
+
+        if(!apartment.getOwner().getId().equals(ownerId)){
+            throw new ApiException("You are not authorized to this action!");
+        }
+
+        apartment.setAvailable(true);
+        apartment.setStatus(ApartmentStatus.AVAILABLE);
+        apartmentRepository.save(apartment);
+    }
+
+    // this method show the owner apartments and their status. The apartments will be grouped by status.
+    public Map<ApartmentStatus, List<ApartmentDTOOut>> getOwnerDashboard(Integer ownerId) {
+        Owner owner = ownerRepository.findOwnerById(ownerId);
+
+        if (owner == null) {
+            throw new ApiException("Owner not found!");
+        }
+
+        List<Apartment> apartments = apartmentRepository.findApartmentsByOwnerId(ownerId);
+
+        Map<ApartmentStatus, List<ApartmentDTOOut>> groupedApartments = new HashMap<>();
+
+        for (ApartmentStatus status : ApartmentStatus.values()) {
+            groupedApartments.put(status, new ArrayList<>());
+        }
+
+        for (Apartment apartment : apartments) {
+            ApartmentDTOOut dto = convertToDTO(apartment); // Assuming you have this method
+            groupedApartments.get(apartment.getStatus()).add(dto);
+        }
+
+        return groupedApartments;
+    }
+}

@@ -46,7 +46,4 @@ public class Owner {
     @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Conversation> conversations = new ArrayList<>();
 
-    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Contract> contracts = new ArrayList<>();
-
 }
