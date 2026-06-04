@@ -6,14 +6,8 @@ import com.example.capstone3.DTO.Out.ContractDTOOut;
 import com.example.capstone3.Enums.ApartmentStatus;
 import com.example.capstone3.Enums.ContractStatus;
 import com.example.capstone3.Enums.ReservationStatus;
-import com.example.capstone3.Models.Apartment;
-import com.example.capstone3.Models.Contract;
-import com.example.capstone3.Models.Reservation;
-import com.example.capstone3.Models.User;
-import com.example.capstone3.Repository.ApartmentRepository;
-import com.example.capstone3.Repository.ContractRepository;
-import com.example.capstone3.Repository.ReservationRepository;
-import com.example.capstone3.Repository.UserRepository;
+import com.example.capstone3.Models.*;
+import com.example.capstone3.Repository.*;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -30,6 +24,7 @@ public class ContractService {
     private final ReservationRepository reservationRepository;
     private final UserRepository userRepository;
     private final ApartmentRepository apartmentRepository;
+    private final OwnerRepository ownerRepository;
 
     public List<ContractDTOOut> getAll() {
         List<ContractDTOOut> contractDTOOuts = new ArrayList<>();
@@ -176,6 +171,83 @@ public class ContractService {
         apartmentRepository.save(apartment);
     }
 
+
+
+    public List<ContractDTOOut> getContractsByUserId(Integer userId){
+        User user = userRepository.findUserById(userId);
+
+        if (user == null) {
+            throw new ApiException("User not found!");
+        }
+
+        List<Contract> contracts = user.getContracts();
+
+        if (contracts.isEmpty()) {
+            throw new ApiException("No contracts were found for this user!");
+        }
+
+        List<ContractDTOOut> contractDTOOuts = new ArrayList<>();
+
+        for(Contract contract: contracts){
+            contractDTOOuts.add(convertToDTO(contract));
+        }
+
+        return contractDTOOuts;
+    }
+
+
+    public List<ContractDTOOut> getContractsByOwnerId(Integer ownerId){
+        Owner owner = ownerRepository.findOwnerById(ownerId);
+
+        if(owner == null){
+            throw new ApiException("Owner not found!");
+        }
+
+        List<Contract> contracts = owner.getContracts();
+
+        if (contracts.isEmpty()) {
+            throw new ApiException("No contracts for this user were found!");
+        }
+
+        List<ContractDTOOut> contractDTOOuts = new ArrayList<>();
+
+        for(Contract contract: contracts){
+            contractDTOOuts.add(convertToDTO(contract));
+        }
+
+        return contractDTOOuts;
+    }
+
+
+    public void endContract(Integer ownerId, Integer contractId){
+        Owner owner = ownerRepository.findOwnerById(ownerId);
+        Contract contract = contractRepository.findContractById(contractId);
+
+        if(owner == null){
+            throw new ApiException("Owner not found!");
+        }
+
+        if (contract == null) {
+            throw new ApiException("Contract not found!");
+        }
+
+        if(!contract.getOwner().getId().equals(ownerId)){
+            throw new ApiException("You are not authorized to do this action");
+        }
+
+        if(!contract.getContractStatus().equals(ContractStatus.ACTIVE)){
+            throw new ApiException("Contract is not active!");
+        }
+
+        contract.setContractStatus(ContractStatus.ENDED);
+        contractRepository.save(contract);
+
+        Reservation reservation = contract.getReservation();
+        reservation.setStatus(ReservationStatus.COMPLETED);
+        reservationRepository.save(reservation);
+
+//        Apartment apartment = contract.getA
+    }
 
 
 }
