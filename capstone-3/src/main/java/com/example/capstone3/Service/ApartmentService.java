@@ -289,4 +289,20 @@ public class ApartmentService {
 
         return groupedApartments;
     }
+
+    public List<ApartmentDTOOut> searchApartments(Double minRent,Double maxRent, Integer bedrooms, String district, Boolean isFurnished){
+        List<Apartment> apartments = apartmentRepository.searchAvailableApartments(minRent, maxRent, bedrooms, district, isFurnished);
+
+        if(apartments.isEmpty()){
+            throw new ApiException("No apartments were found matching your search criteria!");
+        }
+
+        List<ApartmentDTOOut> apartmentDTOOuts = new ArrayList<>();
+        for(Apartment apartment: apartments){
+            apartmentDTOOuts.add(convertToDTO(apartment));
+        }
+
+        return apartmentDTOOuts;
+
+    }
 }
