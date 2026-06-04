@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "reservations")
@@ -36,6 +37,9 @@ public class Reservation {
 
     @Column(name = "message", columnDefinition = "TEXT")
     private String message;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 
     @OneToOne(mappedBy = "reservation", cascade = CascadeType.ALL)
     private Contract contract;

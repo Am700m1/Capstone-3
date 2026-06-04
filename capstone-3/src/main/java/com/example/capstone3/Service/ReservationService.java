@@ -18,6 +18,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -61,6 +62,7 @@ public class ReservationService {
         reservation.setReservationDate(reservationDTOIn.getReservationDate());
         reservation.setStatus(ReservationStatus.PENDING);
         reservation.setMessage(reservationDTOIn.getMessage());
+        reservation.setCreatedAt(LocalDateTime.now());
         reservationRepository.save(reservation);
     }
 
@@ -103,6 +105,8 @@ public class ReservationService {
         return reservationDTOOut;
     }
 
+
+    //^^^^^^^CRUD^^^^^^^^
 
 
     public List<ReservationDTOOut> getPendingReservations(){

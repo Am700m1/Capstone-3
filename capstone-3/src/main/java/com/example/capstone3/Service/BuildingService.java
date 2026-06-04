@@ -63,7 +63,7 @@ public class BuildingService {
         if (building == null) {
             throw new ApiException("Building not found");
         }
-        Owner owner = ownerRepository.findOwnerById(buildingDTOIn.getOwnerId());
+        Owner owner = building.getOwner();
         if (owner == null) {
             throw new ApiException("Owner not found");
         }
@@ -110,4 +110,9 @@ public class BuildingService {
         buildingDTOOut.setPetsAllowed(building.getPetsAllowed());
         return buildingDTOOut;
     }
+
+
+    //^^^^^^^CRUD^^^^^^^^
+
+
 }

@@ -25,9 +25,9 @@ public class ContractController {
         return ResponseEntity.status(200).body(contractService.getContract(id));
     }
 
-    @PostMapping("/add")
-    public ResponseEntity<?> addContract(@RequestBody @Valid ContractDTOIn contractDTOIn) {
-        contractService.addContract(contractDTOIn);
+    @PostMapping("/add/{reservation_id}")
+    public ResponseEntity<?> addContract(@RequestBody @Valid ContractDTOIn contractDTOIn, @PathVariable Integer reservation_id) {
+        contractService.addContract(contractDTOIn, reservation_id);
         return ResponseEntity.status(200).body(new ApiResponse("Contract added successfully"));
     }
 

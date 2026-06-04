@@ -78,4 +78,9 @@ public class MessageService {
         messageDTOOut.setIsRead(message.getIsRead());
         return messageDTOOut;
     }
+
+
+    //^^^^^^^CRUD^^^^^^^^
+
+
 }
