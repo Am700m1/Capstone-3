@@ -128,7 +128,7 @@ public class ReservationService {
             throw new ApiException("Owner not found");
         }
 
-        List<Reservation> reservations = reservationRepository.findReservationsByApartment_Owner_Id(ownerId);
+        List<Reservation> reservations = reservationRepository.findReservationsByStatusAndApartment_OwnerId(ReservationStatus.PENDING, ownerId);
 
         if(reservations.isEmpty()){
             throw new ApiException("No pending reservations for this owner were found!");

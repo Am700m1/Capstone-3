@@ -15,7 +15,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Intege
 
     List<Reservation> findReservationsByStatus(ReservationStatus status);
 
-    List<Reservation> findReservationsByApartment_Owner_Id(Integer apartmentOwnerId);
+    List<Reservation> findReservationsByStatusAndApartment_OwnerId(ReservationStatus status, Integer apartmentOwnerId);
 
     List<Reservation> findReservationsByUser_Id(Integer userId);
 
