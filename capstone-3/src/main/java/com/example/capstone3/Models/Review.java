@@ -27,6 +27,10 @@ public class Review {
     @JoinColumn(name = "apartment_id", nullable = false)
     private Apartment apartment;
 
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reservation_id", unique = true)
+    private Reservation reservation;
+
     @Column(name = "rating", nullable = false)
     private Integer rating;
 

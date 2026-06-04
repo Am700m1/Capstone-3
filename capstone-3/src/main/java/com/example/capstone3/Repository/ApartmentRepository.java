@@ -12,4 +12,10 @@ public interface ApartmentRepository extends JpaRepository<Apartment, Integer> {
     Apartment findApartmentById(Integer id);
 
     List<Apartment> findApartmentsByOwnerId(Integer ownerId);
+
+    /** Returns all apartments with available = true (used by the recommendation engine). */
+    List<Apartment> findByAvailableTrue();
+
+    /** Returns available apartments filtered by district (case-sensitive). */
+    List<Apartment> findByAvailableTrueAndBuilding_District(String district);
 }

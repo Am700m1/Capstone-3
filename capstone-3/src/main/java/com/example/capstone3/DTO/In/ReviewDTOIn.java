@@ -1,6 +1,5 @@
 package com.example.capstone3.DTO.In;
 
-
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
@@ -10,8 +9,8 @@ import lombok.Data;
 @Data
 public class ReviewDTOIn {
 
+    private Integer reservationId;
 
-    @NotNull(message = "Apartment ID is required")
     private Integer apartmentId;
 
     @NotNull(message = "Rating is required")

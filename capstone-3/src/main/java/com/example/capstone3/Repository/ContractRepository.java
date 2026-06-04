@@ -13,7 +13,7 @@ public interface ContractRepository extends JpaRepository<Contract, Integer> {
 
     Contract findContractById(Integer id);
 
-    Contract findContractByReservation_User_IdAndReservation_Apartment_IdAndStatus(Integer userId, Integer apartmentId, ContractStatus status);
+    //Contract findContractByReservation_User_IdAndReservation_Apartment_IdAndStatus(Integer userId, Integer apartmentId, ContractStatus status);
 
     List<Contract> findContractsByReservation_User_Id(Integer reservationUserId);
 

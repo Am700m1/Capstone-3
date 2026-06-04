@@ -9,7 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/review")
+@RequestMapping("/api/v1/reviews")
 @RequiredArgsConstructor
 public class ReviewController {
 
@@ -25,15 +25,15 @@ public class ReviewController {
         return ResponseEntity.status(200).body(reviewService.getReview(id));
     }
 
-    @PostMapping("/add/{user_id}")
-    public ResponseEntity<?> addReview(@RequestBody @Valid ReviewDTOIn reviewDTOIn, @PathVariable Integer user_id) {
-        reviewService.addReview(reviewDTOIn, user_id);
+    @PostMapping("/add")
+    public ResponseEntity<?> addReview(@RequestBody @Valid ReviewDTOIn dto) {
+        reviewService.addReview(dto);
         return ResponseEntity.status(200).body(new ApiResponse("Review added successfully"));
     }
 
     @PutMapping("/update/{id}")
-    public ResponseEntity<?> updateReview(@PathVariable Integer id, @RequestBody @Valid ReviewDTOIn reviewDTOIn) {
-        reviewService.updateReview(id, reviewDTOIn);
+    public ResponseEntity<?> updateReview(@PathVariable Integer id, @RequestBody @Valid ReviewDTOIn dto) {
+        reviewService.updateReview(id, dto);
         return ResponseEntity.status(200).body(new ApiResponse("Review updated successfully"));
     }
 
@@ -41,5 +41,25 @@ public class ReviewController {
     public ResponseEntity<?> deleteReview(@PathVariable Integer id) {
         reviewService.deleteReview(id);
         return ResponseEntity.status(200).body(new ApiResponse("Review deleted successfully"));
+    }
+
+    @GetMapping("/get/apartment/{apartmentId}")
+    public ResponseEntity<?> getReviewsByApartment(@PathVariable Integer apartmentId) {
+        return ResponseEntity.status(200).body(reviewService.getReviewByApartment(apartmentId));
+    }
+
+    @GetMapping("/get/user/{userId}")
+    public ResponseEntity<?> getReviewsByUser(@PathVariable Integer userId) {
+        return ResponseEntity.status(200).body(reviewService.getReviewsByUserId(userId));
+    }
+
+    @GetMapping("/get/owner/{ownerId}")
+    public ResponseEntity<?> getOwnerReviews(@PathVariable Integer ownerId) {
+        return ResponseEntity.status(200).body(reviewService.getOwnerReviews(ownerId));
+    }
+
+    @GetMapping("/get/owner-analysis/{ownerId}")
+    public ResponseEntity<?> getOwnerReviewAnalysis(@PathVariable Integer ownerId) {
+        return ResponseEntity.status(200).body(reviewService.generateOwnerAnalysis(ownerId));
     }
 }

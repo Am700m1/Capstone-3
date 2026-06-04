@@ -32,10 +32,8 @@ public class UserPreferenceDTOIn {
     private String cafesPreference;
     private String hospitalPreference;
     private String schoolPreference;
-    private String mosquePreference;
     private String publicTransportPreference;
 
-    // optional
     private Integer preferredBedrooms;
     private Integer preferredBathrooms;
 

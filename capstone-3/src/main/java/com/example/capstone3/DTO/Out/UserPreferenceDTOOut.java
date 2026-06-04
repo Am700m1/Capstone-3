@@ -18,7 +18,6 @@ public class UserPreferenceDTOOut {
     private String cafesPreference;
     private String hospitalPreference;
     private String schoolPreference;
-    private String mosquePreference;
     private String publicTransportPreference;
     private Integer preferredBedrooms;
     private Integer preferredBathrooms;

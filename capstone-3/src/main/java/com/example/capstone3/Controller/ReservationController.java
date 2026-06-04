@@ -44,7 +44,6 @@ public class ReservationController {
     }
 
 
-
     @GetMapping("/get/pending")
     public ResponseEntity<?> getPendingReservations() {
         return ResponseEntity.status(200).body(reservationService.getPendingReservations());
