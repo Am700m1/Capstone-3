@@ -44,6 +44,7 @@ public class Contract {
     @Column(name = "signed_date")
     private LocalDate signedDate;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "contract_status", nullable = false, length = 20)
     private ContractStatus contractStatus;
 

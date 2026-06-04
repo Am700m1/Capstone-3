@@ -69,11 +69,11 @@ public class ReservationService {
         if (reservation == null) {
             throw new ApiException("Reservation not found");
         }
-        Apartment apartment = apartmentRepository.findApartmentById(reservationDTOIn.getApartmentId());
+        Apartment apartment = reservation.getApartment();
         if (apartment == null) {
             throw new ApiException("Apartment not found");
         }
-        User user = userRepository.findUserById(reservationDTOIn.getUserId());
+        User user = reservation.getUser();
         if (user == null) {
             throw new ApiException("User not found");
         }
@@ -102,6 +102,7 @@ public class ReservationService {
         reservationDTOOut.setMessage(reservation.getMessage());
         return reservationDTOOut;
     }
+
 
 
     public List<ReservationDTOOut> getPendingReservations(){

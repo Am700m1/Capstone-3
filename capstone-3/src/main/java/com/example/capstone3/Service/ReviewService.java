@@ -3,6 +3,7 @@ package com.example.capstone3.Service;
 import com.example.capstone3.Api.ApiException;
 import com.example.capstone3.DTO.In.ReviewDTOIn;
 import com.example.capstone3.DTO.Out.ReviewDTOOut;
+import com.example.capstone3.Enums.ContractStatus;
 import com.example.capstone3.Enums.ReservationStatus;
 import com.example.capstone3.Models.*;
 import com.example.capstone3.Repository.*;
@@ -47,14 +48,11 @@ public class ReviewService {
         if (apartment == null) {
             throw new ApiException("Apartment not found");
         }
-
         Contract contract = contractRepository.findContractByReservation_User_IdAndReservation_Apartment_IdAndStatus(
-                user_id, reviewDTOIn.getApartmentId(), ContractStatus.ENDED
-        );
+                user_id, reviewDTOIn.getApartmentId(), ContractStatus.ENDED);
         if (contract == null) {
             throw new ApiException("You can only review an apartment after your contract has ended");
         }
-
         Review review = new Review();
         review.setUser(user);
         review.setApartment(apartment);
@@ -68,11 +66,11 @@ public class ReviewService {
         if (review == null) {
             throw new ApiException("Review not found");
         }
-        User user = userRepository.findUserById(reviewDTOIn.getUserId());
+        User user = review.getUser();
         if (user == null) {
             throw new ApiException("User not found");
         }
-        Apartment apartment = apartmentRepository.findApartmentById(reviewDTOIn.getApartmentId());
+        Apartment apartment = review.getApartment();
         if (apartment == null) {
             throw new ApiException("Apartment not found");
         }

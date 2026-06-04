@@ -1,5 +1,6 @@
 package com.example.capstone3.Repository;
 
+import com.example.capstone3.Enums.ContractStatus;
 import com.example.capstone3.Models.Contract;
 import com.example.capstone3.Models.Reservation;
 import org.springframework.data.jpa.repository.JpaRepository;
