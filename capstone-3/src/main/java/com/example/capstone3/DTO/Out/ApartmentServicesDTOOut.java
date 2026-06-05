@@ -3,7 +3,7 @@ package com.example.capstone3.DTO.Out;
 import lombok.Data;
 
 @Data
-public class ApartmentServicesDTO {
+public class ApartmentServicesDTOOut {
 
     private int hospitalCount;
     private int schoolCount;

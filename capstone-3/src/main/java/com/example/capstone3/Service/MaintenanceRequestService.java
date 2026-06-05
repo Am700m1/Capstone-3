@@ -2,16 +2,28 @@ package com.example.capstone3.Service;
 
 import com.example.capstone3.Api.ApiException;
 import com.example.capstone3.DTO.In.MaintenanceRequestDTOIn;
+import com.example.capstone3.DTO.Out.BuildingMaintenanceSummaryDTOOut;
 import com.example.capstone3.DTO.Out.MaintenanceRequestDTOOut;
+import com.example.capstone3.Enums.ApartmentStatus;
+import com.example.capstone3.Enums.ContractStatus;
+import com.example.capstone3.Enums.MaintenancePriority;
+import com.example.capstone3.Enums.MaintenanceStatus;
 import com.example.capstone3.Models.Apartment;
+import com.example.capstone3.Models.Building;
+import com.example.capstone3.Models.Contract;
 import com.example.capstone3.Models.MaintenanceRequest;
+import com.example.capstone3.Models.Owner;
 import com.example.capstone3.Models.User;
 import com.example.capstone3.Repository.ApartmentRepository;
+import com.example.capstone3.Repository.BuildingRepository;
+import com.example.capstone3.Repository.ContractRepository;
 import com.example.capstone3.Repository.MaintenanceRepository;
+import com.example.capstone3.Repository.OwnerRepository;
 import com.example.capstone3.Repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,88 +32,293 @@ import java.util.List;
 public class MaintenanceRequestService {
 
     private final MaintenanceRepository maintenanceRepository;
-    private final UserRepository userRepository;
-    private final ApartmentRepository apartmentRepository;
+    private final UserRepository        userRepository;
+    private final ApartmentRepository   apartmentRepository;
+    private final ContractRepository    contractRepository;
+    private final BuildingRepository    buildingRepository;
+    private final OwnerRepository       ownerRepository;
+    private final AiService             aiService;
+
+    // ─── Get All ──────────────────────────────────────────────────────────────
 
     public List<MaintenanceRequestDTOOut> getAll() {
-        List<MaintenanceRequestDTOOut> maintenanceRequestDTOOuts = new ArrayList<>();
-        for (MaintenanceRequest maintenanceRequest : maintenanceRepository.findAll()) {
-            maintenanceRequestDTOOuts.add(convertToDTO(maintenanceRequest));
+        List<MaintenanceRequestDTOOut> result = new ArrayList<>();
+        for (MaintenanceRequest req : maintenanceRepository.findAll()) {
+            result.add(convertToDTO(req));
         }
-        return maintenanceRequestDTOOuts;
+        return result;
     }
+
+    // ─── Get Single ───────────────────────────────────────────────────────────
 
     public MaintenanceRequestDTOOut getMaintenanceRequest(Integer id) {
-        MaintenanceRequest maintenanceRequest = maintenanceRepository.findMaintenanceRequestById(id);
-        if (maintenanceRequest == null) {
+        MaintenanceRequest req = maintenanceRepository.findMaintenanceRequestById(id);
+        if (req == null) {
             throw new ApiException("Maintenance request not found");
         }
-        return convertToDTO(maintenanceRequest);
+        return convertToDTO(req);
     }
 
-    public void addMaintenanceRequest(MaintenanceRequestDTOIn maintenanceRequestDTOIn) {
-        User user = userRepository.findUserById(maintenanceRequestDTOIn.getUserId());
+    // ─── Get by User ──────────────────────────────────────────────────────────
+
+    public List<MaintenanceRequestDTOOut> getUserMaintenanceRequests(Integer userId) {
+        User user = userRepository.findUserById(userId);
         if (user == null) {
             throw new ApiException("User not found");
         }
-        Apartment apartment = apartmentRepository.findApartmentById(maintenanceRequestDTOIn.getApartmentId());
+        List<MaintenanceRequestDTOOut> result = new ArrayList<>();
+        for (MaintenanceRequest req : maintenanceRepository.findMaintenanceRequestsByUserId(userId)) {
+            result.add(convertToDTO(req));
+        }
+        return result;
+    }
+
+    // ─── Get by Apartment ─────────────────────────────────────────────────────
+
+    public List<MaintenanceRequestDTOOut> getApartmentMaintenanceRequests(Integer apartmentId) {
+        Apartment apartment = apartmentRepository.findApartmentById(apartmentId);
         if (apartment == null) {
             throw new ApiException("Apartment not found");
         }
-        MaintenanceRequest maintenanceRequest = new MaintenanceRequest();
-        maintenanceRequest.setUser(user);
-        maintenanceRequest.setApartment(apartment);
-        maintenanceRequest.setTitle(maintenanceRequestDTOIn.getTitle());
-        maintenanceRequest.setDescription(maintenanceRequestDTOIn.getDescription());
-        maintenanceRequest.setPriority(maintenanceRequestDTOIn.getPriority());
-        maintenanceRepository.save(maintenanceRequest);
+        List<MaintenanceRequestDTOOut> result = new ArrayList<>();
+        for (MaintenanceRequest req : maintenanceRepository.findMaintenanceRequestsByApartmentId(apartmentId)) {
+            result.add(convertToDTO(req));
+        }
+        return result;
     }
 
-    public void updateMaintenanceRequest(Integer id, MaintenanceRequestDTOIn maintenanceRequestDTOIn) {
-        MaintenanceRequest maintenanceRequest = maintenanceRepository.findMaintenanceRequestById(id);
-        if (maintenanceRequest == null) {
-            throw new ApiException("Maintenance request not found");
-        }
-        User user = userRepository.findUserById(maintenanceRequestDTOIn.getUserId());
+    // ─── Create ───────────────────────────────────────────────────────────────
+
+    public void createMaintenanceRequest(Integer userId, Integer apartmentId, MaintenanceRequestDTOIn dto) {
+        User user = userRepository.findUserById(userId);
         if (user == null) {
             throw new ApiException("User not found");
         }
-        Apartment apartment = apartmentRepository.findApartmentById(maintenanceRequestDTOIn.getApartmentId());
+
+        Apartment apartment = apartmentRepository.findApartmentById(apartmentId);
         if (apartment == null) {
             throw new ApiException("Apartment not found");
         }
-        maintenanceRequest.setUser(user);
-        maintenanceRequest.setApartment(apartment);
-        maintenanceRequest.setTitle(maintenanceRequestDTOIn.getTitle());
-        maintenanceRequest.setDescription(maintenanceRequestDTOIn.getDescription());
-        maintenanceRequest.setPriority(maintenanceRequestDTOIn.getPriority());
-        maintenanceRepository.save(maintenanceRequest);
+
+        if (apartment.getStatus() != ApartmentStatus.RENTED) {
+            throw new ApiException("Apartment is not currently rented");
+        }
+
+        Contract contract = contractRepository.findByReservation_User_IdAndReservation_Apartment_IdAndContractStatus(
+                userId, apartmentId, ContractStatus.ACTIVE);
+        if (contract == null) {
+            throw new ApiException("No active contract found for this user and apartment");
+        }
+
+        // AI auto-analysis
+        String aiResponse = aiService.generateText(buildMaintenanceAnalysisPrompt(dto.getTitle(), dto.getDescription()));
+
+        MaintenanceRequest req = new MaintenanceRequest();
+        req.setUser(user);
+        req.setApartment(apartment);
+        req.setTitle(dto.getTitle());
+        req.setDescription(dto.getDescription());
+        req.setStatus(MaintenanceStatus.PENDING);
+        req.setAiCategory(extractAiField(aiResponse, "Category"));
+        req.setAiSummary(extractAiField(aiResponse, "Summary"));
+        req.setPriority(parseAiPriority(aiResponse));
+
+        maintenanceRepository.save(req);
     }
+
+    // ─── Start ────────────────────────────────────────────────────────────────
+
+    public void startMaintenanceRequest(Integer ownerId, Integer requestId) {
+        Owner owner = ownerRepository.findOwnerById(ownerId);
+        if (owner == null) {
+            throw new ApiException("Owner not found");
+        }
+        MaintenanceRequest req = maintenanceRepository.findMaintenanceRequestById(requestId);
+        if (req == null) {
+            throw new ApiException("Maintenance request not found");
+        }
+        if (!req.getApartment().getBuilding().getOwner().getId().equals(ownerId)) {
+            throw new ApiException("You are not authorized to update this maintenance request");
+        }
+        if (req.getStatus() != MaintenanceStatus.PENDING) {
+            throw new ApiException("Only PENDING requests can be started");
+        }
+        req.setStatus(MaintenanceStatus.IN_PROGRESS);
+        maintenanceRepository.save(req);
+    }
+
+    // ─── Complete ─────────────────────────────────────────────────────────────
+
+    public void completeMaintenanceRequest(Integer ownerId, Integer requestId) {
+        Owner owner = ownerRepository.findOwnerById(ownerId);
+        if (owner == null) {
+            throw new ApiException("Owner not found");
+        }
+        MaintenanceRequest req = maintenanceRepository.findMaintenanceRequestById(requestId);
+        if (req == null) {
+            throw new ApiException("Maintenance request not found");
+        }
+        if (!req.getApartment().getBuilding().getOwner().getId().equals(ownerId)) {
+            throw new ApiException("You are not authorized to update this maintenance request");
+        }
+        if (req.getStatus() != MaintenanceStatus.IN_PROGRESS) {
+            throw new ApiException("Only IN_PROGRESS requests can be completed");
+        }
+        req.setStatus(MaintenanceStatus.COMPLETED);
+        req.setCompletedAt(LocalDateTime.now());
+        maintenanceRepository.save(req);
+    }
+
+    // ─── Update ───────────────────────────────────────────────────────────────
+
+    public void updateMaintenanceRequest(Integer id, MaintenanceRequestDTOIn dto) {
+        MaintenanceRequest req = maintenanceRepository.findMaintenanceRequestById(id);
+        if (req == null) {
+            throw new ApiException("Maintenance request not found");
+        }
+        if (req.getStatus() != MaintenanceStatus.PENDING) {
+            throw new ApiException("Only PENDING requests can be updated");
+        }
+        req.setTitle(dto.getTitle());
+        req.setDescription(dto.getDescription());
+
+        // Rerun AI analysis after title/description change
+        String aiResponse = aiService.generateText(buildMaintenanceAnalysisPrompt(dto.getTitle(), dto.getDescription()));
+        req.setAiCategory(extractAiField(aiResponse, "Category"));
+        req.setAiSummary(extractAiField(aiResponse, "Summary"));
+        req.setPriority(parseAiPriority(aiResponse));
+
+        maintenanceRepository.save(req);
+    }
+
+    // ─── Delete ───────────────────────────────────────────────────────────────
 
     public void deleteMaintenanceRequest(Integer id) {
-        MaintenanceRequest maintenanceRequest = maintenanceRepository.findMaintenanceRequestById(id);
-        if (maintenanceRequest == null) {
+        MaintenanceRequest req = maintenanceRepository.findMaintenanceRequestById(id);
+        if (req == null) {
             throw new ApiException("Maintenance request not found");
+        }
+        if (req.getStatus() != MaintenanceStatus.PENDING) {
+            throw new ApiException("Only PENDING requests can be deleted");
         }
         maintenanceRepository.deleteById(id);
     }
 
-    public MaintenanceRequestDTOOut convertToDTO(MaintenanceRequest maintenanceRequest) {
-        MaintenanceRequestDTOOut maintenanceRequestDTOOut = new MaintenanceRequestDTOOut();
-        maintenanceRequestDTOOut.setId(maintenanceRequest.getId());
-        maintenanceRequestDTOOut.setUserId(maintenanceRequest.getUser().getId());
-        maintenanceRequestDTOOut.setApartmentId(maintenanceRequest.getApartment().getId());
-        maintenanceRequestDTOOut.setTitle(maintenanceRequest.getTitle());
-        maintenanceRequestDTOOut.setDescription(maintenanceRequest.getDescription());
-        maintenanceRequestDTOOut.setStatus(maintenanceRequest.getStatus());
-        maintenanceRequestDTOOut.setPriority(maintenanceRequest.getPriority());
-        maintenanceRequestDTOOut.setCreatedAt(maintenanceRequest.getCreatedAt());
-        maintenanceRequestDTOOut.setCompletedAt(maintenanceRequest.getCompletedAt());
-        return maintenanceRequestDTOOut;
+    // ─── Building Maintenance Summary (AI) ───────────────────────────────────
+
+    public BuildingMaintenanceSummaryDTOOut getBuildingMaintenanceSummary(Integer buildingId) {
+        Building building = buildingRepository.findBuildingById(buildingId);
+        if (building == null) {
+            throw new ApiException("Building not found");
+        }
+
+        List<MaintenanceRequest> requests = maintenanceRepository.findMaintenanceRequestsByApartment_Building_Id(buildingId);
+        if (requests.isEmpty()) {
+            throw new ApiException("No maintenance requests found for this building");
+        }
+
+        String aiResponse = aiService.generateText(buildBuildingSummaryPrompt(building, requests));
+
+        BuildingMaintenanceSummaryDTOOut response = new BuildingMaintenanceSummaryDTOOut();
+        response.setBuildingId(buildingId);
+        response.setSummary(aiResponse);
+
+        return response;
     }
 
+    // ─── AI Prompt Builders ───────────────────────────────────────────────────
 
-    //^^^^^^^CRUD^^^^^^^^
+    private String buildMaintenanceAnalysisPrompt(String title, String description) {
+        StringBuilder prompt = new StringBuilder();
 
+        prompt.append("You are a property maintenance analyst. Analyze this maintenance request and respond in exactly this format:\n\n");
+        prompt.append("Category: [one of: Plumbing, Electrical, HVAC, Elevator, Internet, Appliance, Water Leakage, Other]\n");
+        prompt.append("Priority: [one of: LOW, MEDIUM, HIGH, URGENT]\n");
+        prompt.append("Summary: [2-3 sentence professional summary of the issue and recommended urgency]\n\n");
+        prompt.append("=== MAINTENANCE REQUEST ===\n");
+        prompt.append("Title: ").append(title).append("\n");
+        prompt.append("Description: ").append(description).append("\n\n");
+        prompt.append("Use URGENT for immediate safety risks or severe damage.\n");
+        prompt.append("Use HIGH for issues significantly affecting daily living.\n");
+        prompt.append("Use MEDIUM for disruptive but non-critical issues.\n");
+        prompt.append("Use LOW for minor inconveniences.");
 
+        return prompt.toString();
+    }
+
+    private String buildBuildingSummaryPrompt(Building building, List<MaintenanceRequest> requests) {
+        StringBuilder prompt = new StringBuilder();
+
+        prompt.append("You are a property management analyst reviewing maintenance records for a residential building in Saudi Arabia.\n\n");
+
+        prompt.append("=== BUILDING ===\n");
+        prompt.append("Name: ").append(building.getName()).append("\n");
+        prompt.append("District: ").append(building.getDistrict()).append("\n");
+        prompt.append("City: ").append(building.getCity()).append("\n");
+        prompt.append("Total Maintenance Requests: ").append(requests.size()).append("\n\n");
+
+        prompt.append("=== MAINTENANCE REQUESTS ===\n");
+        for (int i = 0; i < requests.size(); i++) {
+            MaintenanceRequest req = requests.get(i);
+            prompt.append("\nRequest ").append(i + 1).append(":\n");
+            prompt.append("Title: ").append(req.getTitle()).append("\n");
+            prompt.append("Status: ").append(req.getStatus()).append("\n");
+            prompt.append("Priority: ").append(req.getPriority() != null ? req.getPriority() : "Not set").append("\n");
+            prompt.append("Category: ").append(req.getAiCategory() != null ? req.getAiCategory() : "Uncategorized").append("\n");
+        }
+
+        prompt.append("\n=== OUTPUT INSTRUCTIONS ===\n");
+        prompt.append("Do not write greetings or introductions. Start directly with the analysis.\n");
+        prompt.append("Provide a structured analysis covering:\n");
+        prompt.append("1. Most common issues\n");
+        prompt.append("2. Repeated problems\n");
+        prompt.append("3. Urgent patterns\n");
+        prompt.append("4. Suggested preventive actions\n");
+        prompt.append("Use concise professional language.");
+
+        return prompt.toString();
+    }
+
+    // ─── AI Response Parsers ──────────────────────────────────────────────────
+
+    private String extractAiField(String aiResponse, String field) {
+        if (aiResponse == null || aiResponse.isBlank()) return null;
+        for (String line : aiResponse.split("\n")) {
+            String trimmed = line.trim();
+            if (trimmed.startsWith(field + ":")) {
+                return trimmed.substring(field.length() + 1).trim();
+            }
+        }
+        return null;
+    }
+
+    private MaintenancePriority parseAiPriority(String aiResponse) {
+        String priorityValue = extractAiField(aiResponse, "Priority");
+        if (priorityValue != null) {
+            try {
+                return MaintenancePriority.valueOf(priorityValue.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return MaintenancePriority.MEDIUM;
+            }
+        }
+        return MaintenancePriority.MEDIUM;
+    }
+
+    // ─── Converter ────────────────────────────────────────────────────────────
+
+    public MaintenanceRequestDTOOut convertToDTO(MaintenanceRequest req) {
+        MaintenanceRequestDTOOut dto = new MaintenanceRequestDTOOut();
+        dto.setId(req.getId());
+        dto.setUserId(req.getUser().getId());
+        dto.setApartmentId(req.getApartment().getId());
+        dto.setTitle(req.getTitle());
+        dto.setDescription(req.getDescription());
+        dto.setStatus(req.getStatus());
+        dto.setPriority(req.getPriority());
+        dto.setAiCategory(req.getAiCategory());
+        dto.setAiSummary(req.getAiSummary());
+        dto.setCreatedAt(req.getCreatedAt());
+        dto.setCompletedAt(req.getCompletedAt());
+        return dto;
+    }
 }

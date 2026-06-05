@@ -1,7 +1,7 @@
 package com.example.capstone3.Controller;
 
-import com.example.capstone3.DTO.In.ApartmentServicesRequestDTO;
-import com.example.capstone3.DTO.Out.ApartmentServicesDTO;
+import com.example.capstone3.DTO.In.ApartmentServicesDTOIn;
+import com.example.capstone3.DTO.Out.ApartmentServicesDTOOut;
 import com.example.capstone3.Service.OverpassLocationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +18,7 @@ public class LocationAnalysisController {
     private final OverpassLocationService overpassLocationService;
 
     @PostMapping("/analyze")
-    public ApartmentServicesDTO analyzeArea(@RequestBody @Valid ApartmentServicesRequestDTO request) {
+    public ApartmentServicesDTOOut analyzeArea(@RequestBody @Valid ApartmentServicesDTOIn request) {
         return overpassLocationService.analyzeApartmentLocation(request.getLatitude(), request.getLongitude(), request.getRadiusMetres());
     }
 }

@@ -5,6 +5,5 @@ import lombok.Data;
 @Data
 public class RecommendationResponseDTOOut {
 
-    private Integer userId;
     private String recommendation;
 }
