@@ -1,7 +1,7 @@
 package com.example.capstone3.Service;
 
 import com.example.capstone3.Api.ApiException;
-import com.example.capstone3.DTO.Out.ApartmentServicesDTO;
+import com.example.capstone3.DTO.Out.ApartmentServicesDTOOut;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +25,7 @@ public class OverpassLocationService {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
 
-    public ApartmentServicesDTO analyzeApartmentLocation(double latitude, double longitude, int radiusMetres) {
+    public ApartmentServicesDTOOut analyzeApartmentLocation(double latitude, double longitude, int radiusMetres) {
 
         String query = buildQuery(latitude, longitude, radiusMetres);
         JsonNode elements = fetchFromOverpass(query);
@@ -51,7 +51,7 @@ public class OverpassLocationService {
             if (leisure.equals("fitness_centre") || leisure.equals("sports_centre")) gyms++;
         }
 
-        ApartmentServicesDTO dto = new ApartmentServicesDTO();
+        ApartmentServicesDTOOut dto = new ApartmentServicesDTOOut();
         dto.setHospitalCount(hospitals);
         dto.setSchoolCount(schools);
         dto.setSupermarketCount(supermarkets);

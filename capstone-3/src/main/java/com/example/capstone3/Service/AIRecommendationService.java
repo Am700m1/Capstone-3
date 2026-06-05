@@ -1,7 +1,7 @@
 package com.example.capstone3.Service;
 
 import com.example.capstone3.Api.ApiException;
-import com.example.capstone3.DTO.Out.ApartmentServicesDTO;
+import com.example.capstone3.DTO.Out.ApartmentServicesDTOOut;
 import com.example.capstone3.DTO.Out.CommuteAnalysisDTOOut;
 import com.example.capstone3.DTO.Out.RecommendationResponseDTOOut;
 import com.example.capstone3.Enums.PreferenceLevel;
@@ -47,7 +47,6 @@ public class AIRecommendationService {
         String aiResponse = aiService.generateText(prompt);
 
         RecommendationResponseDTOOut response = new RecommendationResponseDTOOut();
-        response.setUserId(userId);
         response.setRecommendation(aiResponse);
 
         return response;
@@ -55,14 +54,10 @@ public class AIRecommendationService {
 
     private String buildPrompt(List<Apartment> apartments, UserPreference preferences, User user, int radiusMetres) {
 
-        apartments = apartments.stream()
-                .limit(2)
-                .toList();
 
         StringBuilder prompt = new StringBuilder();
 
-        prompt.append("You are a smart rental apartment recommendation assistant in Saudi Arabia.\n");
-        prompt.append("Analyze the apartments below and recommend the best options for this user.\n\n");
+        prompt.append("You are a rental apartment recommendation assistant for Saudi Arabia.\n\n");
 
         // User profile
         if (user != null) {
@@ -131,7 +126,7 @@ public class AIRecommendationService {
 
             // Nearby amenities from Overpass
             try {
-                ApartmentServicesDTO amenities = overpassLocationService.analyzeApartmentLocation(aptLat, aptLng, radiusMetres);
+                ApartmentServicesDTOOut amenities = overpassLocationService.analyzeApartmentLocation(aptLat, aptLng, radiusMetres);
                 prompt.append("Nearby Amenities (within ").append(radiusMetres).append("m): ");
                 prompt.append("Hospitals: ").append(amenities.getHospitalCount()).append(", ");
                 prompt.append("Schools: ").append(amenities.getSchoolCount()).append(", ");
@@ -156,23 +151,28 @@ public class AIRecommendationService {
             }
         }
 
-        // Task
-        prompt.append("\n=== YOUR TASK ===\n");
-        prompt.append("Based on everything above, provide your recommendation:\n\n");
-        prompt.append("1. TOP 3 RANKING\n");
-        prompt.append("   Rank the top 3 apartments from best to worst.\n");
-        prompt.append("   For each: state the title, district, and 2-3 sentences explaining why it suits this user.\n\n");
-        prompt.append("2. FINAL RECOMMENDATION\n");
-        prompt.append("   Recommend the single best apartment in 3-4 sentences.\n");
-        prompt.append("   When evaluating, consider:\n");
-        prompt.append("   - Budget fit and included utilities (water, internet, electricity)\n");
-        prompt.append("   - Family situation and children count\n");
-        prompt.append("   - Amenity importance (prioritize what the user marked as HIGH)\n");
-        prompt.append("   - Commute convenience\n");
-        prompt.append("   - District preference (treat as a positive factor, not a requirement)\n");
-        prompt.append("   - Apartment description and overall quality\n");
-        prompt.append("   - Review rating if available\n\n");
-        prompt.append("Write in a clear, friendly, and helpful tone.");
+        // Output instructions
+        prompt.append("\n=== OUTPUT INSTRUCTIONS ===\n");
+        prompt.append("Do not write greetings, introductions, or explain what you are doing.\n");
+        prompt.append("Start your response directly with \"# Top Matches\".\n");
+        prompt.append("Use concise professional language.\n");
+        prompt.append("Where relevant, mention commute time, budget fit, nearby amenities, review ratings, and family suitability.\n");
+        prompt.append("Return the response in this exact Markdown format:\n\n");
+        prompt.append("# Top Matches\n\n");
+        prompt.append("## 1. [Apartment Title]\n");
+        prompt.append("- [Reason]\n");
+        prompt.append("- [Reason]\n");
+        prompt.append("- [Reason]\n\n");
+        prompt.append("## 2. [Apartment Title]\n");
+        prompt.append("- [Reason]\n");
+        prompt.append("- [Reason]\n");
+        prompt.append("- [Reason]\n\n");
+        prompt.append("## 3. [Apartment Title]\n");
+        prompt.append("- [Reason]\n");
+        prompt.append("- [Reason]\n");
+        prompt.append("- [Reason]\n\n");
+        prompt.append("# Final Recommendation\n");
+        prompt.append("[Short paragraph explaining why the best apartment is the most suitable choice.]");
 
         return prompt.toString();
     }

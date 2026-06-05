@@ -45,9 +45,7 @@ public class AiService {
 
             HttpEntity<String> request = new HttpEntity<>(requestBody, headers);
 
-            ResponseEntity<String> response = restTemplate.exchange(
-                    url, HttpMethod.POST, request, String.class
-            );
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, request, String.class);
 
             return extractGeneratedText(response.getBody());
 

@@ -20,7 +20,4 @@ public class MaintenanceRequestDTOIn {
 
     @NotEmpty(message = "Description is required")
     private String description;
-
-    @NotEmpty(message = "Priority is required")
-    private String priority;
 }
