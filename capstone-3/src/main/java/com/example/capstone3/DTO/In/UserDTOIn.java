@@ -4,6 +4,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Past;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -29,11 +30,13 @@ public class UserDTOIn {
     @Size(min = 8, message = "Password must be at least 8 characters")
     private String password;
 
+    @Past(message = "Date of birth must be in the past")
     private LocalDateTime dateOfBirth;
 
-    @NotEmpty(message = "Marital status is required")
-    @Size(max = 10, message = "Marital status must not exceed 10 characters")
-    private String maritalStatus;
+    private Boolean married;
+
+    @Min(value = 0, message = "Family count cannot be negative")
+    private Integer familyCount;
 
     @NotNull(message = "Children count is required")
     @Min(value = 0, message = "Children count cannot be negative")

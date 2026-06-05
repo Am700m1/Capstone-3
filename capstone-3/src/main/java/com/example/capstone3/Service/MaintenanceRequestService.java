@@ -31,6 +31,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MaintenanceRequestService {
 
+    // Uses Gemini to classify maintenance requests and summarize building issues.
     private final MaintenanceRepository maintenanceRepository;
     private final UserRepository        userRepository;
     private final ApartmentRepository   apartmentRepository;
@@ -89,7 +90,8 @@ public class MaintenanceRequestService {
 
     // ─── Create ───────────────────────────────────────────────────────────────
 
-    public void createMaintenanceRequest(Integer userId, Integer apartmentId, MaintenanceRequestDTOIn dto) {
+    public void createMaintenanceRequest(Integer userId, Integer apartmentId, MaintenanceRequestDTOIn dto,
+                                         String language) {
         User user = userRepository.findUserById(userId);
         if (user == null) {
             throw new ApiException("User not found");
@@ -110,8 +112,9 @@ public class MaintenanceRequestService {
             throw new ApiException("No active contract found for this user and apartment");
         }
 
-        // AI auto-analysis
-        String aiResponse = aiService.generateText(buildMaintenanceAnalysisPrompt(dto.getTitle(), dto.getDescription()));
+        // Gemini classifies the issue after backend contract checks pass.
+        String aiResponse = aiService.generateText(
+                buildMaintenanceAnalysisPrompt(dto.getTitle(), dto.getDescription()), language);
 
         MaintenanceRequest req = new MaintenanceRequest();
         req.setUser(user);
@@ -171,7 +174,7 @@ public class MaintenanceRequestService {
 
     // ─── Update ───────────────────────────────────────────────────────────────
 
-    public void updateMaintenanceRequest(Integer id, MaintenanceRequestDTOIn dto) {
+    public void updateMaintenanceRequest(Integer id, MaintenanceRequestDTOIn dto, String language) {
         MaintenanceRequest req = maintenanceRepository.findMaintenanceRequestById(id);
         if (req == null) {
             throw new ApiException("Maintenance request not found");
@@ -182,8 +185,9 @@ public class MaintenanceRequestService {
         req.setTitle(dto.getTitle());
         req.setDescription(dto.getDescription());
 
-        // Rerun AI analysis after title/description change
-        String aiResponse = aiService.generateText(buildMaintenanceAnalysisPrompt(dto.getTitle(), dto.getDescription()));
+        // Reclassify the request because its issue details changed.
+        String aiResponse = aiService.generateText(
+                buildMaintenanceAnalysisPrompt(dto.getTitle(), dto.getDescription()), language);
         req.setAiCategory(extractAiField(aiResponse, "Category"));
         req.setAiSummary(extractAiField(aiResponse, "Summary"));
         req.setPriority(parseAiPriority(aiResponse));
@@ -206,7 +210,9 @@ public class MaintenanceRequestService {
 
     // ─── Building Maintenance Summary (AI) ───────────────────────────────────
 
-    public BuildingMaintenanceSummaryDTOOut getBuildingMaintenanceSummary(Integer buildingId) {
+    // Summarizes maintenance patterns across one building using stored requests.
+    public BuildingMaintenanceSummaryDTOOut getBuildingMaintenanceSummary(Integer buildingId,
+                                                                           String language) {
         Building building = buildingRepository.findBuildingById(buildingId);
         if (building == null) {
             throw new ApiException("Building not found");
@@ -217,10 +223,9 @@ public class MaintenanceRequestService {
             throw new ApiException("No maintenance requests found for this building");
         }
 
-        String aiResponse = aiService.generateText(buildBuildingSummaryPrompt(building, requests));
+        String aiResponse = aiService.generateText(buildBuildingSummaryPrompt(building, requests), language);
 
         BuildingMaintenanceSummaryDTOOut response = new BuildingMaintenanceSummaryDTOOut();
-        response.setBuildingId(buildingId);
         response.setSummary(aiResponse);
 
         return response;
@@ -228,6 +233,7 @@ public class MaintenanceRequestService {
 
     // ─── AI Prompt Builders ───────────────────────────────────────────────────
 
+    // Instruct Gemini to return category, priority, and summary in a fixed format.
     private String buildMaintenanceAnalysisPrompt(String title, String description) {
         StringBuilder prompt = new StringBuilder();
 
@@ -235,6 +241,7 @@ public class MaintenanceRequestService {
         prompt.append("Category: [one of: Plumbing, Electrical, HVAC, Elevator, Internet, Appliance, Water Leakage, Other]\n");
         prompt.append("Priority: [one of: LOW, MEDIUM, HIGH, URGENT]\n");
         prompt.append("Summary: [2-3 sentence professional summary of the issue and recommended urgency]\n\n");
+        prompt.append("Keep the labels Category, Priority, and Summary in English so the system can read them.\n");
         prompt.append("=== MAINTENANCE REQUEST ===\n");
         prompt.append("Title: ").append(title).append("\n");
         prompt.append("Description: ").append(description).append("\n\n");
@@ -246,10 +253,11 @@ public class MaintenanceRequestService {
         return prompt.toString();
     }
 
+    // Give Gemini current maintenance facts for a short owner-friendly overview.
     private String buildBuildingSummaryPrompt(Building building, List<MaintenanceRequest> requests) {
         StringBuilder prompt = new StringBuilder();
 
-        prompt.append("You are a property management analyst reviewing maintenance records for a residential building in Saudi Arabia.\n\n");
+        prompt.append("Summarize the current maintenance activity for a residential building in Saudi Arabia.\n\n");
 
         prompt.append("=== BUILDING ===\n");
         prompt.append("Name: ").append(building.getName()).append("\n");
@@ -268,19 +276,21 @@ public class MaintenanceRequestService {
         }
 
         prompt.append("\n=== OUTPUT INSTRUCTIONS ===\n");
-        prompt.append("Do not write greetings or introductions. Start directly with the analysis.\n");
-        prompt.append("Provide a structured analysis covering:\n");
-        prompt.append("1. Most common issues\n");
-        prompt.append("2. Repeated problems\n");
-        prompt.append("3. Urgent patterns\n");
-        prompt.append("4. Suggested preventive actions\n");
-        prompt.append("Use concise professional language.");
+        prompt.append("Write one natural overview of 2 to 4 concise sentences.\n");
+        prompt.append("Quickly describe the issues that currently exist.\n");
+        prompt.append("Mention urgent requests when present.\n");
+        prompt.append("Mention recurring or common issues when present.\n");
+        prompt.append("If there is one request, summarize its issue, urgency, and current status naturally.\n");
+        prompt.append("Do not include recommendations, suggested actions, preventive actions, root cause analysis, strategies, or advice.\n");
+        prompt.append("Do not use headings, numbered sections, bullet lists, or Markdown.\n");
+        prompt.append("Do not repeat information or add unnecessary details.");
 
         return prompt.toString();
     }
 
     // ─── AI Response Parsers ──────────────────────────────────────────────────
 
+    // Read a named value from Gemini's structured maintenance response.
     private String extractAiField(String aiResponse, String field) {
         if (aiResponse == null || aiResponse.isBlank()) return null;
         for (String line : aiResponse.split("\n")) {
@@ -292,6 +302,7 @@ public class MaintenanceRequestService {
         return null;
     }
 
+    // Convert Gemini's priority text to the project enum with a safe default.
     private MaintenancePriority parseAiPriority(String aiResponse) {
         String priorityValue = extractAiField(aiResponse, "Priority");
         if (priorityValue != null) {

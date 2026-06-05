@@ -19,6 +19,7 @@ public class Building {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    // Lazy because owner details are not always needed when loading a building.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", nullable = false)
     private Owner owner;
@@ -42,6 +43,7 @@ public class Building {
     @Column(name = "longitude", nullable = false)
     private Double longitude;
 
+    // Lazy because apartment collections are not needed for basic building responses.
     @OneToMany(mappedBy = "building", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Apartment> apartments = new ArrayList<>();
 

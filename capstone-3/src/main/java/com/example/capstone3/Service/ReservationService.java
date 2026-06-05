@@ -4,20 +4,22 @@ import com.example.capstone3.Api.ApiException;
 import com.example.capstone3.DTO.In.ReservationDTOIn;
 import com.example.capstone3.DTO.Out.ReservationDTOOut;
 import com.example.capstone3.Enums.ApartmentStatus;
+import com.example.capstone3.Enums.ContractStatus;
 import com.example.capstone3.Enums.ReservationStatus;
 import com.example.capstone3.Models.Apartment;
 import com.example.capstone3.Models.Owner;
 import com.example.capstone3.Models.Reservation;
 import com.example.capstone3.Models.User;
 import com.example.capstone3.Repository.ApartmentRepository;
+import com.example.capstone3.Repository.ContractRepository;
 import com.example.capstone3.Repository.OwnerRepository;
 import com.example.capstone3.Repository.ReservationRepository;
 import com.example.capstone3.Repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +32,7 @@ public class ReservationService {
     private final ApartmentRepository apartmentRepository;
     private final UserRepository userRepository;
     private final OwnerRepository ownerRepository;
+    private final ContractRepository contractRepository;
 
     public List<ReservationDTOOut> getAll() {
         List<ReservationDTOOut> reservationDTOOuts = new ArrayList<>();
@@ -47,6 +50,7 @@ public class ReservationService {
         return convertToDTO(reservation);
     }
 
+    @Transactional
     public void addReservation(ReservationDTOIn reservationDTOIn) {
         Apartment apartment = apartmentRepository.findApartmentById(reservationDTOIn.getApartmentId());
         if (apartment == null) {
@@ -55,6 +59,20 @@ public class ReservationService {
         User user = userRepository.findUserById(reservationDTOIn.getUserId());
         if (user == null) {
             throw new ApiException("User not found");
+        }
+        if (apartment.getStatus() != ApartmentStatus.AVAILABLE) {
+            throw new ApiException("Apartment is not available for reservation");
+        }
+        if (apartment.getAvailableFrom() != null
+                && reservationDTOIn.getReservationDate().isBefore(apartment.getAvailableFrom())) {
+            throw new ApiException("Reservation date must be on or after the apartment available date");
+        }
+        if (reservationRepository.existsByApartment_IdAndStatus(apartment.getId(), ReservationStatus.APPROVED)) {
+            throw new ApiException("Apartment already has an approved reservation");
+        }
+        if (contractRepository.existsByReservation_Apartment_IdAndContractStatus(
+                apartment.getId(), ContractStatus.ACTIVE)) {
+            throw new ApiException("Apartment already has an active contract");
         }
         Reservation reservation = new Reservation();
         reservation.setApartment(apartment);
@@ -71,6 +89,13 @@ public class ReservationService {
         if (reservation == null) {
             throw new ApiException("Reservation not found");
         }
+        if (reservation.getStatus() != ReservationStatus.PENDING) {
+            throw new ApiException("Only pending reservations can be updated");
+        }
+        if (!reservation.getApartment().getId().equals(reservationDTOIn.getApartmentId())
+                || !reservation.getUser().getId().equals(reservationDTOIn.getUserId())) {
+            throw new ApiException("Reservation apartment and user cannot be changed");
+        }
         Apartment apartment = reservation.getApartment();
         if (apartment == null) {
             throw new ApiException("Apartment not found");
@@ -78,6 +103,10 @@ public class ReservationService {
         User user = reservation.getUser();
         if (user == null) {
             throw new ApiException("User not found");
+        }
+        if (apartment.getAvailableFrom() != null
+                && reservationDTOIn.getReservationDate().isBefore(apartment.getAvailableFrom())) {
+            throw new ApiException("Reservation date must be on or after the apartment available date");
         }
         reservation.setApartment(apartment);
         reservation.setUser(user);
@@ -91,6 +120,9 @@ public class ReservationService {
         if (reservation == null) {
             throw new ApiException("Reservation not found");
         }
+        if (reservation.getStatus() != ReservationStatus.PENDING) {
+            throw new ApiException("Only pending reservations can be deleted");
+        }
         reservationRepository.deleteById(id);
     }
 
@@ -100,7 +132,7 @@ public class ReservationService {
         reservationDTOOut.setApartmentId(reservation.getApartment().getId());
         reservationDTOOut.setUserId(reservation.getUser().getId());
         reservationDTOOut.setReservationDate(reservation.getReservationDate());
-        reservationDTOOut.setStatus(reservation.getStatus() == null ? null : reservation.getStatus().name());
+        reservationDTOOut.setStatus(reservation.getStatus());
         reservationDTOOut.setMessage(reservation.getMessage());
         return reservationDTOOut;
     }
@@ -172,6 +204,7 @@ public class ReservationService {
     }
 
 
+    @Transactional
     public void acceptReservation(Integer ownerId, Integer reservationId) {
         Reservation reservation = reservationRepository.findReservationById(reservationId);
 
@@ -183,13 +216,31 @@ public class ReservationService {
         if (!reservation.getApartment().getBuilding().getOwner().getId().equals(ownerId)) {
             throw new ApiException("You do not have permission to accept this reservation");
         }
+        if (reservation.getStatus() != ReservationStatus.PENDING) {
+            throw new ApiException("Only pending reservations can be accepted");
+        }
+
+        Apartment apartment = reservation.getApartment();
+        if (apartment.getStatus() != ApartmentStatus.AVAILABLE) {
+            throw new ApiException("Apartment is no longer available");
+        }
+        if (contractRepository.existsByReservation_Apartment_IdAndContractStatus(
+                apartment.getId(), ContractStatus.ACTIVE)) {
+            throw new ApiException("Apartment already has an active contract");
+        }
 
         reservation.setStatus(ReservationStatus.APPROVED);
-        reservationRepository.save(reservation);
-
-        // Update Apartment Status
-        Apartment apartment = reservation.getApartment();
         apartment.setStatus(ApartmentStatus.RESERVED);
+
+        for (Reservation competingReservation :
+                reservationRepository.findReservationsByApartment_IdAndStatus(
+                        apartment.getId(), ReservationStatus.PENDING)) {
+            if (!competingReservation.getId().equals(reservationId)) {
+                competingReservation.setStatus(ReservationStatus.REJECTED);
+            }
+        }
+
+        reservationRepository.save(reservation);
         apartmentRepository.save(apartment);
     }
 
@@ -205,17 +256,16 @@ public class ReservationService {
         if (!reservation.getApartment().getBuilding().getOwner().getId().equals(ownerId)) {
             throw new ApiException("You do not have permission to reject this reservation");
         }
+        if (reservation.getStatus() != ReservationStatus.PENDING) {
+            throw new ApiException("Only pending reservations can be rejected");
+        }
 
         reservation.setStatus(ReservationStatus.REJECTED);
         reservationRepository.save(reservation);
-
-        // Free up the apartment
-        Apartment apartment = reservation.getApartment();
-        apartment.setStatus(ApartmentStatus.AVAILABLE);
-        apartmentRepository.save(apartment);
     }
 
 
+    @Transactional
     public void endReservation(Integer userId, Integer reservationId) {
         Reservation reservation = reservationRepository.findReservationById(reservationId);
 
@@ -227,15 +277,20 @@ public class ReservationService {
         if (!reservation.getUser().getId().equals(userId)) {
             throw new ApiException("You can only cancel your own reservations");
         }
+        if (reservation.getStatus() != ReservationStatus.PENDING
+                && reservation.getStatus() != ReservationStatus.APPROVED) {
+            throw new ApiException("Only pending or approved reservations can be cancelled");
+        }
 
-        // Differentiate between Owner rejecting and User cancelling
+        boolean wasApproved = reservation.getStatus() == ReservationStatus.APPROVED;
         reservation.setStatus(ReservationStatus.CANCELLED);
         reservationRepository.save(reservation);
 
-        // Free up the apartment
-        Apartment apartment = reservation.getApartment();
-        apartment.setStatus(ApartmentStatus.UNDER_MAINTENANCE);
-        apartmentRepository.save(apartment);
+        if (wasApproved) {
+            Apartment apartment = reservation.getApartment();
+            apartment.setStatus(ApartmentStatus.AVAILABLE);
+            apartmentRepository.save(apartment);
+        }
     }
 
 //    @Scheduled(fixedRate = 60000)
@@ -243,10 +298,11 @@ public class ReservationService {
     public void checkReservationExpiration() {
 
         // 1. Calculate the date from 2 days ago (48 hours)
-        LocalDate twoDaysAgo = LocalDate.now().minusDays(2);
+        LocalDateTime twoDaysAgo = LocalDateTime.now().minusDays(2);
 
         // 2. Fetch all reservations that are still PENDING and were made before that date
-        List<Reservation> expiredReservations = reservationRepository.findByStatusAndReservationDateBefore(ReservationStatus.PENDING, twoDaysAgo);
+        List<Reservation> expiredReservations =
+                reservationRepository.findByStatusAndCreatedAtBefore(ReservationStatus.PENDING, twoDaysAgo);
 
         // 3. Loop through them to update statuses
         for (Reservation reservation : expiredReservations) {
@@ -255,11 +311,6 @@ public class ReservationService {
             reservation.setStatus(ReservationStatus.EXPIRED);
             reservationRepository.save(reservation);
 
-            // CHANGE BASED ON NEED!!!!!!
-            // Free up the apartment so it appears in searches again
-            Apartment apartment = reservation.getApartment();
-            apartment.setStatus(ApartmentStatus.AVAILABLE);
-            apartmentRepository.save(apartment);
         }
 
         System.out.println("Ran expiration check: Expired " + expiredReservations.size() + " reservations.");

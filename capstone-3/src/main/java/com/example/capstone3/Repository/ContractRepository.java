@@ -18,4 +18,8 @@ public interface ContractRepository extends JpaRepository<Contract, Integer> {
 
     Contract findByReservation_User_IdAndReservation_Apartment_IdAndContractStatus(
             Integer userId, Integer apartmentId, ContractStatus contractStatus);
+
+    boolean existsByReservation_Id(Integer reservationId);
+
+    boolean existsByReservation_Apartment_IdAndContractStatus(Integer apartmentId, ContractStatus contractStatus);
 }

@@ -19,14 +19,17 @@ public class Review {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    // Lazy because user details are not always needed when loading a review.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    // Lazy because apartment details are not always needed when loading a review.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "apartment_id", nullable = false)
     private Apartment apartment;
 
+    // Lazy because reservation details are only needed to validate review history.
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reservation_id", unique = true)
     private Reservation reservation;

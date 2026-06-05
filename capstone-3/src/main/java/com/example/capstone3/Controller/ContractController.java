@@ -42,4 +42,39 @@ public class ContractController {
         contractService.deleteContract(id);
         return ResponseEntity.status(200).body(new ApiResponse("Contract deleted successfully"));
     }
+
+    @PutMapping("/accept/{userId}/{contractId}")
+    public ResponseEntity<?> acceptContract(@PathVariable Integer userId, @PathVariable Integer contractId) {
+        contractService.acceptContract(userId, contractId);
+        return ResponseEntity.status(200).body(new ApiResponse("Contract accepted successfully"));
+    }
+
+    @PutMapping("/reject/{userId}/{contractId}")
+    public ResponseEntity<?> rejectContract(@PathVariable Integer userId, @PathVariable Integer contractId) {
+        contractService.rejectContract(userId, contractId);
+        return ResponseEntity.status(200).body(new ApiResponse("Contract rejected successfully"));
+    }
+
+    @PutMapping("/end/{ownerId}/{contractId}")
+    public ResponseEntity<?> endContract(@PathVariable Integer ownerId, @PathVariable Integer contractId) {
+        contractService.endContract(ownerId, contractId);
+        return ResponseEntity.status(200).body(new ApiResponse("Contract ended successfully"));
+    }
+
+    @PutMapping("/renew/{userId}/{contractId}/{extraMonths}")
+    public ResponseEntity<?> renewContract(@PathVariable Integer userId, @PathVariable Integer contractId,
+                                           @PathVariable Integer extraMonths) {
+        contractService.renewContract(userId, contractId, extraMonths);
+        return ResponseEntity.status(200).body(new ApiResponse("Contract renewed successfully"));
+    }
+
+    @GetMapping("/get/user/{userId}")
+    public ResponseEntity<?> getContractsByUser(@PathVariable Integer userId) {
+        return ResponseEntity.status(200).body(contractService.getContractsByUserId(userId));
+    }
+
+    @GetMapping("/get/owner/{ownerId}")
+    public ResponseEntity<?> getContractsByOwner(@PathVariable Integer ownerId) {
+        return ResponseEntity.status(200).body(contractService.getContractsByOwnerId(ownerId));
+    }
 }

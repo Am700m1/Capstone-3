@@ -20,10 +20,12 @@ public class Reservation {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    // Lazy because apartment details are not always needed when loading a reservation.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "apartment_id", nullable = false)
     private Apartment apartment;
 
+    // Lazy because user details are not always needed when loading a reservation.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -41,6 +43,7 @@ public class Reservation {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @OneToOne(mappedBy = "reservation", cascade = CascadeType.ALL)
+    // Lazy because a contract may not exist and is only needed in contract workflows.
+    @OneToOne(mappedBy = "reservation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Contract contract;
 }

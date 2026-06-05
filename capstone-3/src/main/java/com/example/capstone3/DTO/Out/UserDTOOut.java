@@ -12,7 +12,8 @@ public class UserDTOOut {
     private String email;
     private String phoneNumber;
     private LocalDateTime dateOfBirth;
-    private String maritalStatus;
+    private Boolean married;
+    private Integer familyCount;
     private Integer childrenCount;
     private LocalDateTime createdAt;
 }

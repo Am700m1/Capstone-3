@@ -1,5 +1,7 @@
 package com.example.capstone3.DTO.In;
 
+import jakarta.validation.constraints.FutureOrPresent;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -38,10 +40,12 @@ public class ApartmentDTOIn {
     @Positive(message = "Area must be positive")
     private Double area;
 
+    @Min(value = 0, message = "Floor number cannot be negative")
     private Integer floorNumber;
     private Boolean furnished;
-    private Boolean available;
+    @FutureOrPresent(message = "Available date cannot be in the past")
     private java.time.LocalDate availableFrom;
+    @Size(max = 50, message = "Allowed tenant type must not exceed 50 characters")
     private String allowedTenantType;
     private Boolean waterIncluded;
     private Boolean internetIncluded;
