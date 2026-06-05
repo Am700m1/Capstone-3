@@ -10,11 +10,13 @@ import com.example.capstone3.Models.*;
 import com.example.capstone3.Repository.*;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @Service
@@ -26,6 +28,9 @@ public class ContractService {
     private final UserRepository userRepository;
     private final ApartmentRepository apartmentRepository;
     private final OwnerRepository ownerRepository;
+
+    private final AiService aiService;
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
     public List<ContractDTOOut> getAll() {
         List<ContractDTOOut> contractDTOOuts = new ArrayList<>();
@@ -48,6 +53,11 @@ public class ContractService {
         if (reservation == null) {
             throw new ApiException("Reservation not found");
         }
+
+        if (!reservation.getStatus().equals(ReservationStatus.APPROVED)) {
+            throw new ApiException("Cannot generate a contract! The reservation must be APPROVED by the owner first.");
+        }
+
         Contract contract = new Contract();
         contract.setReservation(reservation);
         contract.setContractNumber(contractDTOIn.getContractNumber());
@@ -244,6 +254,7 @@ public class ContractService {
         }
 
         contract.setContractStatus(ContractStatus.ENDED);
+        contract.setEndDate(LocalDate.now());
         contractRepository.save(contract);
 
         Reservation reservation = contract.getReservation();
@@ -291,5 +302,82 @@ public class ContractService {
         contractRepository.save(contract);
     }
 
+    public Map<String, Object> getContractAnalysis(Integer userId, Integer contractId, String language) {
+        User user = userRepository.findUserById(userId);
+        Contract contract = contractRepository.findContractById(contractId);
+
+        if (user == null) {
+            throw new ApiException("User not found!");
+        }
+
+        if (contract == null) {
+            throw new ApiException("Contract not found!");
+        }
+
+        if (!userId.equals(contract.getReservation().getUser().getId())) {
+            throw new ApiException("You are not authorized to view this contract's analysis.");
+        }
+
+        if (!language.equalsIgnoreCase("English") && !language.equalsIgnoreCase("Arabic")) {
+            throw new ApiException("Language must be either 'English' or 'Arabic'");
+        }
+
+        try {
+            String aiJsonString = aiService.analyzeContract(contract, language);
+            return objectMapper.readValue(aiJsonString, new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String, Object>>() {});
+
+        } catch (Exception e) {
+            throw new ApiException("Failed to parse AI analysis: " + e.getMessage());
+        }
+    }
+
+    @Scheduled(cron = "0 0 0 * * *")
+    @Transactional
+    public void processExpiredContracts() {
+        LocalDate today = LocalDate.now();
+
+        List<Contract> expiredContracts = contractRepository.findContractsByContractStatusAndEndDateBefore(ContractStatus.ACTIVE, today);
+
+        if(expiredContracts.isEmpty()) {
+            return;
+        }
+
+        for (Contract contract : expiredContracts) {
+
+            contract.setContractStatus(ContractStatus.ENDED);
+            contractRepository.save(contract);
+
+            Reservation reservation = contract.getReservation();
+            reservation.setStatus(ReservationStatus.COMPLETED);
+            reservationRepository.save(reservation);
+
+            Apartment apartment = reservation.getApartment();
+            apartment.setStatus(ApartmentStatus.UNDER_MAINTENANCE);
+            apartment.setAvailable(false);
+            apartmentRepository.save(apartment);
+
+            // 5. Trigger Notifications
+            sendEndRentalNotificationToOwner(apartment.getOwner(), apartment);
+            sendEndRentalNotificationToUser(reservation.getUser(), apartment);
+        }
+
+        System.out.println("Automated Check: Processed and closed " + expiredContracts.size() + " expired contracts.");
+    }
+
+    // --- NOTIFICATION HOLDING PLACES ---
+
+    private void sendEndRentalNotificationToOwner(Owner owner, Apartment apartment) {
+        // TODO: Implement Email / WhatsApp integration here in the future
+        System.out.println(">> SMS/EMAIL TO OWNER (" + owner.getPhoneNumber() + " / " + owner.getEmail() + "): " +
+                "The contract for apartment '" + apartment.getTitle() + "' has ended. " +
+                "The system has automatically placed the apartment UNDER_MAINTENANCE for your inspection.");
+    }
+
+    private void sendEndRentalNotificationToUser(User user, Apartment apartment) {
+        // TODO: Implement Email / WhatsApp integration here in the future
+        System.out.println(">> SMS/EMAIL TO TENANT (" + user.getPhoneNumber() + " / " + user.getEmail() + "): " +
+                "Dear " + user.getFullName() + ", your rental contract for '" + apartment.getTitle() + "' has officially ended today. " +
+                "Please make sure to hand over the apartment and submit any final reviews.");
+    }
 
 }

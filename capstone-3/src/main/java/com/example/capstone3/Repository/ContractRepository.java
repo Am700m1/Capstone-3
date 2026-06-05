@@ -6,6 +6,7 @@ import com.example.capstone3.Models.Reservation;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Repository
@@ -18,4 +19,6 @@ public interface ContractRepository extends JpaRepository<Contract, Integer> {
     List<Contract> findContractsByReservation_User_Id(Integer reservationUserId);
 
     List<Contract> findContractsByReservation_Apartment_Owner_Id(Integer reservationApartmentOwnerId);
+
+    List<Contract> findContractsByContractStatusAndEndDateBefore(ContractStatus status, LocalDate date);
 }

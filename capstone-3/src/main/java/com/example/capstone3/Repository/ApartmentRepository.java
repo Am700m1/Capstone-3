@@ -31,7 +31,7 @@ public interface ApartmentRepository extends JpaRepository<Apartment, Integer> {
             @Param("minRent") Double minRent,
             @Param("maxRent") Double maxRent,
             @Param("bedrooms") Integer bedrooms,
-            @Param("bedrooms") String district,
+            @Param("district") String district,
             @Param("isFurnished") Boolean isFurnished
     );
 }
