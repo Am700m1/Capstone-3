@@ -2,6 +2,8 @@ package com.example.capstone3.Service;
 
 import com.example.capstone3.Api.ApiException;
 import com.example.capstone3.DTO.In.UserPreferenceDTOIn;
+import com.example.capstone3.DTO.In.WorkplaceDTOIn;
+import com.example.capstone3.DTO.Out.NominatimLocationDTOOut;
 import com.example.capstone3.DTO.Out.UserPreferenceDTOOut;
 import com.example.capstone3.Enums.PreferenceLevel;
 import com.example.capstone3.Models.User;
@@ -20,6 +22,7 @@ public class UserPreferenceService {
 
     private final UserPreferenceRepository userPreferenceRepository;
     private final UserRepository userRepository;
+    private final NominatimService nominatimService;
 
     public List<UserPreferenceDTOOut> getAll() {
         List<UserPreferenceDTOOut> userPreferenceDTOOuts = new ArrayList<>();
@@ -42,22 +45,27 @@ public class UserPreferenceService {
         if (user == null) {
             throw new ApiException("User not found");
         }
+        if (userPreferenceRepository.findUserPreferenceByUserId(user.getId()) != null) {
+            throw new ApiException("User preferences already exist");
+        }
         UserPreference preference = new UserPreference();
         preference.setUser(user);
         preference.setWorkLatitude(userPreferenceDTOIn.getWorkLatitude());
         preference.setWorkLongitude(userPreferenceDTOIn.getWorkLongitude());
         preference.setMaxBudget(userPreferenceDTOIn.getMaxBudget());
-        preference.setMaxCommuteMinutes(userPreferenceDTOIn.getMaxCommuteMinutes());
         preference.setRequiresParking(userPreferenceDTOIn.getRequiresParking());
         preference.setRequiresElevator(userPreferenceDTOIn.getRequiresElevator());
         preference.setRequiresFurnished(userPreferenceDTOIn.getRequiresFurnished());
-        preference.setLookingForRoommate(userPreferenceDTOIn.getLookingForRoommate());
-        preference.setRoommateBudget(userPreferenceDTOIn.getRoommateBudget());
-        preference.setGymPreference(parsePreferenceLevel(userPreferenceDTOIn.getGymPreference()));
-        preference.setCafesPreference(parsePreferenceLevel(userPreferenceDTOIn.getCafesPreference()));
-        preference.setHospitalPreference(parsePreferenceLevel(userPreferenceDTOIn.getHospitalPreference()));
-        preference.setSchoolPreference(parsePreferenceLevel(userPreferenceDTOIn.getSchoolPreference()));
-        preference.setPublicTransportPreference(parsePreferenceLevel(userPreferenceDTOIn.getPublicTransportPreference()));
+        preference.setGymPreference(userPreferenceDTOIn.getGymPreference() == null
+                ? PreferenceLevel.NOT_IMPORTANT : userPreferenceDTOIn.getGymPreference());
+        preference.setCafesPreference(userPreferenceDTOIn.getCafesPreference() == null
+                ? PreferenceLevel.NOT_IMPORTANT : userPreferenceDTOIn.getCafesPreference());
+        preference.setHospitalPreference(userPreferenceDTOIn.getHospitalPreference() == null
+                ? PreferenceLevel.NOT_IMPORTANT : userPreferenceDTOIn.getHospitalPreference());
+        preference.setSchoolPreference(userPreferenceDTOIn.getSchoolPreference() == null
+                ? PreferenceLevel.NOT_IMPORTANT : userPreferenceDTOIn.getSchoolPreference());
+        preference.setPublicTransportPreference(userPreferenceDTOIn.getPublicTransportPreference() == null
+                ? PreferenceLevel.NOT_IMPORTANT : userPreferenceDTOIn.getPublicTransportPreference());
         preference.setPreferredBedrooms(userPreferenceDTOIn.getPreferredBedrooms());
         preference.setPreferredBathrooms(userPreferenceDTOIn.getPreferredBathrooms());
         preference.setPreferredDistrict(userPreferenceDTOIn.getPreferredDistrict());
@@ -73,21 +81,27 @@ public class UserPreferenceService {
         if (user == null) {
             throw new ApiException("User not found");
         }
+        UserPreference existingPreference = userPreferenceRepository.findUserPreferenceByUserId(user.getId());
+        if (existingPreference != null && !existingPreference.getId().equals(id)) {
+            throw new ApiException("User preferences already exist");
+        }
         preference.setUser(user);
         preference.setWorkLatitude(userPreferenceDTOIn.getWorkLatitude());
         preference.setWorkLongitude(userPreferenceDTOIn.getWorkLongitude());
         preference.setMaxBudget(userPreferenceDTOIn.getMaxBudget());
-        preference.setMaxCommuteMinutes(userPreferenceDTOIn.getMaxCommuteMinutes());
         preference.setRequiresParking(userPreferenceDTOIn.getRequiresParking());
         preference.setRequiresElevator(userPreferenceDTOIn.getRequiresElevator());
         preference.setRequiresFurnished(userPreferenceDTOIn.getRequiresFurnished());
-        preference.setLookingForRoommate(userPreferenceDTOIn.getLookingForRoommate());
-        preference.setRoommateBudget(userPreferenceDTOIn.getRoommateBudget());
-        preference.setGymPreference(parsePreferenceLevel(userPreferenceDTOIn.getGymPreference()));
-        preference.setCafesPreference(parsePreferenceLevel(userPreferenceDTOIn.getCafesPreference()));
-        preference.setHospitalPreference(parsePreferenceLevel(userPreferenceDTOIn.getHospitalPreference()));
-        preference.setSchoolPreference(parsePreferenceLevel(userPreferenceDTOIn.getSchoolPreference()));
-        preference.setPublicTransportPreference(parsePreferenceLevel(userPreferenceDTOIn.getPublicTransportPreference()));
+        preference.setGymPreference(userPreferenceDTOIn.getGymPreference() == null
+                ? PreferenceLevel.NOT_IMPORTANT : userPreferenceDTOIn.getGymPreference());
+        preference.setCafesPreference(userPreferenceDTOIn.getCafesPreference() == null
+                ? PreferenceLevel.NOT_IMPORTANT : userPreferenceDTOIn.getCafesPreference());
+        preference.setHospitalPreference(userPreferenceDTOIn.getHospitalPreference() == null
+                ? PreferenceLevel.NOT_IMPORTANT : userPreferenceDTOIn.getHospitalPreference());
+        preference.setSchoolPreference(userPreferenceDTOIn.getSchoolPreference() == null
+                ? PreferenceLevel.NOT_IMPORTANT : userPreferenceDTOIn.getSchoolPreference());
+        preference.setPublicTransportPreference(userPreferenceDTOIn.getPublicTransportPreference() == null
+                ? PreferenceLevel.NOT_IMPORTANT : userPreferenceDTOIn.getPublicTransportPreference());
         preference.setPreferredBedrooms(userPreferenceDTOIn.getPreferredBedrooms());
         preference.setPreferredBathrooms(userPreferenceDTOIn.getPreferredBathrooms());
         preference.setPreferredDistrict(userPreferenceDTOIn.getPreferredDistrict());
@@ -102,22 +116,40 @@ public class UserPreferenceService {
         userPreferenceRepository.deleteById(id);
     }
 
+    public UserPreferenceDTOOut updateWorkplace(Integer userId, WorkplaceDTOIn workplaceDTOIn) {
+        UserPreference preference = userPreferenceRepository.findUserPreferenceByUserId(userId);
+        if (preference == null) {
+            throw new ApiException("User preferences not found. Please create preferences first.");
+        }
+
+        // Convert the workplace name to coordinates before saving the preference.
+        NominatimLocationDTOOut location =
+                nominatimService.resolveWorkplaceCoordinates(workplaceDTOIn.getWorkplaceName());
+
+        preference.setWorkplaceName(workplaceDTOIn.getWorkplaceName().trim());
+        preference.setWorkLatitude(location.getLatitude());
+        preference.setWorkLongitude(location.getLongitude());
+        userPreferenceRepository.save(preference);
+
+        return convertToDTO(preference);
+    }
+
     public UserPreferenceDTOOut convertToDTO(UserPreference preference) {
         UserPreferenceDTOOut userPreferenceDTOOut = new UserPreferenceDTOOut();
         userPreferenceDTOOut.setId(preference.getId());
         userPreferenceDTOOut.setUserId(preference.getUser().getId());
         userPreferenceDTOOut.setWorkLatitude(preference.getWorkLatitude());
         userPreferenceDTOOut.setWorkLongitude(preference.getWorkLongitude());
+        userPreferenceDTOOut.setWorkplaceName(preference.getWorkplaceName());
         userPreferenceDTOOut.setMaxBudget(preference.getMaxBudget());
-        userPreferenceDTOOut.setMaxCommuteMinutes(preference.getMaxCommuteMinutes());
         userPreferenceDTOOut.setRequiresParking(preference.getRequiresParking());
         userPreferenceDTOOut.setRequiresElevator(preference.getRequiresElevator());
         userPreferenceDTOOut.setRequiresFurnished(preference.getRequiresFurnished());
-        userPreferenceDTOOut.setGymPreference(preference.getGymPreference() == null ? null : preference.getGymPreference().name());
-        userPreferenceDTOOut.setCafesPreference(preference.getCafesPreference() == null ? null : preference.getCafesPreference().name());
-        userPreferenceDTOOut.setHospitalPreference(preference.getHospitalPreference() == null ? null : preference.getHospitalPreference().name());
-        userPreferenceDTOOut.setSchoolPreference(preference.getSchoolPreference() == null ? null : preference.getSchoolPreference().name());
-        userPreferenceDTOOut.setPublicTransportPreference(preference.getPublicTransportPreference() == null ? null : preference.getPublicTransportPreference().name());
+        userPreferenceDTOOut.setGymPreference(preference.getGymPreference());
+        userPreferenceDTOOut.setCafesPreference(preference.getCafesPreference());
+        userPreferenceDTOOut.setHospitalPreference(preference.getHospitalPreference());
+        userPreferenceDTOOut.setSchoolPreference(preference.getSchoolPreference());
+        userPreferenceDTOOut.setPublicTransportPreference(preference.getPublicTransportPreference());
         userPreferenceDTOOut.setPreferredBedrooms(preference.getPreferredBedrooms());
         userPreferenceDTOOut.setPreferredBathrooms(preference.getPreferredBathrooms());
         userPreferenceDTOOut.setPreferredDistrict(preference.getPreferredDistrict());
@@ -127,11 +159,4 @@ public class UserPreferenceService {
 
     //^^^^^^^CRUD^^^^^^^^
 
-
-    private PreferenceLevel parsePreferenceLevel(String value) {
-        if (value == null || value.isBlank()) {
-            return PreferenceLevel.NOT_IMPORTANT;
-        }
-        return PreferenceLevel.valueOf(value.toUpperCase());
-    }
 }

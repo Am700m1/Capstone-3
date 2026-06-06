@@ -19,6 +19,7 @@ public class Contract {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    // Lazy because reservation details are loaded only for contract workflows.
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reservation_id", nullable = false, unique = true)
     private Reservation reservation;

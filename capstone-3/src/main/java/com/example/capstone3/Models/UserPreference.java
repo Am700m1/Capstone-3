@@ -17,6 +17,7 @@ public class UserPreference {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    // Lazy because full user details are not needed when loading preferences.
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
@@ -27,11 +28,11 @@ public class UserPreference {
     @Column(name = "work_longitude", nullable = false)
     private Double workLongitude;
 
+    @Column(name = "workplace_name", length = 200)
+    private String workplaceName;
+
     @Column(name = "max_budget", nullable = false)
     private Double maxBudget;
-
-    @Column(name = "max_commute_minutes")
-    private Integer maxCommuteMinutes;
 
     @Column(name = "requires_parking")
     private Boolean requiresParking;
@@ -52,23 +53,23 @@ public class UserPreference {
     // enumtype.string so its entered as string
     @Enumerated(EnumType.STRING)
     @Column(name = "gym_preference", length = 20)
-    private PreferenceLevel gymPreference;
+    private PreferenceLevel gymPreference = PreferenceLevel.NOT_IMPORTANT;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "cafes_preference", length = 20)
-    private PreferenceLevel cafesPreference;
+    private PreferenceLevel cafesPreference = PreferenceLevel.NOT_IMPORTANT;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "hospital_preference", length = 20)
-    private PreferenceLevel hospitalPreference;
+    private PreferenceLevel hospitalPreference = PreferenceLevel.NOT_IMPORTANT;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "school_preference", length = 20)
-    private PreferenceLevel schoolPreference;
+    private PreferenceLevel schoolPreference = PreferenceLevel.NOT_IMPORTANT;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "public_transport_preference", length = 20)
-    private PreferenceLevel publicTransportPreference;
+    private PreferenceLevel publicTransportPreference = PreferenceLevel.NOT_IMPORTANT;
 
     @Column(name = "preferred_bedrooms")
     private Integer preferredBedrooms;

@@ -1,6 +1,7 @@
 package com.example.capstone3.DTO.In;
 
 
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
@@ -11,7 +12,8 @@ import java.time.LocalDate;
 @Data
 public class ContractDTOIn {
 
-    @NotNull(message = "Contract number is required")
+    @NotEmpty(message = "Contract number is required")
+    @Size(max = 100, message = "Contract number must not exceed 100 characters")
     private String contractNumber;
 
     @NotNull(message = "Start date is required")
@@ -26,9 +28,6 @@ public class ContractDTOIn {
 
     @Positive(message = "Security deposit must be positive")
     private Double securityDeposit;
-
-    private Boolean signed;
-    private LocalDate signedDate;
 
     @Size(max = 500, message = "PDF path must not exceed 500 characters")
     private String pdfPath;

@@ -48,10 +48,25 @@ public class ContractService {
         return convertToDTO(contract);
     }
 
+    @Transactional
     public void addContract(ContractDTOIn contractDTOIn, Integer reservation_id) {
         Reservation reservation = reservationRepository.findReservationById(reservation_id);
         if (reservation == null) {
             throw new ApiException("Reservation not found");
+        }
+        if (reservation.getStatus() != ReservationStatus.APPROVED) {
+            throw new ApiException("Contract can only be created for an approved reservation");
+        }
+        if (contractRepository.existsByReservation_Id(reservation_id)) {
+            throw new ApiException("A contract already exists for this reservation");
+        }
+        if (contractRepository.existsByReservation_Apartment_IdAndContractStatus(
+                reservation.getApartment().getId(), ContractStatus.ACTIVE)) {
+            throw new ApiException("Apartment already has an active contract");
+        }
+        validateContractDates(contractDTOIn.getStartDate(), contractDTOIn.getEndDate());
+        if (!reservation.getApartment().getMonthlyRent().equals(contractDTOIn.getMonthlyRent())) {
+            throw new ApiException("Contract monthly rent must match the apartment monthly rent");
         }
 
         if (!reservation.getStatus().equals(ReservationStatus.APPROVED)) {
@@ -65,8 +80,8 @@ public class ContractService {
         contract.setEndDate(contractDTOIn.getEndDate());
         contract.setMonthlyRent(contractDTOIn.getMonthlyRent());
         contract.setSecurityDeposit(contractDTOIn.getSecurityDeposit());
-        contract.setSigned(contractDTOIn.getSigned() == null ? false : contractDTOIn.getSigned());
-        contract.setSignedDate(contractDTOIn.getSignedDate());
+        contract.setSigned(false);
+        contract.setSignedDate(null);
         contract.setPdfPath(contractDTOIn.getPdfPath());
         contract.setContractStatus(ContractStatus.PENDING);
         contractRepository.save(contract);
@@ -76,6 +91,13 @@ public class ContractService {
         Contract contract = contractRepository.findContractById(id);
         if (contract == null) {
             throw new ApiException("Contract not found");
+        }
+        if (contract.getContractStatus() != ContractStatus.PENDING) {
+            throw new ApiException("Only pending contracts can be updated");
+        }
+        validateContractDates(contractDTOIn.getStartDate(), contractDTOIn.getEndDate());
+        if (!contract.getReservation().getApartment().getMonthlyRent().equals(contractDTOIn.getMonthlyRent())) {
+            throw new ApiException("Contract monthly rent must match the apartment monthly rent");
         }
         Reservation reservation = contract.getReservation();
         if (reservation == null) {
@@ -97,6 +119,10 @@ public class ContractService {
         Contract contract = contractRepository.findContractById(id);
         if (contract == null) {
             throw new ApiException("Contract not found");
+        }
+        if (contract.getContractStatus() != ContractStatus.PENDING
+                && contract.getContractStatus() != ContractStatus.CANCELLED) {
+            throw new ApiException("Only pending or cancelled contracts can be deleted");
         }
         contractRepository.deleteById(id);
     }
@@ -155,10 +181,21 @@ public class ContractService {
         if(!userId.equals(contract.getReservation().getUser().getId())){
             throw new ApiException("You are not authorized to do this action");
         }
+        if (contract.getContractStatus() != ContractStatus.PENDING) {
+            throw new ApiException("Only pending contracts can be accepted");
+        }
 
         Reservation reservation = contract.getReservation();
+        if (reservation.getStatus() != ReservationStatus.APPROVED) {
+            throw new ApiException("Reservation must be approved before accepting the contract");
+        }
+        Apartment apartment = reservation.getApartment();
+        if (apartment.getStatus() != ApartmentStatus.RESERVED) {
+            throw new ApiException("Apartment must be reserved before accepting the contract");
+        }
 
         contract.setSigned(true);
+        contract.setSignedDate(contract.getSignedDate() == null ? LocalDate.now() : contract.getSignedDate());
         contract.setContractStatus(ContractStatus.ACTIVE);
         reservation.setStatus(ReservationStatus.COMPLETED);
         reservationRepository.save(reservation);
@@ -186,6 +223,9 @@ public class ContractService {
 
         if(!userId.equals(contract.getReservation().getUser().getId())){
             throw new ApiException("You are not authorized to do this action");
+        }
+        if (contract.getContractStatus() != ContractStatus.PENDING) {
+            throw new ApiException("Only pending contracts can be rejected");
         }
 
         Reservation reservation = contract.getReservation();
@@ -249,6 +289,7 @@ public class ContractService {
     }
 
 
+    @Transactional
     public void endContract(Integer ownerId, Integer contractId){
         Owner owner = ownerRepository.findOwnerById(ownerId);
         Contract contract = contractRepository.findContractById(contractId);
@@ -318,6 +359,11 @@ public class ContractService {
         contractRepository.save(contract);
     }
 
+    private void validateContractDates(LocalDate startDate, LocalDate endDate) {
+        if (startDate == null || endDate == null || !endDate.isAfter(startDate)) {
+            throw new ApiException("Contract end date must be after start date");
+        }
+    }
     public Map<String, Object> getContractAnalysis(Integer userId, Integer contractId, String language) {
         User user = userRepository.findUserById(userId);
         Contract contract = contractRepository.findContractById(contractId);

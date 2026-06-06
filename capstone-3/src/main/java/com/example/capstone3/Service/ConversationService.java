@@ -45,26 +45,7 @@ public class ConversationService {
     }
 
     public void addConversation(ConversationDTOIn conversationDTOIn) {
-        User user = userRepository.findUserById(conversationDTOIn.getUserId());
-        if (user == null) {
-            throw new ApiException("User not found");
-        }
-        Owner owner = ownerRepository.findOwnerById(conversationDTOIn.getOwnerId());
-        if (owner == null) {
-            throw new ApiException("Owner not found");
-        }
-        Apartment apartment = apartmentRepository.findApartmentById(conversationDTOIn.getApartmentId());
-        if (apartment == null) {
-            throw new ApiException("Apartment not found");
-        }
-        if (!apartment.getOwner().getId().equals(owner.getId())) {
-            throw new ApiException("Owner does not own this apartment");
-        }
-        Conversation conversation = new Conversation();
-        conversation.setUser(user);
-        conversation.setOwner(owner);
-        conversation.setApartment(apartment);
-        conversationRepository.save(conversation);
+        throw new ApiException("Conversation is created or reused when the first message is sent");
     }
 
     public void updateConversation(Integer id, ConversationDTOIn conversationDTOIn) {
@@ -86,6 +67,11 @@ public class ConversationService {
         }
         if (!apartment.getOwner().getId().equals(owner.getId())) {
             throw new ApiException("Owner does not own this apartment");
+        }
+        Conversation duplicate = conversationRepository.findByUser_IdAndOwner_IdAndApartment_Id(
+                user.getId(), owner.getId(), apartment.getId());
+        if (duplicate != null && !duplicate.getId().equals(id)) {
+            throw new ApiException("Conversation already exists for this user, owner, and apartment");
         }
         conversation.setUser(user);
         conversation.setOwner(owner);
@@ -114,6 +100,8 @@ public class ConversationService {
             MessageDTOOut messageDTOOut = new MessageDTOOut();
             messageDTOOut.setId(message.getId());
             messageDTOOut.setConversationId(conversation.getId());
+            messageDTOOut.setSenderType(message.getSenderType());
+            messageDTOOut.setSenderId(message.getSenderId());
             messageDTOOut.setContent(message.getContent());
             messageDTOOut.setSentAt(message.getSentAt());
             messageDTOOut.setIsRead(message.getIsRead());

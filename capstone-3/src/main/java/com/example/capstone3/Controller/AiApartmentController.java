@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -15,29 +16,32 @@ public class AiApartmentController {
 
     private final AiApartmentService aiApartmentService;
 
+    // Analyzes apartment reviews using AI.
     @GetMapping("/api/v1/ai/apartments/review-summary/{apartmentId}")
-    public ResponseEntity<?> getReviewSummary(@PathVariable Integer apartmentId) {
-        return ResponseEntity.status(200).body(aiApartmentService.getReviewSummary(apartmentId));
+    public ResponseEntity<?> getReviewSummary(@PathVariable Integer apartmentId,
+                                              @RequestParam(defaultValue = "EN") String language) {
+        return ResponseEntity.status(200).body(aiApartmentService.getReviewSummary(apartmentId, language));
     }
 
+    // Describes an apartment neighborhood using AI and nearby service data.
     @GetMapping("/api/v1/ai/apartments/neighborhood-summary/{apartmentId}")
-    public ResponseEntity<?> getNeighborhoodSummary(@PathVariable Integer apartmentId) {
-        return ResponseEntity.status(200).body(aiApartmentService.getNeighborhoodSummary(apartmentId));
+    public ResponseEntity<?> getNeighborhoodSummary(@PathVariable Integer apartmentId,
+                                                    @RequestParam(defaultValue = "EN") String language) {
+        return ResponseEntity.status(200).body(aiApartmentService.getNeighborhoodSummary(apartmentId, language));
     }
 
-    @GetMapping("/api/v1/ai/apartments/price-suggestion/{apartmentId}")
-    public ResponseEntity<?> getPriceSuggestion(@PathVariable Integer apartmentId) {
-        return ResponseEntity.status(200).body(aiApartmentService.getPriceSuggestion(apartmentId));
-    }
-
+    // Generates an AI summary of owner reputation from tenant reviews.
     @GetMapping("/api/v1/ai/owners/reputation-summary/{ownerId}")
-    public ResponseEntity<?> getOwnerReputationSummary(@PathVariable Integer ownerId) {
-        return ResponseEntity.status(200).body(aiApartmentService.getOwnerReputationSummary(ownerId));
+    public ResponseEntity<?> getOwnerReputationSummary(@PathVariable Integer ownerId,
+                                                       @RequestParam(defaultValue = "EN") String language) {
+        return ResponseEntity.status(200).body(aiApartmentService.getOwnerReputationSummary(ownerId, language));
     }
 
+    // Compares the supplied apartments using AI.
     @GetMapping("/api/v1/ai/apartments/compare/{id1}/{id2}")
-    public ResponseEntity<?> compareTwoApartments(@PathVariable Integer id1, @PathVariable Integer id2) {
-        return ResponseEntity.status(200).body(aiApartmentService.compareApartments(List.of(id1, id2)));
+    public ResponseEntity<?> compareTwoApartments(@PathVariable Integer id1, @PathVariable Integer id2,
+                                                  @RequestParam(defaultValue = "EN") String language) {
+        return ResponseEntity.status(200).body(aiApartmentService.compareApartments(List.of(id1, id2), language));
     }
 
 }

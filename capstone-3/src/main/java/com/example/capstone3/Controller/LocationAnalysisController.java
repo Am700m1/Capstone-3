@@ -17,6 +17,7 @@ public class LocationAnalysisController {
 
     private final OverpassLocationService overpassLocationService;
 
+    // Uses Overpass to count nearby services around the supplied coordinates.
     @PostMapping("/analyze")
     public ApartmentServicesDTOOut analyzeArea(@RequestBody @Valid ApartmentServicesDTOIn request) {
         return overpassLocationService.analyzeApartmentLocation(request.getLatitude(), request.getLongitude(), request.getRadiusMetres());

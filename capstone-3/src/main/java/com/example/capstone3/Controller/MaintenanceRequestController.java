@@ -35,14 +35,18 @@ public class MaintenanceRequestController {
         return ResponseEntity.status(200).body(maintenanceRequestService.getApartmentMaintenanceRequests(apartmentId));
     }
 
+    // Generates an AI summary of maintenance patterns for a building.
     @GetMapping("/building-summary/{buildingId}")
-    public ResponseEntity<?> getBuildingMaintenanceSummary(@PathVariable Integer buildingId) {
-        return ResponseEntity.status(200).body(maintenanceRequestService.getBuildingMaintenanceSummary(buildingId));
+    public ResponseEntity<?> getBuildingMaintenanceSummary(@PathVariable Integer buildingId,
+                                                           @RequestParam(defaultValue = "EN") String language) {
+        return ResponseEntity.status(200).body(maintenanceRequestService.getBuildingMaintenanceSummary(buildingId, language));
     }
 
+    // Creates a request and uses AI to classify its category and priority.
     @PostMapping("/add")
-    public ResponseEntity<?> addMaintenanceRequest(@RequestBody @Valid MaintenanceRequestDTOIn dto) {
-        maintenanceRequestService.createMaintenanceRequest(dto.getUserId(), dto.getApartmentId(), dto);
+    public ResponseEntity<?> addMaintenanceRequest(@RequestBody @Valid MaintenanceRequestDTOIn dto,
+                                                   @RequestParam(defaultValue = "EN") String language) {
+        maintenanceRequestService.createMaintenanceRequest(dto.getUserId(), dto.getApartmentId(), dto, language);
         return ResponseEntity.status(200).body(new ApiResponse("Maintenance request created successfully"));
     }
 
@@ -59,8 +63,10 @@ public class MaintenanceRequestController {
     }
 
     @PutMapping("/update/{id}")
-    public ResponseEntity<?> updateMaintenanceRequest(@PathVariable Integer id, @RequestBody @Valid MaintenanceRequestDTOIn dto) {
-        maintenanceRequestService.updateMaintenanceRequest(id, dto);
+    public ResponseEntity<?> updateMaintenanceRequest(@PathVariable Integer id,
+                                                      @RequestBody @Valid MaintenanceRequestDTOIn dto,
+                                                      @RequestParam(defaultValue = "EN") String language) {
+        maintenanceRequestService.updateMaintenanceRequest(id, dto, language);
         return ResponseEntity.status(200).body(new ApiResponse("Maintenance request updated successfully"));
     }
 

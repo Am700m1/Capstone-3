@@ -2,6 +2,7 @@ package com.example.capstone3.Controller;
 
 import com.example.capstone3.Api.ApiResponse;
 import com.example.capstone3.DTO.In.UserPreferenceDTOIn;
+import com.example.capstone3.DTO.In.WorkplaceDTOIn;
 import com.example.capstone3.Service.UserPreferenceService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -9,7 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/user-preference")
+@RequestMapping({"/api/v1/user-preference", "/api/v1/user-preferences"})
 @RequiredArgsConstructor
 public class UserPreferenceController {
 
@@ -41,5 +42,11 @@ public class UserPreferenceController {
     public ResponseEntity<?> deleteUserPreference(@PathVariable Integer id) {
         userPreferenceService.deleteUserPreference(id);
         return ResponseEntity.status(200).body(new ApiResponse("User preference deleted successfully"));
+    }
+
+    // Resolves a workplace name with Nominatim and saves its coordinates.
+    @PutMapping("/add-workplace/{userId}")
+    public ResponseEntity<?> updateWorkplace(@PathVariable Integer userId, @RequestBody @Valid WorkplaceDTOIn workplaceDTOIn) {
+        return ResponseEntity.status(200).body(userPreferenceService.updateWorkplace(userId, workplaceDTOIn));
     }
 }

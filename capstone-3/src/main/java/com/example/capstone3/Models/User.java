@@ -43,8 +43,11 @@ public class User {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "marital_status", nullable = false, length = 10)
-    private String maritalStatus;
+    @Column(name = "married")
+    private Boolean married;
+
+    @Column(name = "family_count")
+    private Integer familyCount;
 
     @Column(name = "children_count", nullable = false)
     private Integer childrenCount;
@@ -53,17 +56,23 @@ public class User {
     private Integer currentRoommateId;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+    // Lazy because preferences are loaded only for preference and recommendation workflows.
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private UserPreference preference;
 
+    // Lazy because reservation history is not needed for basic user responses.
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Reservation> reservations = new ArrayList<>();
 
+    // Lazy because reviews are loaded only for review workflows.
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Review> reviews = new ArrayList<>();
 
+    // Lazy because maintenance requests are loaded only for maintenance workflows.
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<MaintenanceRequest> maintenanceRequests = new ArrayList<>();
 
+    // Lazy because conversations are loaded only for messaging workflows.
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Conversation> conversations = new ArrayList<>();
 

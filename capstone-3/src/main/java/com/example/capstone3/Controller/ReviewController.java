@@ -58,8 +58,10 @@ public class ReviewController {
         return ResponseEntity.status(200).body(reviewService.getOwnerReviews(ownerId));
     }
 
+    // Generates an AI analysis of reviews across an owner's apartments.
     @GetMapping("/get/owner-analysis/{ownerId}")
-    public ResponseEntity<?> getOwnerReviewAnalysis(@PathVariable Integer ownerId) {
-        return ResponseEntity.status(200).body(reviewService.generateOwnerAnalysis(ownerId));
+    public ResponseEntity<?> getOwnerReviewAnalysis(@PathVariable Integer ownerId,
+                                                    @RequestParam(defaultValue = "EN") String language) {
+        return ResponseEntity.status(200).body(reviewService.generateOwnerAnalysis(ownerId, language));
     }
 }

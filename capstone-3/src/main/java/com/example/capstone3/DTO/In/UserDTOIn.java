@@ -1,5 +1,11 @@
 package com.example.capstone3.DTO.In;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Past;
+import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
@@ -29,11 +35,13 @@ public class UserDTOIn {
     @Pattern(regexp = "^(MALE|FEMALE)$", message = "Gender must be exactly MALE or FEMALE")
     private String gender;
 
+    @Past(message = "Date of birth must be in the past")
     private LocalDateTime dateOfBirth;
 
-    @NotEmpty(message = "Marital status is required")
-    @Size(max = 10, message = "Marital status must not exceed 10 characters")
-    private String maritalStatus;
+    private Boolean married;
+
+    @Min(value = 0, message = "Family count cannot be negative")
+    private Integer familyCount;
 
     @NotNull(message = "Children count is required")
     @Min(value = 0, message = "Children count cannot be negative")

@@ -129,7 +129,8 @@ public class ReviewService {
         return reviewDTOOuts;
     }
 
-    public OwnerReviewAnalysisDTOOut generateOwnerAnalysis(Integer ownerId) {
+    // gets owner reviews, calculates backend statistics, and requests AI analysis.
+    public OwnerReviewAnalysisDTOOut generateOwnerAnalysis(Integer ownerId, String language) {
         Owner owner = ownerRepository.findOwnerById(ownerId);
         if (owner == null) {
             throw new ApiException("Owner not found");
@@ -138,7 +139,8 @@ public class ReviewService {
         if (reviews.isEmpty()) {
             throw new ApiException("No reviews found for this owner");
         }
-        String analysis = aiService.generateOwnerReviewAnalysis(owner, reviews);
+        // Gemini writes the analysis; review count and average rating stay backend-calculated.
+        String analysis = aiService.generateOwnerReviewAnalysis(owner, reviews, language);
 
         OwnerReviewAnalysisDTOOut dto = new OwnerReviewAnalysisDTOOut();
         dto.setOwnerId(owner.getId());
@@ -161,10 +163,12 @@ public class ReviewService {
         return reviewDTOOut;
     }
 
+    // Collect all reviews linked to apartments owned by the selected owner.
     private List<Review> loadOwnerReviews(Integer ownerId) {
         return reviewRepository.findByApartment_Building_Owner_Id(ownerId);
     }
 
+    // Calculate the rating shown beside the separate AI-written analysis.
     private double calcAvgRating(List<Review> reviews) {
         if (reviews.isEmpty()) return 0;
         int sum = 0;

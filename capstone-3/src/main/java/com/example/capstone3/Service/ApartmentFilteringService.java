@@ -1,5 +1,6 @@
 package com.example.capstone3.Service;
 
+import com.example.capstone3.Enums.ApartmentStatus;
 import com.example.capstone3.Models.Apartment;
 import com.example.capstone3.Models.UserPreference;
 import com.example.capstone3.Repository.ApartmentRepository;
@@ -17,10 +18,15 @@ public class ApartmentFilteringService {
 
     public List<Apartment> filterByPreferences(UserPreference preferences) {
 
-        List<Apartment> allAvailable = apartmentRepository.findByAvailableTrue();
+        List<Apartment> allAvailable = apartmentRepository.findByStatus(ApartmentStatus.AVAILABLE);
         List<Apartment> filtered = new ArrayList<>();
 
         for (Apartment apartment : allAvailable) {
+
+            if (apartment.getAvailableFrom() != null
+                    && apartment.getAvailableFrom().isAfter(java.time.LocalDate.now())) {
+                continue;
+            }
 
             // Filter by budget
             if (apartment.getMonthlyRent() > preferences.getMaxBudget()) {

@@ -1,0 +1,47 @@
+package com.example.capstone3.DTO.Out;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Data;
+
+@Data
+public class RankedApartmentDTOOut {
+
+    private Integer rank;
+    private Integer apartmentId;
+    private String title;
+    private String district;
+    private Double monthlyRent;
+    private Integer bedrooms;
+    private Integer bathrooms;
+    private Double area;
+    private Boolean furnished;
+    @JsonIgnore
+    private Boolean waterIncluded;
+    @JsonIgnore
+    private Boolean electricityIncluded;
+    @JsonIgnore
+    private Boolean internetIncluded;
+    @JsonIgnore
+    private Boolean buildingHasParking;
+    @JsonIgnore
+    private Boolean buildingHasElevator;
+    @JsonIgnore
+    private Boolean buildingHasSecurity;
+    private Double totalScore;
+    @JsonIgnore
+    private Double budgetScore;
+    @JsonIgnore
+    private Double amenityScore;
+    @JsonIgnore
+    private Double commuteScore;
+    @JsonIgnore
+    private Double familyScore;
+    @JsonIgnore
+    private Double apartmentScore;
+    @JsonIgnore
+    private Double averageRating;
+    private Integer commuteMinutes;
+    private Double commuteDistanceKm;
+    @JsonIgnore
+    private ApartmentServicesDTOOut nearbyServices;
+}

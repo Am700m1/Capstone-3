@@ -8,4 +8,6 @@ import org.springframework.stereotype.Repository;
 public interface ConversationRepository extends JpaRepository<Conversation, Integer> {
 
     Conversation findConversationById(Integer id);
+
+    Conversation findByUser_IdAndOwner_IdAndApartment_Id(Integer userId, Integer ownerId, Integer apartmentId);
 }

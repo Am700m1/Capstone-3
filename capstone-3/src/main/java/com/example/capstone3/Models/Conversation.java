@@ -11,7 +11,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "conversations")
+@Table(
+        name = "conversations",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_conversation_participants_apartment",
+                columnNames = {"user_id", "owner_id", "apartment_id"}
+        )
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -20,14 +26,17 @@ public class Conversation {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    // Lazy because user details are not always needed when loading a conversation.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    // Lazy because owner details are not always needed when loading a conversation.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", nullable = false)
     private Owner owner;
 
+    // Lazy because apartment details are not always needed when loading a conversation.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "apartment_id", nullable = false)
     private Apartment apartment;
@@ -36,6 +45,7 @@ public class Conversation {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    // Lazy because messages are loaded only when conversation content is requested.
     @OneToMany(mappedBy = "conversation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Message> messages = new ArrayList<>();
 }

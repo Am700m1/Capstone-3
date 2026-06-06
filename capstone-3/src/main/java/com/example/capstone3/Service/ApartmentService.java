@@ -67,7 +67,6 @@ public class ApartmentService {
         apartment.setArea(apartmentDTOIn.getArea());
         apartment.setFloorNumber(apartmentDTOIn.getFloorNumber());
         apartment.setFurnished(apartmentDTOIn.getFurnished());
-        apartment.setAvailable(apartmentDTOIn.getAvailable() == null ? true : apartmentDTOIn.getAvailable());
         apartment.setAvailableFrom(apartmentDTOIn.getAvailableFrom());
         apartment.setAllowedTenantType(apartmentDTOIn.getAllowedTenantType());
         apartment.setWaterIncluded(apartmentDTOIn.getWaterIncluded());
@@ -103,7 +102,6 @@ public class ApartmentService {
         apartment.setArea(apartmentDTOIn.getArea());
         apartment.setFloorNumber(apartmentDTOIn.getFloorNumber());
         apartment.setFurnished(apartmentDTOIn.getFurnished());
-        apartment.setAvailable(apartmentDTOIn.getAvailable());
         apartment.setAvailableFrom(apartmentDTOIn.getAvailableFrom());
         apartment.setAllowedTenantType(apartmentDTOIn.getAllowedTenantType());
         apartment.setWaterIncluded(apartmentDTOIn.getWaterIncluded());
@@ -133,9 +131,8 @@ public class ApartmentService {
         apartmentDTOOut.setBathrooms(apartment.getBathrooms());
         apartmentDTOOut.setArea(apartment.getArea());
         apartmentDTOOut.setFloorNumber(apartment.getFloorNumber());
-        apartmentDTOOut.setStatus(apartment.getStatus() == null ? null : apartment.getStatus().name());
+        apartmentDTOOut.setStatus(apartment.getStatus());
         apartmentDTOOut.setFurnished(apartment.getFurnished());
-        apartmentDTOOut.setAvailable(apartment.getAvailable());
         apartmentDTOOut.setAvailableFrom(apartment.getAvailableFrom());
         apartmentDTOOut.setAllowedTenantType(apartment.getAllowedTenantType());
         apartmentDTOOut.setWaterIncluded(apartment.getWaterIncluded());
@@ -239,7 +236,6 @@ public class ApartmentService {
             throw new ApiException("You are not authorized to this action!");
         }
 
-        apartment.setAvailable(false);
         apartment.setStatus(ApartmentStatus.UNDER_MAINTENANCE);
         apartmentRepository.save(apartment);
     }
@@ -261,7 +257,6 @@ public class ApartmentService {
             throw new ApiException("You are not authorized to this action!");
         }
 
-        apartment.setAvailable(true);
         apartment.setStatus(ApartmentStatus.AVAILABLE);
         apartmentRepository.save(apartment);
     }
@@ -291,7 +286,8 @@ public class ApartmentService {
     }
 
     public List<ApartmentDTOOut> searchApartments(Double minRent,Double maxRent, Integer bedrooms, String district, Boolean isFurnished){
-        List<Apartment> apartments = apartmentRepository.searchAvailableApartments(minRent, maxRent, bedrooms, district, isFurnished);
+        List<Apartment> apartments = apartmentRepository.searchAvailableApartments(
+                ApartmentStatus.AVAILABLE, minRent, maxRent, bedrooms, district, isFurnished);
 
         if(apartments.isEmpty()){
             throw new ApiException("No apartments were found matching your search criteria!");

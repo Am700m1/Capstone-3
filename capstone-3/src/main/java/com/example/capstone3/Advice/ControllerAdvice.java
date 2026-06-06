@@ -13,6 +13,8 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
@@ -31,15 +33,13 @@ public class ControllerAdvice {
     // duplicate
     @ExceptionHandler(SQLIntegrityConstraintViolationException.class)
     public ResponseEntity<?> SQLIntegrityConstraintViolationException(SQLIntegrityConstraintViolationException e) {
-        String message = e.getMessage();
-        return ResponseEntity.status(400).body(new ApiResponse(message));
+        return ResponseEntity.status(400).body(new ApiResponse("The request conflicts with existing data"));
     }
 
     // id entering when its generated
     @ExceptionHandler(StaleObjectStateException.class)
     public ResponseEntity<?> StaleObjectStateException(StaleObjectStateException e) {
-        String message = e.getMessage();
-        return ResponseEntity.status(400).body(new ApiResponse(message));
+        return ResponseEntity.status(400).body(new ApiResponse("The record was changed by another operation"));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -50,20 +50,17 @@ public class ControllerAdvice {
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<?> HttpMessageNotReadableException(HttpMessageNotReadableException e) {
-        String message = e.getMessage();
-        return ResponseEntity.status(400).body(new ApiResponse(message));
+        return ResponseEntity.status(400).body(new ApiResponse("Request body is invalid or contains an unsupported value"));
     }
 
     @ExceptionHandler(InputMismatchException.class)
     public ResponseEntity<?> InputMismatchException(InputMismatchException e) {
-        String message = e.getMessage();
-        return ResponseEntity.status(400).body(new ApiResponse(message));
+        return ResponseEntity.status(400).body(new ApiResponse("Request value has an invalid format"));
     }
 
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<?> NoResourceFoundException(NoResourceFoundException e) {
-        String message = e.getMessage();
-        return ResponseEntity.status(400).body(new ApiResponse(message));
+        return ResponseEntity.status(400).body(new ApiResponse("Requested resource was not found"));
     }
 
     // Server Validation Exception
@@ -77,29 +74,35 @@ public class ControllerAdvice {
     // wrong write SQL in @column Exception
     @ExceptionHandler(value = InvalidDataAccessResourceUsageException.class)
     public ResponseEntity<ApiResponse> InvalidDataAccessResourceUsageException(InvalidDataAccessResourceUsageException e) {
-        String msg = e.getMessage();
-        return ResponseEntity.status(200).body(new ApiResponse(msg));
+        return ResponseEntity.status(500).body(new ApiResponse("A database operation could not be completed"));
     }
 
     // Database Constraint Exception
     @ExceptionHandler(value = DataIntegrityViolationException.class)
     public ResponseEntity<ApiResponse> DataIntegrityViolationException(DataIntegrityViolationException e) {
-        String msg = e.getMessage();
-        return ResponseEntity.status(400).body(new ApiResponse(msg));
+        return ResponseEntity.status(400).body(new ApiResponse("The request conflicts with existing data"));
     }
 
     // Method not allowed Exception
     @ExceptionHandler(value = HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<ApiResponse> HttpRequestMethodNotSupportedException(HttpRequestMethodNotSupportedException e) {
-        String msg = e.getMessage();
-        return ResponseEntity.status(400).body(new ApiResponse(msg));
+        return ResponseEntity.status(400).body(new ApiResponse("HTTP method is not supported for this endpoint"));
     }
 
     // TypesMisMatch Exception
     @ExceptionHandler(value = MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ApiResponse> MethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException e) {
-        String msg = e.getMessage();
-        return ResponseEntity.status(400).body(new ApiResponse(msg));
+        return ResponseEntity.status(400).body(new ApiResponse("Request parameter has an invalid value"));
+    }
+
+    @ExceptionHandler(HttpClientErrorException.TooManyRequests.class)
+    public ResponseEntity<ApiResponse> handleTooManyRequests(HttpClientErrorException.TooManyRequests e) {
+        return ResponseEntity.status(400).body(new ApiResponse("AI service is temporarily unavailable. Please try again later."));
+    }
+
+    @ExceptionHandler(RestClientException.class)
+    public ResponseEntity<ApiResponse> handleRestClientException(RestClientException e) {
+        return ResponseEntity.status(400).body(new ApiResponse("External service is temporarily unavailable. Please try again later."));
     }
 
 
