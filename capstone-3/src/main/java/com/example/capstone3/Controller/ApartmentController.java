@@ -28,9 +28,9 @@ public class ApartmentController {
         return ResponseEntity.status(200).body(apartmentService.getApartment(id));
     }
 
-    @PostMapping("/add")
-    public ResponseEntity<?> addApartment(@RequestBody @Valid ApartmentDTOIn apartmentDTOIn) {
-        apartmentService.addApartment(apartmentDTOIn);
+    @PostMapping("/add/{ownerId}/{buildingId}")
+    public ResponseEntity<?> addApartment(@PathVariable Integer ownerId, @PathVariable Integer buildingId, @RequestBody @Valid ApartmentDTOIn apartmentDTOIn) {
+        apartmentService.addApartment(ownerId, buildingId, apartmentDTOIn);
         return ResponseEntity.status(200).body(new ApiResponse("Apartment added successfully"));
     }
 
@@ -58,11 +58,14 @@ public class ApartmentController {
     }
 
     @GetMapping("/dashboard/{ownerId}")
-    public ResponseEntity<java.util.Map<com.example.capstone3.Enums.ApartmentStatus, java.util.List<com.example.capstone3.DTO.Out.ApartmentDTOOut>>> getOwnerDashboard(@PathVariable Integer ownerId) {
+    public ResponseEntity<?> getOwnerDashboard(@PathVariable Integer ownerId) {
         return ResponseEntity.status(200).body(apartmentService.getOwnerDashboard(ownerId));
     }
 
     @GetMapping("/search")
+    public ResponseEntity<?> searchApartments(@RequestParam(required = false) Double minRent, @RequestParam(required = false) Double maxRent,
+                                              @RequestParam(required = false) Integer bedrooms, @RequestParam(required = false) String district,
+                                              @RequestParam(required = false) Boolean isFurnished) {
     public ResponseEntity<List<ApartmentDTOOut>> searchApartments(@RequestParam(required = false) Double minRent, @RequestParam(required = false) Double maxRent, @RequestParam(required = false) Integer bedrooms, @RequestParam(required = false) String district, @RequestParam(required = false) Boolean isFurnished) {
         return ResponseEntity.status(200).body(apartmentService.searchApartments(minRent, maxRent, bedrooms, district, isFurnished));
     }
@@ -73,4 +76,20 @@ public class ApartmentController {
     }
 
 
+
+    @PutMapping("/available/{ownerId}/{apartmentId}")
+    public ResponseEntity<?> makeApartmentAvailable(@PathVariable Integer ownerId, @PathVariable Integer apartmentId) {
+        apartmentService.toggleAvailableMode(ownerId, apartmentId);
+        return ResponseEntity.status(200).body(new ApiResponse("Apartment is now available"));
+    }
+
+    @GetMapping("/next-available/{apartmentId}")
+    public ResponseEntity<?> getNextAvailability(@PathVariable Integer apartmentId) {
+        return ResponseEntity.status(200).body(apartmentService.getNextAvailability(apartmentId));
+    }
+
+    @GetMapping("/available-on/{apartmentId}/{date}")
+    public ResponseEntity<?> checkAvailabilityOnDate(@PathVariable Integer apartmentId, @PathVariable LocalDate date) {
+        return ResponseEntity.status(200).body(apartmentService.checkAvailabilityOnDate(apartmentId, date));
+    }
 }

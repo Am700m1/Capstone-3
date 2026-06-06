@@ -30,19 +30,19 @@ public class Owner {
     @Column(name = "phone_number", nullable = false, unique = true, length = 20)
     private String phoneNumber;
 
-    @Column(name = "password", nullable = false)
-    private String password;
-
     @CurrentTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    // Lazy because building collections are not needed for basic owner responses.
     @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Building> buildings = new ArrayList<>();
 
+    // Lazy because apartment collections are loaded only for owner property workflows.
     @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Apartment> apartments = new ArrayList<>();
 
+    // Lazy because conversations are loaded only for messaging workflows.
     @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Conversation> conversations = new ArrayList<>();
 

@@ -6,7 +6,6 @@ import com.example.capstone3.DTO.Out.ApartmentReviewSummaryDTOOut;
 import com.example.capstone3.DTO.Out.ApartmentServicesDTOOut;
 import com.example.capstone3.DTO.Out.NeighborhoodSummaryDTOOut;
 import com.example.capstone3.DTO.Out.OwnerReputationSummaryDTOOut;
-import com.example.capstone3.DTO.Out.PriceSuggestionDTOOut;
 import com.example.capstone3.Models.Apartment;
 import com.example.capstone3.Models.Owner;
 import com.example.capstone3.Models.Review;
@@ -23,15 +22,17 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AiApartmentService {
 
-    private final ApartmentRepository      apartmentRepository;
-    private final ReviewRepository         reviewRepository;
-    private final OwnerRepository          ownerRepository;
-    private final OverpassLocationService  overpassLocationService;
-    private final AiService                aiService;
+    // Backend loads trusted facts; Gemini only writes summaries and comparisons.
+    private final ApartmentRepository apartmentRepository;
+    private final ReviewRepository reviewRepository;
+    private final OwnerRepository ownerRepository;
+    private final OverpassLocationService overpassLocationService;
+    private final AiService aiService;
 
     // ─── Apartment Review Summary ─────────────────────────────────────────────
 
-    public ApartmentReviewSummaryDTOOut getReviewSummary(Integer apartmentId) {
+    // Summarizes tenant reviews for one apartment using stored apartment facts.
+    public ApartmentReviewSummaryDTOOut getReviewSummary(Integer apartmentId, String language) {
         Apartment apartment = apartmentRepository.findApartmentById(apartmentId);
         if (apartment == null) {
             throw new ApiException("Apartment not found");
@@ -42,15 +43,15 @@ public class AiApartmentService {
             throw new ApiException("No reviews found for this apartment");
         }
 
-        String aiResponse = aiService.generateText(buildReviewSummaryPrompt(apartment, reviews));
+        String aiResponse = aiService.generateText(buildReviewSummaryPrompt(apartment, reviews), language);
 
         ApartmentReviewSummaryDTOOut response = new ApartmentReviewSummaryDTOOut();
-        response.setApartmentId(apartmentId);
-        response.setSummary(aiResponse);
+        response.setSummary(aiService.cleanAiText(aiResponse));
 
         return response;
     }
 
+    // Sends apartment details, ratings, and comments to Gemini for summarization.
     private String buildReviewSummaryPrompt(Apartment apartment, List<Review> reviews) {
         StringBuilder prompt = new StringBuilder();
 
@@ -106,7 +107,8 @@ public class AiApartmentService {
 
     // ─── Neighborhood Summary ─────────────────────────────────────────────────
 
-    public NeighborhoodSummaryDTOOut getNeighborhoodSummary(Integer apartmentId) {
+    // Combines apartment data with nearby services for a neighborhood summary.
+    public NeighborhoodSummaryDTOOut getNeighborhoodSummary(Integer apartmentId, String language) {
         Apartment apartment = apartmentRepository.findApartmentById(apartmentId);
         if (apartment == null) {
             throw new ApiException("Apartment not found");
@@ -118,15 +120,24 @@ public class AiApartmentService {
                 3000
         );
 
-        String aiResponse = aiService.generateText(buildNeighborhoodPrompt(apartment, amenities));
+        String aiResponse = aiService.generateText(buildNeighborhoodPrompt(apartment, amenities), language);
+
+        NeighborhoodSummaryDTOOut.NearbyCounts counts = new NeighborhoodSummaryDTOOut.NearbyCounts();
+        counts.setSchools(amenities.getSchoolCount());
+        counts.setSupermarkets(amenities.getSupermarketCount());
+        counts.setRestaurants(amenities.getRestaurantCount());
+        counts.setHospitals(amenities.getHospitalCount());
 
         NeighborhoodSummaryDTOOut response = new NeighborhoodSummaryDTOOut();
-        response.setApartmentId(apartmentId);
-        response.setSummary(aiResponse);
+        response.setDistrict(apartment.getBuilding().getDistrict());
+        response.setRadiusMetres(3000);
+        response.setNearbyCounts(counts);
+        response.setSummary(aiService.cleanAiText(aiResponse));
 
         return response;
     }
 
+    // Gives Gemini location, building, and Overpass service data to describe.
     private String buildNeighborhoodPrompt(Apartment apartment, ApartmentServicesDTOOut amenities) {
         StringBuilder prompt = new StringBuilder();
 
@@ -176,116 +187,9 @@ public class AiApartmentService {
         return prompt.toString();
     }
 
-    // ─── Rental Price Suggestion ──────────────────────────────────────────────
 
-    public PriceSuggestionDTOOut getPriceSuggestion(Integer apartmentId) {
-        Apartment apartment = apartmentRepository.findApartmentById(apartmentId);
-        if (apartment == null) {
-            throw new ApiException("Apartment not found");
-        }
-
-        ApartmentServicesDTOOut amenities = overpassLocationService.analyzeApartmentLocation(
-                apartment.getBuilding().getLatitude(),
-                apartment.getBuilding().getLongitude(),
-                3000
-        );
-
-        List<Review> reviews = reviewRepository.findReviewByApartmentId(apartmentId);
-
-        List<Apartment> similarApartments = apartmentRepository
-                .findByAvailableTrueAndBuilding_District(apartment.getBuilding().getDistrict())
-                .stream()
-                .filter(a -> !a.getId().equals(apartmentId)
-                        && a.getBedrooms().equals(apartment.getBedrooms())
-                        && Boolean.TRUE.equals(a.getFurnished()) == Boolean.TRUE.equals(apartment.getFurnished()))
-                .limit(5)
-                .toList();
-
-        String aiResponse = aiService.generateText(buildPriceSuggestionPrompt(apartment, amenities, reviews, similarApartments));
-
-        PriceSuggestionDTOOut response = new PriceSuggestionDTOOut();
-        response.setApartmentId(apartmentId);
-        response.setSuggestedPrice(extractSuggestedPrice(aiResponse));
-        response.setExplanation(aiResponse);
-
-        return response;
-    }
-
-    private String buildPriceSuggestionPrompt(Apartment apartment, ApartmentServicesDTOOut amenities,
-                                               List<Review> reviews, List<Apartment> similarApartments) {
-        StringBuilder prompt = new StringBuilder();
-
-        prompt.append("You are a real estate pricing expert in Saudi Arabia.\n\n");
-
-        prompt.append("=== APARTMENT DETAILS ===\n");
-        prompt.append("Title: ").append(apartment.getTitle()).append("\n");
-        prompt.append("District: ").append(apartment.getBuilding().getDistrict()).append("\n");
-        prompt.append("City: ").append(apartment.getBuilding().getCity()).append("\n");
-        prompt.append("Area: ").append(apartment.getArea()).append(" sqm\n");
-        prompt.append("Bedrooms: ").append(apartment.getBedrooms()).append("\n");
-        prompt.append("Bathrooms: ").append(apartment.getBathrooms()).append("\n");
-        prompt.append("Furnished: ").append(Boolean.TRUE.equals(apartment.getFurnished()) ? "Yes" : "No").append("\n");
-        prompt.append("Floor: ").append(apartment.getFloorNumber() != null ? apartment.getFloorNumber() : "Not specified").append("\n");
-        prompt.append("Allowed Tenant Type: ").append(apartment.getAllowedTenantType() != null ? apartment.getAllowedTenantType() : "All").append("\n");
-        prompt.append("Water Included: ").append(Boolean.TRUE.equals(apartment.getWaterIncluded()) ? "Yes" : "No").append("\n");
-        prompt.append("Internet Included: ").append(Boolean.TRUE.equals(apartment.getInternetIncluded()) ? "Yes" : "No").append("\n");
-        prompt.append("Electricity Included: ").append(Boolean.TRUE.equals(apartment.getElectricityIncluded()) ? "Yes" : "No").append("\n");
-        prompt.append("Parking: ").append(Boolean.TRUE.equals(apartment.getBuilding().getHasParking()) ? "Yes" : "No").append("\n");
-        prompt.append("Elevator: ").append(Boolean.TRUE.equals(apartment.getBuilding().getHasElevator()) ? "Yes" : "No").append("\n");
-        prompt.append("Security: ").append(Boolean.TRUE.equals(apartment.getBuilding().getHasSecurity()) ? "Yes" : "No").append("\n");
-        prompt.append("Pets Allowed: ").append(Boolean.TRUE.equals(apartment.getBuilding().getPetsAllowed()) ? "Yes" : "No").append("\n");
-
-        if (apartment.getDescription() != null && !apartment.getDescription().isBlank()) {
-            prompt.append("Description: ").append(apartment.getDescription()).append("\n");
-        }
-
-        if (!reviews.isEmpty()) {
-            double avgRating = reviews.stream().mapToInt(Review::getRating).average().orElse(0);
-            prompt.append("Average Rating: ").append(String.format("%.1f", avgRating)).append("/5 (")
-                    .append(reviews.size()).append(" reviews)\n");
-        } else {
-            prompt.append("Reviews: No reviews yet\n");
-        }
-
-        prompt.append("\n=== NEARBY SERVICES (within 3000m) ===\n");
-        prompt.append("Hospitals: ").append(amenities.getHospitalCount()).append("\n");
-        prompt.append("Schools: ").append(amenities.getSchoolCount()).append("\n");
-        prompt.append("Supermarkets: ").append(amenities.getSupermarketCount()).append("\n");
-        prompt.append("Pharmacies: ").append(amenities.getPharmacyCount()).append("\n");
-        prompt.append("Gyms: ").append(amenities.getGymCount()).append("\n");
-        prompt.append("Restaurants: ").append(amenities.getRestaurantCount()).append("\n");
-
-        if (!similarApartments.isEmpty()) {
-            prompt.append("\n=== SIMILAR APARTMENTS IN SAME DISTRICT (for reference) ===\n");
-            for (Apartment sim : similarApartments) {
-                prompt.append("- ").append(sim.getTitle())
-                        .append(" | ").append(sim.getBedrooms()).append(" bed")
-                        .append(" | ").append(sim.getArea()).append(" sqm")
-                        .append(" | Furnished: ").append(Boolean.TRUE.equals(sim.getFurnished()) ? "Yes" : "No")
-                        .append(" | SAR ").append(sim.getMonthlyRent()).append("/month\n");
-            }
-        }
-
-        prompt.append("\n=== OUTPUT INSTRUCTIONS ===\n");
-        prompt.append("Do not write greetings or introductions.\n");
-        prompt.append("Start your response with a line in this exact format: Suggested Price: SAR [min] - SAR [max] per month\n");
-        prompt.append("Then provide a short explanation of why this price range is appropriate,\n");
-        prompt.append("considering the location, size, amenities, nearby services, and similar apartments if provided.\n");
-        prompt.append("Use concise professional language.");
-
-        return prompt.toString();
-    }
-
-    // extracts the first line which contains the suggested price range
-    private String extractSuggestedPrice(String aiResponse) {
-        if (aiResponse == null || aiResponse.isBlank()) return "Not available";
-        String firstLine = aiResponse.split("\n")[0].trim();
-        return firstLine.startsWith("Suggested Price:") ? firstLine : "See explanation";
-    }
-
-    // ─── Owner Reputation Summary ─────────────────────────────────────────────
-
-    public OwnerReputationSummaryDTOOut getOwnerReputationSummary(Integer ownerId) {
+    // Summarizes an owner's reputation from apartments and tenant reviews.
+    public OwnerReputationSummaryDTOOut getOwnerReputationSummary(Integer ownerId, String language) {
         Owner owner = ownerRepository.findOwnerById(ownerId);
         if (owner == null) {
             throw new ApiException("Owner not found");
@@ -301,15 +205,15 @@ public class AiApartmentService {
             throw new ApiException("No reviews found for this owner's apartments");
         }
 
-        String aiResponse = aiService.generateText(buildOwnerReputationPrompt(owner, apartments, reviews));
+        String aiResponse = aiService.generateText(buildOwnerReputationPrompt(owner, apartments, reviews), language);
 
         OwnerReputationSummaryDTOOut response = new OwnerReputationSummaryDTOOut();
-        response.setOwnerId(ownerId);
-        response.setSummary(aiResponse);
+        response.setSummary(aiService.cleanAiText(aiResponse));
 
         return response;
     }
 
+    // Gives Gemini owner facts and review evidence for reputation analysis.
     private String buildOwnerReputationPrompt(Owner owner, List<Apartment> apartments, List<Review> reviews) {
         StringBuilder prompt = new StringBuilder();
 
@@ -371,11 +275,14 @@ public class AiApartmentService {
         return prompt.toString();
     }
 
-    // ─── Apartment Comparison ─────────────────────────────────────────────────
 
-    public ApartmentComparisonDTOOut compareApartments(List<Integer> apartmentIds) {
+    // get the selected apartments before Gemini compares their supplied facts.
+    public ApartmentComparisonDTOOut compareApartments(List<Integer> apartmentIds, String language) {
         if (apartmentIds == null || apartmentIds.size() < 2 || apartmentIds.size() > 3) {
             throw new ApiException("Please provide 2 or 3 apartment IDs to compare");
+        }
+        if (apartmentIds.stream().distinct().count() != apartmentIds.size()) {
+            throw new ApiException("An apartment cannot be compared with itself");
         }
 
         List<Apartment> apartments = new ArrayList<>();
@@ -387,15 +294,15 @@ public class AiApartmentService {
             apartments.add(apt);
         }
 
-        String aiResponse = aiService.generateText(buildComparisonPrompt(apartments));
+        String aiResponse = aiService.generateText(buildComparisonPrompt(apartments), language);
 
         ApartmentComparisonDTOOut response = new ApartmentComparisonDTOOut();
-        response.setApartmentIds(apartmentIds);
-        response.setComparison(aiResponse);
+        response.setComparison(normalizeComparisonText(aiResponse));
 
         return response;
     }
 
+    // Limits Gemini to the apartment, owner, review, and service data provided.
     private String buildComparisonPrompt(List<Apartment> apartments) {
         StringBuilder prompt = new StringBuilder();
 
@@ -412,7 +319,7 @@ public class AiApartmentService {
             }
             double avgRating = reviews.isEmpty() ? 0 : (double) ratingSum / reviews.size();
 
-            prompt.append("=== APARTMENT ").append(i + 1).append(": ").append(apt.getTitle()).append(" ===\n");
+            prompt.append("Apartment ").append(i + 1).append(": ").append(apt.getTitle()).append("\n");
             prompt.append("District: ").append(apt.getBuilding().getDistrict()).append("\n");
             prompt.append("City: ").append(apt.getBuilding().getCity()).append("\n");
             prompt.append("Building: ").append(apt.getBuilding().getName()).append("\n");
@@ -491,23 +398,28 @@ public class AiApartmentService {
             prompt.append("\n");
         }
 
-        prompt.append("=== OUTPUT INSTRUCTIONS ===\n");
-        prompt.append("Do not write greetings or introductions. Start directly with the comparison.\n");
-        prompt.append("Use this exact structure:\n\n");
-        prompt.append("## Apartment Comparison\n\n");
+        prompt.append("Output instructions\n");
+        prompt.append("Return one clean plain-text comparison block.\n");
+        prompt.append("Do not use Markdown, headings, bold text, hash symbols, or bullet lists.\n");
+        prompt.append("Do not mention apartment IDs, backend scores, or ranking logic.\n");
+        prompt.append("Use one short paragraph for each apartment and one line for each conclusion.\n");
+        prompt.append("Use this exact style:\n");
         for (int i = 0; i < apartments.size(); i++) {
-            prompt.append("### Apartment ").append(i + 1).append(": ").append(apartments.get(i).getTitle()).append("\n");
-            prompt.append("Strengths:\n- ...\n- ...\n");
-            prompt.append("Weaknesses:\n- ...\n- ...\n\n");
+            prompt.append("Apartment ").append(i + 1)
+                    .append(": Summarize the main strengths in one sentence. Weaknesses: summarize the main weaknesses.\n");
         }
-        prompt.append("### Best for Families\n...\n\n");
-        prompt.append("### Best Value for Money\n...\n\n");
-        prompt.append("### Best Location\n...\n\n");
-        prompt.append("### Final Recommendation\n...\n\n");
-        prompt.append("### Overall Winner\n...\n\n");
+        prompt.append("Best for families: State which apartment fits families best and why.\n");
+        prompt.append("Best value: State which apartment offers the best value and why.\n");
+        prompt.append("Final recommendation: State which renter type each apartment suits best.\n");
         prompt.append("Base every conclusion strictly on the apartment data provided above.\n");
-        prompt.append("Use concise professional language.");
+        prompt.append("Use concise professional language with no repeated blank lines.");
 
         return prompt.toString();
+    }
+
+    // Remove extra spacing so the comparison stays readable in JSON responses.
+    private String normalizeComparisonText(String comparison) {
+        if (comparison == null) return "";
+        return aiService.cleanAiText(comparison);
     }
 }

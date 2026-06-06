@@ -18,12 +18,16 @@ public class Message {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    // Lazy because conversation details are not always needed when loading a message.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "conversation_id", nullable = false)
     private Conversation conversation;
 
     @Column(name = "content", nullable = false, columnDefinition = "TEXT")
     private String content;
+
+    @Column(name = "sender_id", nullable = false)
+    private Integer senderId;
 
     @CurrentTimestamp
     @Column(name = "sent_at", nullable = false, updatable = false)

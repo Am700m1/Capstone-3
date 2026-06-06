@@ -5,6 +5,5 @@ import lombok.Data;
 @Data
 public class ApartmentReviewSummaryDTOOut {
 
-    private Integer apartmentId;
     private String summary;
 }

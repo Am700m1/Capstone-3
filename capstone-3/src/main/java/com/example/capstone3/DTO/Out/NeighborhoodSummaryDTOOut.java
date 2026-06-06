@@ -5,6 +5,16 @@ import lombok.Data;
 @Data
 public class NeighborhoodSummaryDTOOut {
 
-    private Integer apartmentId;
+    private String district;
+    private Integer radiusMetres;
+    private NearbyCounts nearbyCounts;
     private String summary;
+
+    @Data
+    public static class NearbyCounts {
+        private int schools;
+        private int supermarkets;
+        private int restaurants;
+        private int hospitals;
+    }
 }

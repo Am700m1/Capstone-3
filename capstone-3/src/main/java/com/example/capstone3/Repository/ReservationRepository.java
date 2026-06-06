@@ -5,7 +5,7 @@ import com.example.capstone3.Models.Reservation;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -19,5 +19,9 @@ public interface ReservationRepository extends JpaRepository<Reservation, Intege
 
     List<Reservation> findReservationsByUser_Id(Integer userId);
 
-    List<Reservation> findByStatusAndReservationDateBefore(ReservationStatus status, LocalDate reservationDateBefore);
+    List<Reservation> findByStatusAndCreatedAtBefore(ReservationStatus status, LocalDateTime createdAtBefore);
+
+    boolean existsByApartment_IdAndStatus(Integer apartmentId, ReservationStatus status);
+
+    List<Reservation> findReservationsByApartment_IdAndStatus(Integer apartmentId, ReservationStatus status);
 }

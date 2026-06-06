@@ -1,5 +1,6 @@
 package com.example.capstone3.DTO.Out;
 
+import com.example.capstone3.Enums.ApartmentStatus;
 import lombok.Data;
 
 import java.time.LocalDate;
@@ -9,23 +10,22 @@ import java.util.List;
 public class ApartmentDTOOut {
 
     private Integer id;
+    private String title;
+    private String description;
     private Integer buildingId;
     private Integer ownerId;
     private String district;
-    private String title;
-    private String description;
     private Double monthlyRent;
     private Integer bedrooms;
     private Integer bathrooms;
     private Double area;
     private Integer floorNumber;
-    private String status;
     private Boolean furnished;
-    private Boolean available;
     private LocalDate availableFrom;
     private String allowedTenantType;
     private Boolean waterIncluded;
     private Boolean internetIncluded;
     private Boolean electricityIncluded;
+    private ApartmentStatus status;
     private List<ApartmentImageDTOOut> images;
 }

@@ -35,32 +35,38 @@ public class MaintenanceRequestController {
         return ResponseEntity.status(200).body(maintenanceRequestService.getApartmentMaintenanceRequests(apartmentId));
     }
 
+    // Generates an AI summary of maintenance patterns for a building.
     @GetMapping("/building-summary/{buildingId}")
-    public ResponseEntity<?> getBuildingMaintenanceSummary(@PathVariable Integer buildingId) {
-        return ResponseEntity.status(200).body(maintenanceRequestService.getBuildingMaintenanceSummary(buildingId));
+    public ResponseEntity<?> getBuildingMaintenanceSummary(@PathVariable Integer buildingId,
+                                                           @RequestParam(defaultValue = "EN") String language) {
+        return ResponseEntity.status(200).body(maintenanceRequestService.getBuildingMaintenanceSummary(buildingId, language));
     }
 
-    @PostMapping("/add")
-    public ResponseEntity<?> addMaintenanceRequest(@RequestBody @Valid MaintenanceRequestDTOIn dto) {
-        maintenanceRequestService.createMaintenanceRequest(dto.getUserId(), dto.getApartmentId(), dto);
+    // Creates a request and uses AI to classify its category and priority.
+    @PostMapping("/add/{userId}/{apartmentId}")
+    public ResponseEntity<?> addMaintenanceRequest(@PathVariable Integer userId, @PathVariable Integer apartmentId,
+                                                   @RequestBody @Valid MaintenanceRequestDTOIn dto,
+                                                   @RequestParam(defaultValue = "EN") String language) {
+        maintenanceRequestService.createMaintenanceRequest(userId, apartmentId, dto, language);
         return ResponseEntity.status(200).body(new ApiResponse("Maintenance request created successfully"));
     }
 
-    @PutMapping("/{ownerId}/start/{requestId}")
+    @PutMapping("/start/{ownerId}/{requestId}")
     public ResponseEntity<?> startMaintenanceRequest(@PathVariable Integer ownerId, @PathVariable Integer requestId) {
         maintenanceRequestService.startMaintenanceRequest(ownerId, requestId);
         return ResponseEntity.status(200).body(new ApiResponse("Maintenance request started"));
     }
 
-    @PutMapping("/{ownerId}/complete/{requestId}")
+    @PutMapping("/complete/{ownerId}/{requestId}")
     public ResponseEntity<?> completeMaintenanceRequest(@PathVariable Integer ownerId, @PathVariable Integer requestId) {
         maintenanceRequestService.completeMaintenanceRequest(ownerId, requestId);
         return ResponseEntity.status(200).body(new ApiResponse("Maintenance request completed"));
     }
 
     @PutMapping("/update/{id}")
-    public ResponseEntity<?> updateMaintenanceRequest(@PathVariable Integer id, @RequestBody @Valid MaintenanceRequestDTOIn dto) {
-        maintenanceRequestService.updateMaintenanceRequest(id, dto);
+    public ResponseEntity<?> updateMaintenanceRequest(@PathVariable Integer id, @RequestBody @Valid MaintenanceRequestDTOIn dto,
+                                                      @RequestParam(defaultValue = "EN") String language) {
+        maintenanceRequestService.updateMaintenanceRequest(id, dto, language);
         return ResponseEntity.status(200).body(new ApiResponse("Maintenance request updated successfully"));
     }
 

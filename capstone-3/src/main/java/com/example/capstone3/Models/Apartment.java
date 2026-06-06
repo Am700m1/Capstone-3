@@ -21,10 +21,12 @@ public class Apartment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    // Lazy because building details are not always needed when loading an apartment.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "building_id", nullable = false)
     private Building building;
 
+    // Lazy because owner details are not always needed when loading an apartment.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", nullable = false)
     private Owner owner;
@@ -57,9 +59,6 @@ public class Apartment {
     @Column(name = "furnished")
     private Boolean furnished;
 
-    @Column(name = "available")
-    private Boolean available;
-
     @Column(name = "available_from")
     private LocalDate availableFrom;
 
@@ -75,18 +74,23 @@ public class Apartment {
     @Column(name = "electricity_included")
     private Boolean electricityIncluded;
 
-    @OneToMany(mappedBy = "apartment", cascade = CascadeType.ALL)
+    // Lazy because apartment images are only needed in detailed apartment responses.
+    @OneToMany(mappedBy = "apartment", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ApartmentImage> images = new ArrayList<>();
 
+    // Lazy because reservation history is not needed for most apartment operations.
     @OneToMany(mappedBy = "apartment", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Reservation> reservations = new ArrayList<>();
 
+    // Lazy because reviews are loaded only for review and analysis operations.
     @OneToMany(mappedBy = "apartment", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Review> reviews = new ArrayList<>();
 
+    // Lazy because maintenance requests are loaded only for maintenance workflows.
     @OneToMany(mappedBy = "apartment", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<MaintenanceRequest> maintenanceRequests = new ArrayList<>();
 
+    // Lazy because conversations are not needed when loading apartment details.
     @OneToMany(mappedBy = "apartment", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Conversation> conversations = new ArrayList<>();
 }

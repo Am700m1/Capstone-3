@@ -17,21 +17,22 @@ public class UserPreference {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    // Lazy because full user details are not needed when loading preferences.
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
 
-    @Column(name = "work_latitude", nullable = false)
+    @Column(name = "work_latitude")
     private Double workLatitude;
 
-    @Column(name = "work_longitude", nullable = false)
+    @Column(name = "work_longitude")
     private Double workLongitude;
+
+    @Column(name = "workplace_name", length = 200)
+    private String workplaceName;
 
     @Column(name = "max_budget", nullable = false)
     private Double maxBudget;
-
-    @Column(name = "max_commute_minutes")
-    private Integer maxCommuteMinutes;
 
     @Column(name = "requires_parking")
     private Boolean requiresParking;
@@ -51,24 +52,24 @@ public class UserPreference {
     // instead of boolean and to be very accurate
     // enumtype.string so its entered as string
     @Enumerated(EnumType.STRING)
-    @Column(name = "gym_preference", length = 20)
-    private PreferenceLevel gymPreference;
+    @Column(name = "gym_preference", nullable = false, length = 20)
+    private PreferenceLevel gymPreference = PreferenceLevel.NOT_IMPORTANT;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "cafes_preference", length = 20)
-    private PreferenceLevel cafesPreference;
+    @Column(name = "cafes_preference", nullable = false, length = 20)
+    private PreferenceLevel cafesPreference = PreferenceLevel.NOT_IMPORTANT;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "hospital_preference", length = 20)
-    private PreferenceLevel hospitalPreference;
+    @Column(name = "hospital_preference", nullable = false, length = 20)
+    private PreferenceLevel hospitalPreference = PreferenceLevel.NOT_IMPORTANT;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "school_preference", length = 20)
-    private PreferenceLevel schoolPreference;
+    @Column(name = "school_preference", nullable = false, length = 20)
+    private PreferenceLevel schoolPreference = PreferenceLevel.NOT_IMPORTANT;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "public_transport_preference", length = 20)
-    private PreferenceLevel publicTransportPreference;
+    @Column(name = "public_transport_preference", nullable = false, length = 20)
+    private PreferenceLevel publicTransportPreference = PreferenceLevel.NOT_IMPORTANT;
 
     @Column(name = "preferred_bedrooms")
     private Integer preferredBedrooms;

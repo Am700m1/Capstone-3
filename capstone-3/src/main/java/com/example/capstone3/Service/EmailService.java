@@ -15,6 +15,10 @@ public class EmailService {
     private final JavaMailSender mailSender;
 
     public void sendEmail(String to, String subject, String message) {
+
+        // SimpleMailMessage stores the recipient, subject, and plain-text content.
+        SimpleMailMessage mail = new SimpleMailMessage();
+
         org.springframework.mail.SimpleMailMessage mail = new org.springframework.mail.SimpleMailMessage();
         mail.setTo(to);
         mail.setSubject(subject);

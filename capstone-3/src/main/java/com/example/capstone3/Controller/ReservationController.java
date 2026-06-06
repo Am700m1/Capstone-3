@@ -25,10 +25,11 @@ public class ReservationController {
         return ResponseEntity.status(200).body(reservationService.getReservation(id));
     }
 
-    @PostMapping("/add")
-    public ResponseEntity<?> addReservation(@RequestBody @Valid ReservationDTOIn reservationDTOIn) {
-        reservationService.addReservation(reservationDTOIn);
-        return ResponseEntity.status(200).body(new ApiResponse("Reservation added successfully"));
+    @PostMapping("/add/{userId}/{apartmentId}")
+    public ResponseEntity<?> addReservation(@PathVariable Integer userId,
+                                            @PathVariable Integer apartmentId,
+                                            @RequestBody @Valid ReservationDTOIn reservationDTOIn) {
+        return ResponseEntity.status(200).body(reservationService.addReservation(userId, apartmentId, reservationDTOIn));
     }
 
     @PutMapping("/update/{id}")
