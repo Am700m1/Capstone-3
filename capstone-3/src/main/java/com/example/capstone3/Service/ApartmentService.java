@@ -2,11 +2,10 @@ package com.example.capstone3.Service;
 
 import com.example.capstone3.Api.ApiException;
 import com.example.capstone3.DTO.In.ApartmentDTOIn;
-import com.example.capstone3.DTO.Out.ApartmentDTOOut;
-import com.example.capstone3.DTO.Out.ApartmentImageDTOOut;
-import com.example.capstone3.DTO.Out.UnderpricedApartmentDTOOut;
+import com.example.capstone3.DTO.Out.*;
 import com.example.capstone3.Enums.ApartmentStatus;
 import com.example.capstone3.Enums.ContractStatus;
+import com.example.capstone3.Enums.ReservationStatus;
 import com.example.capstone3.Enums.ReservationStatus;
 import com.example.capstone3.Models.*;
 import com.example.capstone3.Repository.ApartmentRepository;
@@ -18,6 +17,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.ArrayList;
@@ -32,6 +33,7 @@ public class ApartmentService {
     private final OwnerRepository ownerRepository;
     private final ContractRepository contractRepository;
     private final ReservationRepository reservationRepository;
+    private final AiService aiService;
 
     public List<ApartmentDTOOut> getAll() {
         List<ApartmentDTOOut> apartmentDTOOuts = new ArrayList<>();
@@ -212,6 +214,137 @@ public class ApartmentService {
     }
 
 
+    public List<LowRatedApartmentDTOOut> getLowRatedApartmentsByBuilding(Integer ownerId, Integer buildingId) {
+        Owner owner = ownerRepository.findOwnerById(ownerId);
+        if (owner == null) {
+            throw new ApiException("Owner not found");
+        }
+
+        Building building = buildingRepository.findBuildingById(buildingId);
+        if (building == null) {
+            throw new ApiException("Building not found");
+        }
+
+        // Security check: owner must own this building
+        if (!building.getOwner().getId().equals(ownerId)) {
+            throw new ApiException("You do not have permission to view this building");
+        }
+
+        List<LowRatedApartmentDTOOut> result = new ArrayList<>();
+
+        for (Apartment apartment : building.getApartments()) {
+
+            List<Review> reviews = apartment.getReviews();
+            if (reviews.isEmpty()) continue;
+
+            // Calculate average rating
+            double totalRating = 0;
+            for (Review review : reviews) {
+                totalRating += review.getRating();
+            }
+            double avgRating = totalRating / reviews.size();
+
+            // Only include apartments with average rating below 2.0
+            if (avgRating >= 2.0) continue;
+
+            // Build comments string to send to AI
+            StringBuilder comments = new StringBuilder();
+            for (Review review : reviews) {
+                comments.append("- ").append(review.getComment()).append("\n");
+            }
+
+            // Call AI to summarize the issues
+            String aiSummary = getAiSummary(apartment.getTitle(), comments.toString());
+
+            LowRatedApartmentDTOOut dto = new LowRatedApartmentDTOOut();
+            dto.setId(apartment.getId());
+            dto.setTitle(apartment.getTitle());
+            dto.setDistrict(building.getDistrict());
+            dto.setMonthlyRent(apartment.getMonthlyRent());
+            dto.setBedrooms(apartment.getBedrooms());
+            dto.setBathrooms(apartment.getBathrooms());
+            dto.setAverageRating(Math.round(avgRating * 100.0) / 100.0);
+            dto.setAiSummary(aiSummary);
+            result.add(dto);
+        }
+
+        if (result.isEmpty()) {
+            throw new ApiException("No low rated apartments found in this building");
+        }
+
+        result.sort(Comparator.comparingDouble(LowRatedApartmentDTOOut::getAverageRating));
+        return result;
+    }
+
+    public List<FlaggedApartmentDTOOut> getFlaggedApartmentsByCancellationRate(Integer ownerId) {
+        Owner owner = ownerRepository.findOwnerById(ownerId);
+        if (owner == null) {
+            throw new ApiException("Owner not found");
+        }
+
+        List<Apartment> apartments = apartmentRepository.findApartmentsByOwnerId(ownerId);
+        if (apartments.isEmpty()) {
+            throw new ApiException("No apartments found for this owner");
+        }
+
+        // Step 1: Calculate cancellation rate for each apartment
+        // Rate = total cancellations / total reservations
+        List<FlaggedApartmentDTOOut> allApartmentStats = new ArrayList<>();
+        for (Apartment apartment : apartments) {
+            int total = apartment.getReservations().size();
+            if (total == 0) continue; // skip apartments with no reservations
+
+            int cancelled = 0;
+            for (Reservation r : apartment.getReservations()) {
+                if (r.getStatus() == ReservationStatus.CANCELLED) cancelled++;
+            }
+
+            double rate = (double) cancelled / total;
+
+            FlaggedApartmentDTOOut dto = new FlaggedApartmentDTOOut();
+            dto.setId(apartment.getId());
+            dto.setTitle(apartment.getTitle());
+            dto.setDistrict(apartment.getBuilding().getDistrict());
+            dto.setMonthlyRent(apartment.getMonthlyRent());
+            dto.setTotalReservations(total);
+            dto.setTotalCancellations(cancelled);
+            dto.setCancellationRate(Math.round(rate * 100.0) / 100.0);
+            allApartmentStats.add(dto);
+        }
+
+        // Step 2: Calculate the average cancellation rate across all apartments
+        // This is used as a baseline to detect outliers
+        double averageRate = allApartmentStats.stream()
+                .mapToDouble(FlaggedApartmentDTOOut::getCancellationRate)
+                .average().orElse(0);
+
+        // Step 3: Flag apartments whose cancellation rate is more than 2x the average
+        // 2x is used to identify significant outliers, not just slightly above average
+        List<FlaggedApartmentDTOOut> flagged = new ArrayList<>();
+        for (FlaggedApartmentDTOOut dto : allApartmentStats) {
+            if (dto.getCancellationRate() > averageRate * 2) {
+                dto.setAverageRate(Math.round(averageRate * 100.0) / 100.0);
+                flagged.add(dto);
+            }
+        }
+
+        if (flagged.isEmpty()) {
+            throw new ApiException("No flagged apartments found");
+        }
+
+        // Step 4: Sort by cancellation rate descending so worst apartments appear first
+        flagged.sort(Comparator.comparingDouble(FlaggedApartmentDTOOut::getCancellationRate).reversed());
+        return flagged;
+    }
+
+    private String getAiSummary(String apartmentTitle, String comments) {
+        String prompt = "You are analyzing tenant reviews for an apartment called \"" + apartmentTitle + "\".\n" +
+                "Here are the review comments:\n" + comments + "\n" +
+                "Summarize the main issues tenants are complaining about in one sentence starting with \"Main issues: \"";
+        return aiService.generateText(prompt);
+    }
+
+
     public void toggleMaintenanceMode(Integer ownerId, Integer apartmentId){
         Owner owner = ownerRepository.findOwnerById(ownerId);
         Apartment apartment = apartmentRepository.findApartmentById(apartmentId);
@@ -252,6 +385,7 @@ public class ApartmentService {
             throw new ApiException("Only apartments under maintenance can be made available");
         }
 
+        apartment.setAvailable(true);
         apartment.setStatus(ApartmentStatus.AVAILABLE);
         apartmentRepository.save(apartment);
     }

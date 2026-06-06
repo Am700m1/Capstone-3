@@ -8,11 +8,16 @@ import com.example.capstone3.Enums.ContractStatus;
 import com.example.capstone3.Enums.ReservationStatus;
 import com.example.capstone3.Models.*;
 import com.example.capstone3.Repository.*;
+import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
+import jakarta.mail.MessagingException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayOutputStream;
+
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +32,8 @@ public class ContractService {
     private final UserRepository userRepository;
     private final ApartmentRepository apartmentRepository;
     private final OwnerRepository ownerRepository;
+    private final EmailService emailService;
+    private final WhatsAppService whatsAppService;
 
     private final AiService aiService;
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
@@ -202,6 +209,8 @@ public class ContractService {
 
         apartment.setStatus(ApartmentStatus.RENTED);
         apartmentRepository.save(apartment);
+
+        whatsAppService.notifyOwnerContractAccepted(apartment.getOwner(), apartment, user);
     }
 
 
@@ -236,6 +245,8 @@ public class ContractService {
         Apartment apartment = apartmentRepository.findApartmentById(contract.getReservation().getApartment().getId());
         apartment.setStatus(ApartmentStatus.AVAILABLE);
         apartmentRepository.save(apartment);
+
+        whatsAppService.notifyOwnerContractRejected(apartment.getOwner(), apartment, user);
     }
 
 
@@ -318,6 +329,8 @@ public class ContractService {
         Apartment apartment = contract.getReservation().getApartment();
         apartment.setStatus(ApartmentStatus.UNDER_MAINTENANCE);
         apartmentRepository.save(apartment);
+
+        whatsAppService.notifyTenantContractEnded(reservation.getUser(), apartment);
     }
 
 
@@ -410,8 +423,8 @@ public class ContractService {
             apartmentRepository.save(apartment);
 
             // 5. Trigger Notifications
-            sendEndRentalNotificationToOwner(apartment.getOwner(), apartment);
-            sendEndRentalNotificationToUser(reservation.getUser(), apartment);
+            whatsAppService.notifyOwnerContractEnded(apartment.getOwner(), apartment);
+            whatsAppService.notifyTenantContractEnded(reservation.getUser(), apartment);
         }
 
         System.out.println("Automated Check: Processed and closed " + expiredContracts.size() + " expired contracts.");
@@ -419,18 +432,131 @@ public class ContractService {
 
     // --- NOTIFICATION HOLDING PLACES ---
 
-    private void sendEndRentalNotificationToOwner(Owner owner, Apartment apartment) {
-        // TODO: Implement Email / WhatsApp integration here in the future
-        System.out.println(">> SMS/EMAIL TO OWNER (" + owner.getPhoneNumber() + " / " + owner.getEmail() + "): " +
-                "The contract for apartment '" + apartment.getTitle() + "' has ended. " +
-                "The system has automatically placed the apartment UNDER_MAINTENANCE for your inspection.");
-    }
 
-    private void sendEndRentalNotificationToUser(User user, Apartment apartment) {
-        // TODO: Implement Email / WhatsApp integration here in the future
-        System.out.println(">> SMS/EMAIL TO TENANT (" + user.getPhoneNumber() + " / " + user.getEmail() + "): " +
-                "Dear " + user.getFullName() + ", your rental contract for '" + apartment.getTitle() + "' has officially ended today. " +
-                "Please make sure to hand over the apartment and submit any final reviews.");
+    public void generateAndEmailContractPdf(Integer contractId) throws IOException, MessagingException {
+        Contract contract = contractRepository.findContractById(contractId);
+        if (contract == null) {
+            throw new ApiException("Contract not found");
+        }
+
+        String tenantName     = contract.getReservation().getUser().getFullName();
+        String tenantEmail    = contract.getReservation().getUser().getEmail();
+        String tenantPhone    = contract.getReservation().getUser().getPhoneNumber();
+        String apartmentTitle = contract.getReservation().getApartment().getTitle();
+        String contractNum    = contract.getContractNumber();
+        String monthlyRent    = String.valueOf(contract.getMonthlyRent());
+        String ownerName      = contract.getReservation().getApartment().getBuilding().getOwner().getFullName();
+        String ownerEmail     = contract.getReservation().getApartment().getBuilding().getOwner().getEmail();
+        String ownerPhone     = contract.getReservation().getApartment().getBuilding().getOwner().getPhoneNumber();
+        String buildingName   = contract.getReservation().getApartment().getBuilding().getName();
+        String district       = contract.getReservation().getApartment().getBuilding().getDistrict();
+        String startDate      = contract.getStartDate().toString();
+        String endDate        = contract.getEndDate().toString();
+        String secDeposit     = contract.getSecurityDeposit() != null ? String.valueOf(contract.getSecurityDeposit()) : "N/A";
+        String signedDate     = contract.getSignedDate() != null ? contract.getSignedDate().toString() : "Not signed yet";
+        String status         = contract.getContractStatus().toString();
+        String signed         = Boolean.TRUE.equals(contract.getSigned()) ? "Yes" : "No";
+        String reservationMsg = contract.getReservation().getMessage() != null ? contract.getReservation().getMessage() : "N/A";
+
+        Apartment apt         = contract.getReservation().getApartment();
+        String furnished      = Boolean.TRUE.equals(apt.getFurnished()) ? "Yes" : "No";
+        String waterIncluded  = Boolean.TRUE.equals(apt.getWaterIncluded()) ? "Yes" : "No";
+        String internetIncluded   = Boolean.TRUE.equals(apt.getInternetIncluded()) ? "Yes" : "No";
+        String electricityIncluded = Boolean.TRUE.equals(apt.getElectricityIncluded()) ? "Yes" : "No";
+        String allowedTenantType  = apt.getAllowedTenantType() != null ? apt.getAllowedTenantType() : "N/A";
+        String floorNumber        = apt.getFloorNumber() != null ? String.valueOf(apt.getFloorNumber()) : "N/A";
+
+        Building building     = contract.getReservation().getApartment().getBuilding();
+        String hasParking     = Boolean.TRUE.equals(building.getHasParking()) ? "Yes" : "No";
+        String hasElevator    = Boolean.TRUE.equals(building.getHasElevator()) ? "Yes" : "No";
+        String hasSecurity    = Boolean.TRUE.equals(building.getHasSecurity()) ? "Yes" : "No";
+        String petsAllowed    = Boolean.TRUE.equals(building.getPetsAllowed()) ? "Yes" : "No";
+
+        String pdfHtml = "<html>" +
+                "<head>" +
+                "<style>" +
+                "body { font-family: Arial, sans-serif; padding: 40px; color: #2d3748; }" +
+                "h1 { color: #1a365d; font-size: 24px; margin-bottom: 5px; text-align: center; }" +
+                ".subtitle { color: #718096; font-size: 13px; text-align: center; }" +
+                ".section-title { background-color: #1a365d; color: white; padding: 8px 12px; margin-top: 25px; font-size: 14px; }" +
+                "table { width: 100%; border-collapse: collapse; }" +
+                "td { padding: 10px 12px; border: 1px solid #e2e8f0; font-size: 13px; }" +
+                ".label { font-weight: bold; background-color: #f7fafc; width: 40%; }" +
+                ".footer { margin-top: 40px; font-size: 12px; color: #718096; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 15px; }" +
+                "</style>" +
+                "</head>" +
+                "<body>" +
+                "<h1>OFFICIAL LEASE AGREEMENT</h1>" +
+                "<div class='subtitle'>Contract No: " + contractNum + " | Status: " + status + "</div>" +
+
+                "<div class='section-title'>PROPERTY INFORMATION</div>" +
+                "<table>" +
+                "<tr><td class='label'>Building Name</td><td>" + buildingName + "</td></tr>" +
+                "<tr><td class='label'>Apartment</td><td>" + apartmentTitle + "</td></tr>" +
+                "<tr><td class='label'>District</td><td>" + district + "</td></tr>" +
+                "<tr><td class='label'>Floor Number</td><td>" + floorNumber + "</td></tr>" +
+                "<tr><td class='label'>Allowed Tenant Type</td><td>" + allowedTenantType + "</td></tr>" +
+                "</table>" +
+
+                "<div class='section-title'>BUILDING FACILITIES</div>" +
+                "<table>" +
+                "<tr><td class='label'>Parking</td><td>" + hasParking + "</td></tr>" +
+                "<tr><td class='label'>Elevator</td><td>" + hasElevator + "</td></tr>" +
+                "<tr><td class='label'>Security</td><td>" + hasSecurity + "</td></tr>" +
+                "<tr><td class='label'>Pets Allowed</td><td>" + petsAllowed + "</td></tr>" +
+                "</table>" +
+
+                "<div class='section-title'>APARTMENT INCLUSIONS</div>" +
+                "<table>" +
+                "<tr><td class='label'>Furnished</td><td>" + furnished + "</td></tr>" +
+                "<tr><td class='label'>Water Included</td><td>" + waterIncluded + "</td></tr>" +
+                "<tr><td class='label'>Internet Included</td><td>" + internetIncluded + "</td></tr>" +
+                "<tr><td class='label'>Electricity Included</td><td>" + electricityIncluded + "</td></tr>" +
+                "</table>" +
+
+                "<div class='section-title'>OWNER INFORMATION</div>" +
+                "<table>" +
+                "<tr><td class='label'>Owner Name</td><td>" + ownerName + "</td></tr>" +
+                "<tr><td class='label'>Email</td><td>" + ownerEmail + "</td></tr>" +
+                "<tr><td class='label'>Phone</td><td>" + ownerPhone + "</td></tr>" +
+                "</table>" +
+
+                "<div class='section-title'>TENANT INFORMATION</div>" +
+                "<table>" +
+                "<tr><td class='label'>Tenant Name</td><td>" + tenantName + "</td></tr>" +
+                "<tr><td class='label'>Email</td><td>" + tenantEmail + "</td></tr>" +
+                "<tr><td class='label'>Phone</td><td>" + tenantPhone + "</td></tr>" +
+                "</table>" +
+
+                "<div class='section-title'>CONTRACT TERMS</div>" +
+                "<table>" +
+                "<tr><td class='label'>Start Date</td><td>" + startDate + "</td></tr>" +
+                "<tr><td class='label'>End Date</td><td>" + endDate + "</td></tr>" +
+                "<tr><td class='label'>Monthly Rent</td><td>" + monthlyRent + " SAR</td></tr>" +
+                "<tr><td class='label'>Security Deposit</td><td>" + secDeposit + " SAR</td></tr>" +
+                "<tr><td class='label'>Signed</td><td>" + signed + "</td></tr>" +
+                "<tr><td class='label'>Signed Date</td><td>" + signedDate + "</td></tr>" +
+                "<tr><td class='label'>Tenant Notes</td><td>" + reservationMsg + "</td></tr>" +
+                "</table>" +
+
+                "<div class='footer'>This document is an official lease agreement generated by the Smart Rental Platform. " +
+                "Both parties are bound by the terms stated above.</div>" +
+                "</body>" +
+                "</html>";
+
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+        PdfRendererBuilder builder = new PdfRendererBuilder();
+        builder.withHtmlContent(pdfHtml, "/");
+        builder.toStream(os);
+        builder.run();
+
+        emailService.sendEmailWithPdf(
+                tenantEmail,
+                "Lease Contract Attachment - " + apartmentTitle,
+                "<p>Dear " + tenantName + ", please find your formalized lease contract attached.</p>",
+                os.toByteArray(),
+                "Contract_" + contractNum + ".pdf"
+        );
     }
 
     private void validateContractDates(LocalDate startDate, LocalDate endDate) {

@@ -52,6 +52,11 @@ public class ApartmentController {
         return ResponseEntity.status(200).body(apartmentService.getUnderpricedApartments());
     }
 
+    @GetMapping("/low-rated/{ownerId}/{buildingId}")
+    public ResponseEntity<?> getLowRatedApartmentsByBuilding(@PathVariable Integer ownerId, @PathVariable Integer buildingId) {
+        return ResponseEntity.status(200).body(apartmentService.getLowRatedApartmentsByBuilding(ownerId, buildingId));
+    }
+
     @GetMapping("/dashboard/{ownerId}")
     public ResponseEntity<?> getOwnerDashboard(@PathVariable Integer ownerId) {
         return ResponseEntity.status(200).body(apartmentService.getOwnerDashboard(ownerId));
@@ -79,4 +84,11 @@ public class ApartmentController {
     public ResponseEntity<?> checkAvailabilityOnDate(@PathVariable Integer apartmentId, @PathVariable LocalDate date) {
         return ResponseEntity.status(200).body(apartmentService.checkAvailabilityOnDate(apartmentId, date));
     }
+
+    @GetMapping("/flagged/{ownerId}")
+    public ResponseEntity<?> getFlaggedApartmentsByCancellationRate(@PathVariable Integer ownerId) {
+        return ResponseEntity.status(200).body(apartmentService.getFlaggedApartmentsByCancellationRate(ownerId));
+    }
+
+
 }
