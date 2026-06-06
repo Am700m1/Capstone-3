@@ -69,8 +69,19 @@ public class ContractService {
             throw new ApiException("Contract monthly rent must match the apartment monthly rent");
         }
 
-        if (!reservation.getStatus().equals(ReservationStatus.APPROVED)) {
+        if (reservation.getStatus() != ReservationStatus.APPROVED) {
             throw new ApiException("Cannot generate a contract! The reservation must be APPROVED by the owner first.");
+        }
+        if (contractRepository.existsByReservation_Id(reservation_id)) {
+            throw new ApiException("A contract already exists for this reservation");
+        }
+        if (contractRepository.existsByApartmentAndStatus(
+                reservation.getApartment().getId(), ContractStatus.ACTIVE)) {
+            throw new ApiException("Apartment already has an active contract");
+        }
+        validateContractDates(contractDTOIn.getStartDate(), contractDTOIn.getEndDate());
+        if (!reservation.getApartment().getMonthlyRent().equals(contractDTOIn.getMonthlyRent())) {
+            throw new ApiException("Contract monthly rent must match the apartment monthly rent");
         }
 
         Contract contract = new Contract();
@@ -95,6 +106,9 @@ public class ContractService {
         if (contract.getContractStatus() != ContractStatus.PENDING) {
             throw new ApiException("Only pending contracts can be updated");
         }
+        if (contract.getContractStatus() != ContractStatus.PENDING) {
+            throw new ApiException("Only pending contracts can be updated");
+        }
         validateContractDates(contractDTOIn.getStartDate(), contractDTOIn.getEndDate());
         if (!contract.getReservation().getApartment().getMonthlyRent().equals(contractDTOIn.getMonthlyRent())) {
             throw new ApiException("Contract monthly rent must match the apartment monthly rent");
@@ -102,6 +116,10 @@ public class ContractService {
         Reservation reservation = contract.getReservation();
         if (reservation == null) {
             throw new ApiException("Reservation not found");
+        }
+        validateContractDates(contractDTOIn.getStartDate(), contractDTOIn.getEndDate());
+        if (!reservation.getApartment().getMonthlyRent().equals(contractDTOIn.getMonthlyRent())) {
+            throw new ApiException("Contract monthly rent must match the apartment monthly rent");
         }
         contract.setReservation(reservation);
         contract.setContractNumber(contractDTOIn.getContractNumber());
@@ -184,6 +202,16 @@ public class ContractService {
         if (contract.getContractStatus() != ContractStatus.PENDING) {
             throw new ApiException("Only pending contracts can be accepted");
         }
+        LocalDate today = LocalDate.now();
+        if (today.isBefore(contract.getStartDate())) {
+            throw new ApiException("Contract cannot be activated before its start date");
+        }
+        if (today.isAfter(contract.getEndDate())) {
+            throw new ApiException("Contract cannot be activated after its end date");
+        }
+        if (contract.getContractStatus() != ContractStatus.PENDING) {
+            throw new ApiException("Only pending contracts can be accepted");
+        }
 
         Reservation reservation = contract.getReservation();
         if (reservation.getStatus() != ReservationStatus.APPROVED) {
@@ -195,6 +223,7 @@ public class ContractService {
         }
 
         contract.setSigned(true);
+        contract.setSignedDate(LocalDate.now());
         contract.setSignedDate(contract.getSignedDate() == null ? LocalDate.now() : contract.getSignedDate());
         contract.setContractStatus(ContractStatus.ACTIVE);
         reservation.setStatus(ReservationStatus.COMPLETED);
@@ -380,12 +409,13 @@ public class ContractService {
             throw new ApiException("You are not authorized to view this contract's analysis.");
         }
 
-        if (!language.equalsIgnoreCase("English") && !language.equalsIgnoreCase("Arabic")) {
-            throw new ApiException("Language must be either 'English' or 'Arabic'");
+        String normalizedLanguage = language == null ? "" : language.toUpperCase();
+        if (!normalizedLanguage.equals("EN") && !normalizedLanguage.equals("AR")) {
+            throw new ApiException("Language must be AR or EN");
         }
 
         try {
-            String aiJsonString = aiService.analyzeContract(contract, language);
+            String aiJsonString = aiService.analyzeContract(contract, normalizedLanguage);
             return objectMapper.readValue(aiJsonString, new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String, Object>>() {});
 
         } catch (Exception e) {
@@ -440,6 +470,12 @@ public class ContractService {
         System.out.println(">> SMS/EMAIL TO TENANT (" + user.getPhoneNumber() + " / " + user.getEmail() + "): " +
                 "Dear " + user.getFullName() + ", your rental contract for '" + apartment.getTitle() + "' has officially ended today. " +
                 "Please make sure to hand over the apartment and submit any final reviews.");
+    }
+
+    private void validateContractDates(LocalDate startDate, LocalDate endDate) {
+        if (!endDate.isAfter(startDate)) {
+            throw new ApiException("Contract end date must be after start date");
+        }
     }
 
 }

@@ -88,7 +88,7 @@ public class AiService {
     // Builds the owner-review facts and instructions Gemini is allowed to analyze.
     private String buildOwnerAnalysisPrompt(Owner owner, List<Review> reviews) {
         StringBuilder prompt = new StringBuilder();
-        prompt.append("Analyze the following tenant reviews for a property owner and provide a professional summary.\n\n");
+        prompt.append("Analyze the following tenant reviews for a property owner and provide a concise professional summary.\n\n");
         prompt.append("Owner: ").append(owner.getFullName()).append("\n");
         prompt.append("Total Reviews: ").append(reviews.size()).append("\n\n");
         prompt.append("=== REVIEWS ===\n");
@@ -99,15 +99,10 @@ public class AiService {
             prompt.append("Comment: ").append(r.getComment()).append("\n");
         }
         prompt.append("\n=== YOUR TASK ===\n");
-        prompt.append("Based on the reviews, provide a professional analysis covering:\n");
-        prompt.append("1. Overall tenant satisfaction\n");
-        prompt.append("2. Common complaints\n");
-        prompt.append("3. Common strengths\n");
-        prompt.append("4. Communication quality\n");
-        prompt.append("5. Maintenance quality\n");
-        prompt.append("6. A recommendation score out of 10\n");
-        prompt.append("7. A final summary paragraph\n");
-        prompt.append("Write in a clear and professional tone.");
+        prompt.append("Write a plain text analysis of 4 to 8 sentences maximum.\n");
+        prompt.append("Do not use headings, bullet points, numbered lists, bold text, or any Markdown formatting.\n");
+        prompt.append("Cover only these four points in flowing prose: overall tenant satisfaction, common strengths, common complaints, and an overall conclusion.\n");
+        prompt.append("Write in a clear and professional tone. Keep it concise and easy to read.");
         return prompt.toString();
     }
 
@@ -144,15 +139,35 @@ public class AiService {
                 .asText("No explanation available.");
     }
 
+    public String cleanAiText(String text) {
+        if (text == null) {
+            return null;
+        }
+        // Strip markdown formatting before collapsing whitespace
+        text = text.replaceAll("\\*\\*(.+?)\\*\\*", "$1");   // **bold** → bold
+        text = text.replaceAll("\\*(.+?)\\*", "$1");           // *italic* → italic
+        text = text.replaceAll("(?m)^#{1,6}\\s*", "");        // ## heading → heading
+        text = text.replaceAll("(?m)^\\d+\\.\\s+", "");       // 1. item → item
+        text = text.replaceAll("(?m)^[-*]\\s+", "");           // - item → item
+        // Collapse whitespace and newlines
+        text = text.replace("\\n", " ")
+                   .replace("\n", " ")
+                   .replace("/n", " ")
+                   .replaceAll("\\s+", " ")
+                   .trim();
+        return text;
+    }
+
     // CONTRACT ANALYSIS AI ENDPOINT!
     public String analyzeContract(Contract contract, String language) {
         String prompt = buildContractAnalysisPrompt(contract, language);
-        String rawResponse = generateText(prompt);
+        String rawResponse = generateText(prompt, language);
         return cleanJsonResponse(rawResponse);
     }
 
     private String buildContractAnalysisPrompt(Contract contract, String language) {
         StringBuilder prompt = new StringBuilder();
+        String responseLanguage = "AR".equals(language) ? "Arabic" : "English";
         prompt.append("You are an expert legal AI assistant specializing in the Saudi real estate market.\n");
         prompt.append("Analyze the following contract details.\n\n");
         prompt.append("Start Date: ").append(contract.getStartDate()).append("\n");
@@ -168,7 +183,7 @@ public class AiService {
         prompt.append("CRITICAL INSTRUCTIONS:\n");
         prompt.append("- You must output ONLY a valid JSON object. Do not add any conversational text.\n");
         prompt.append("- The JSON keys must be exactly in English: \"summary\", \"irregularities\" (a list of strings), and \"recommendation\".\n");
-        prompt.append("- The actual VALUES inside the JSON must be written entirely in ").append(language).append(".\n");
+        prompt.append("- The actual VALUES inside the JSON must be written entirely in ").append(responseLanguage).append(".\n");
 
         return prompt.toString();
     }
@@ -184,7 +199,7 @@ public class AiService {
         if (response.endsWith("```")) {
             response = response.substring(0, response.length() - 3);
         }
-        return response.trim();
+        return cleanAiText(response);
     }
 
 

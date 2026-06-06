@@ -38,8 +38,17 @@ public class OsrmCommuteService {
 
             // readTree converts the JSON text into a navigable node tree.
             JsonNode root = objectMapper.readTree(response);
+            if (!"Ok".equals(root.path("code").asText()) || !root.path("routes").isArray()
+                    || root.path("routes").isEmpty()) {
+                throw new ApiException("OSRM did not return a route");
+            }
+
             // routes is a JSON array; the first item is the selected route.
             JsonNode route = root.path("routes").path(0);
+            if (!route.has("distance") || !route.path("distance").isNumber()
+                    || !route.has("duration") || !route.path("duration").isNumber()) {
+                throw new ApiException("OSRM route data is incomplete");
+            }
 
             // OSRM returns distance in metres and duration in seconds.
             double distanceMetres = route.path("distance").asDouble();

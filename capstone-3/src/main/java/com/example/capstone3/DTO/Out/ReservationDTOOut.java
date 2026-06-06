@@ -11,7 +11,7 @@ public class ReservationDTOOut {
     private Integer id;
     private Integer apartmentId;
     private Integer userId;
-    private LocalDate reservationDate;
     private ReservationStatus status;
     private String message;
+    private LocalDate reservationDate;
 }

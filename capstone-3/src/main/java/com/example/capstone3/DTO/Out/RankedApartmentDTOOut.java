@@ -15,6 +15,9 @@ public class RankedApartmentDTOOut {
     private Integer bathrooms;
     private Double area;
     private Boolean furnished;
+    private Double commuteDistanceKm;
+    private Integer commuteMinutes;
+    private Double totalScore;
     @JsonIgnore
     private Boolean waterIncluded;
     @JsonIgnore
@@ -27,7 +30,6 @@ public class RankedApartmentDTOOut {
     private Boolean buildingHasElevator;
     @JsonIgnore
     private Boolean buildingHasSecurity;
-    private Double totalScore;
     @JsonIgnore
     private Double budgetScore;
     @JsonIgnore
@@ -40,8 +42,6 @@ public class RankedApartmentDTOOut {
     private Double apartmentScore;
     @JsonIgnore
     private Double averageRating;
-    private Integer commuteMinutes;
-    private Double commuteDistanceKm;
     @JsonIgnore
     private ApartmentServicesDTOOut nearbyServices;
 }

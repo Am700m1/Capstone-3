@@ -44,6 +44,34 @@ public class ConversationService {
         return convertToDTO(conversation);
     }
 
+    public List<ConversationDTOOut> getConversationsByUserId(Integer userId) {
+        User user = userRepository.findUserById(userId);
+        if (user == null) {
+            throw new ApiException("User not found");
+        }
+
+        List<ConversationDTOOut> conversations = new ArrayList<>();
+        for (Conversation conversation :
+                conversationRepository.findConversationsByUser_IdOrderByCreatedAtDesc(userId)) {
+            conversations.add(convertToDTO(conversation));
+        }
+        return conversations;
+    }
+
+    public List<ConversationDTOOut> getConversationsByOwnerId(Integer ownerId) {
+        Owner owner = ownerRepository.findOwnerById(ownerId);
+        if (owner == null) {
+            throw new ApiException("Owner not found");
+        }
+
+        List<ConversationDTOOut> conversations = new ArrayList<>();
+        for (Conversation conversation :
+                conversationRepository.findConversationsByOwner_IdOrderByCreatedAtDesc(ownerId)) {
+            conversations.add(convertToDTO(conversation));
+        }
+        return conversations;
+    }
+
     public void addConversation(ConversationDTOIn conversationDTOIn) {
         throw new ApiException("Conversation is created or reused when the first message is sent");
     }
@@ -100,7 +128,6 @@ public class ConversationService {
             MessageDTOOut messageDTOOut = new MessageDTOOut();
             messageDTOOut.setId(message.getId());
             messageDTOOut.setConversationId(conversation.getId());
-            messageDTOOut.setSenderType(message.getSenderType());
             messageDTOOut.setSenderId(message.getSenderId());
             messageDTOOut.setContent(message.getContent());
             messageDTOOut.setSentAt(message.getSentAt());

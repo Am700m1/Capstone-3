@@ -40,8 +40,9 @@ public class UserPreferenceService {
         return convertToDTO(preference);
     }
 
-    public void addUserPreference(UserPreferenceDTOIn userPreferenceDTOIn) {
-        User user = userRepository.findUserById(userPreferenceDTOIn.getUserId());
+    public void addUserPreference(Integer userId, UserPreferenceDTOIn userPreferenceDTOIn) {
+        validateCoordinatePair(userPreferenceDTOIn.getWorkLatitude(), userPreferenceDTOIn.getWorkLongitude());
+        User user = userRepository.findUserById(userId);
         if (user == null) {
             throw new ApiException("User not found");
         }
@@ -66,6 +67,23 @@ public class UserPreferenceService {
                 ? PreferenceLevel.NOT_IMPORTANT : userPreferenceDTOIn.getSchoolPreference());
         preference.setPublicTransportPreference(userPreferenceDTOIn.getPublicTransportPreference() == null
                 ? PreferenceLevel.NOT_IMPORTANT : userPreferenceDTOIn.getPublicTransportPreference());
+        preference.setLookingForRoommate(userPreferenceDTOIn.getLookingForRoommate());
+        preference.setRoommateBudget(userPreferenceDTOIn.getRoommateBudget());
+        preference.setGymPreference(parsePreferenceLevel(userPreferenceDTOIn.getGymPreference()));
+        preference.setCafesPreference(parsePreferenceLevel(userPreferenceDTOIn.getCafesPreference()));
+        preference.setHospitalPreference(parsePreferenceLevel(userPreferenceDTOIn.getHospitalPreference()));
+        preference.setSchoolPreference(parsePreferenceLevel(userPreferenceDTOIn.getSchoolPreference()));
+        preference.setPublicTransportPreference(parsePreferenceLevel(userPreferenceDTOIn.getPublicTransportPreference()));
+        preference.setGymPreference(userPreferenceDTOIn.getGymPreference() == null
+                ? PreferenceLevel.NOT_IMPORTANT : userPreferenceDTOIn.getGymPreference());
+        preference.setCafesPreference(userPreferenceDTOIn.getCafesPreference() == null
+                ? PreferenceLevel.NOT_IMPORTANT : userPreferenceDTOIn.getCafesPreference());
+        preference.setHospitalPreference(userPreferenceDTOIn.getHospitalPreference() == null
+                ? PreferenceLevel.NOT_IMPORTANT : userPreferenceDTOIn.getHospitalPreference());
+        preference.setSchoolPreference(userPreferenceDTOIn.getSchoolPreference() == null
+                ? PreferenceLevel.NOT_IMPORTANT : userPreferenceDTOIn.getSchoolPreference());
+        preference.setPublicTransportPreference(userPreferenceDTOIn.getPublicTransportPreference() == null
+                ? PreferenceLevel.NOT_IMPORTANT : userPreferenceDTOIn.getPublicTransportPreference());
         preference.setPreferredBedrooms(userPreferenceDTOIn.getPreferredBedrooms());
         preference.setPreferredBathrooms(userPreferenceDTOIn.getPreferredBathrooms());
         preference.setPreferredDistrict(userPreferenceDTOIn.getPreferredDistrict());
@@ -73,9 +91,14 @@ public class UserPreferenceService {
     }
 
     public void updateUserPreference(Integer id, UserPreferenceDTOIn userPreferenceDTOIn) {
+        validateCoordinatePair(userPreferenceDTOIn.getWorkLatitude(), userPreferenceDTOIn.getWorkLongitude());
         UserPreference preference = userPreferenceRepository.findUserPreferenceById(id);
         if (preference == null) {
             throw new ApiException("User preference not found");
+        }
+        if (userPreferenceDTOIn.getWorkLatitude() != null) {
+            preference.setWorkLatitude(userPreferenceDTOIn.getWorkLatitude());
+            preference.setWorkLongitude(userPreferenceDTOIn.getWorkLongitude());
         }
         User user = userRepository.findUserById(userPreferenceDTOIn.getUserId());
         if (user == null) {
@@ -92,6 +115,23 @@ public class UserPreferenceService {
         preference.setRequiresParking(userPreferenceDTOIn.getRequiresParking());
         preference.setRequiresElevator(userPreferenceDTOIn.getRequiresElevator());
         preference.setRequiresFurnished(userPreferenceDTOIn.getRequiresFurnished());
+        preference.setGymPreference(userPreferenceDTOIn.getGymPreference() == null
+                ? PreferenceLevel.NOT_IMPORTANT : userPreferenceDTOIn.getGymPreference());
+        preference.setCafesPreference(userPreferenceDTOIn.getCafesPreference() == null
+                ? PreferenceLevel.NOT_IMPORTANT : userPreferenceDTOIn.getCafesPreference());
+        preference.setHospitalPreference(userPreferenceDTOIn.getHospitalPreference() == null
+                ? PreferenceLevel.NOT_IMPORTANT : userPreferenceDTOIn.getHospitalPreference());
+        preference.setSchoolPreference(userPreferenceDTOIn.getSchoolPreference() == null
+                ? PreferenceLevel.NOT_IMPORTANT : userPreferenceDTOIn.getSchoolPreference());
+        preference.setPublicTransportPreference(userPreferenceDTOIn.getPublicTransportPreference() == null
+                ? PreferenceLevel.NOT_IMPORTANT : userPreferenceDTOIn.getPublicTransportPreference());
+        preference.setLookingForRoommate(userPreferenceDTOIn.getLookingForRoommate());
+        preference.setRoommateBudget(userPreferenceDTOIn.getRoommateBudget());
+        preference.setGymPreference(parsePreferenceLevel(userPreferenceDTOIn.getGymPreference()));
+        preference.setCafesPreference(parsePreferenceLevel(userPreferenceDTOIn.getCafesPreference()));
+        preference.setHospitalPreference(parsePreferenceLevel(userPreferenceDTOIn.getHospitalPreference()));
+        preference.setSchoolPreference(parsePreferenceLevel(userPreferenceDTOIn.getSchoolPreference()));
+        preference.setPublicTransportPreference(parsePreferenceLevel(userPreferenceDTOIn.getPublicTransportPreference()));
         preference.setGymPreference(userPreferenceDTOIn.getGymPreference() == null
                 ? PreferenceLevel.NOT_IMPORTANT : userPreferenceDTOIn.getGymPreference());
         preference.setCafesPreference(userPreferenceDTOIn.getCafesPreference() == null
@@ -156,7 +196,20 @@ public class UserPreferenceService {
         return userPreferenceDTOOut;
     }
 
+    private void validateCoordinatePair(Double latitude, Double longitude) {
+        if ((latitude == null) != (longitude == null)) {
+            throw new ApiException("Work latitude and longitude must be provided together");
+        }
+    }
+
 
     //^^^^^^^CRUD^^^^^^^^
 
+
+    private PreferenceLevel parsePreferenceLevel(String value) {
+        if (value == null || value.isBlank()) {
+            return PreferenceLevel.NOT_IMPORTANT;
+        }
+        return PreferenceLevel.valueOf(value.toUpperCase());
+    }
 }

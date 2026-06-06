@@ -25,10 +25,23 @@ public class MessageController {
         return ResponseEntity.status(200).body(messageService.getMessage(id));
     }
 
-    @PostMapping("/add")
-    public ResponseEntity<?> addMessage(@RequestBody @Valid MessageDTOIn messageDTOIn) {
-        messageService.addMessage(messageDTOIn);
-        return ResponseEntity.status(200).body(new ApiResponse("Message added successfully"));
+    @GetMapping("/conversation/{conversationId}")
+    public ResponseEntity<?> getMessagesByConversationId(@PathVariable Integer conversationId) {
+        return ResponseEntity.status(200).body(messageService.getMessagesByConversationId(conversationId));
+    }
+
+    @PostMapping("/add/user/{userId}/{ownerId}/{apartmentId}")
+    public ResponseEntity<?> addUserMessage(@PathVariable Integer userId, @PathVariable Integer ownerId, @PathVariable Integer apartmentId,
+                                            @RequestBody @Valid MessageDTOIn messageDTOIn) {
+        messageService.addUserMessage(userId, ownerId, apartmentId, messageDTOIn);
+        return ResponseEntity.status(200).body(new ApiResponse("Message sent successfully"));
+    }
+
+    @PostMapping("/add/owner/{ownerId}/{userId}/{apartmentId}")
+    public ResponseEntity<?> addOwnerMessage(@PathVariable Integer ownerId, @PathVariable Integer userId, @PathVariable Integer apartmentId,
+                                             @RequestBody @Valid MessageDTOIn messageDTOIn) {
+        messageService.addOwnerMessage(ownerId, userId, apartmentId, messageDTOIn);
+        return ResponseEntity.status(200).body(new ApiResponse("Message sent successfully"));
     }
 
     @PutMapping("/update/{id}")

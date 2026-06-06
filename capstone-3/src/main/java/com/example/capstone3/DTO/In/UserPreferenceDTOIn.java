@@ -1,5 +1,12 @@
 package com.example.capstone3.DTO.In;
 
+import com.example.capstone3.Enums.PreferenceLevel;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.*;
 import com.example.capstone3.Enums.PreferenceLevel;
 import jakarta.validation.constraints.DecimalMax;
@@ -13,15 +20,10 @@ import lombok.Data;
 @Data
 public class UserPreferenceDTOIn {
 
-    @NotNull(message = "User ID is required")
-    private Integer userId;
-
-    @NotNull(message = "Work latitude is required")
     @DecimalMin(value = "-90.0", message = "Work latitude must be >= -90")
     @DecimalMax(value = "90.0", message = "Work latitude must be <= 90")
     private Double workLatitude;
 
-    @NotNull(message = "Work longitude is required")
     @DecimalMin(value = "-180.0", message = "Work longitude must be >= -180")
     @DecimalMax(value = "180.0", message = "Work longitude must be <= 180")
     private Double workLongitude;

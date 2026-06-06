@@ -25,9 +25,11 @@ public class ReviewController {
         return ResponseEntity.status(200).body(reviewService.getReview(id));
     }
 
-    @PostMapping("/add")
-    public ResponseEntity<?> addReview(@RequestBody @Valid ReviewDTOIn dto) {
-        reviewService.addReview(dto);
+    @PostMapping("/add/{userId}/{reservationId}")
+    public ResponseEntity<?> addReview(@PathVariable Integer userId,
+                                       @PathVariable Integer reservationId,
+                                       @RequestBody @Valid ReviewDTOIn dto) {
+        reviewService.addReview(userId, reservationId, dto);
         return ResponseEntity.status(200).body(new ApiResponse("Review added successfully"));
     }
 

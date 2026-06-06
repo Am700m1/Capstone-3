@@ -7,6 +7,7 @@ import com.example.capstone3.Enums.ApartmentStatus;
 import com.example.capstone3.Enums.ContractStatus;
 import com.example.capstone3.Enums.ReservationStatus;
 import com.example.capstone3.Models.Apartment;
+import com.example.capstone3.Models.Contract;
 import com.example.capstone3.Models.Owner;
 import com.example.capstone3.Models.Reservation;
 import com.example.capstone3.Models.User;
@@ -51,12 +52,12 @@ public class ReservationService {
     }
 
     @Transactional
-    public void addReservation(ReservationDTOIn reservationDTOIn) {
-        Apartment apartment = apartmentRepository.findApartmentById(reservationDTOIn.getApartmentId());
+    public ReservationDTOOut addReservation(Integer userId, Integer apartmentId, ReservationDTOIn reservationDTOIn) {
+        Apartment apartment = apartmentRepository.findApartmentById(apartmentId);
         if (apartment == null) {
             throw new ApiException("Apartment not found");
         }
-        User user = userRepository.findUserById(reservationDTOIn.getUserId());
+        User user = userRepository.findUserById(userId);
         if (user == null) {
             throw new ApiException("User not found");
         }
@@ -70,7 +71,7 @@ public class ReservationService {
         if (reservationRepository.existsByApartment_IdAndStatus(apartment.getId(), ReservationStatus.APPROVED)) {
             throw new ApiException("Apartment already has an approved reservation");
         }
-        if (contractRepository.existsByReservation_Apartment_IdAndContractStatus(
+        if (contractRepository.existsByApartmentAndStatus(
                 apartment.getId(), ContractStatus.ACTIVE)) {
             throw new ApiException("Apartment already has an active contract");
         }
@@ -82,6 +83,7 @@ public class ReservationService {
         reservation.setMessage(reservationDTOIn.getMessage());
         reservation.setCreatedAt(LocalDateTime.now());
         reservationRepository.save(reservation);
+        return convertToDTO(reservation);
     }
 
     public void updateReservation(Integer id, ReservationDTOIn reservationDTOIn) {
@@ -91,10 +93,6 @@ public class ReservationService {
         }
         if (reservation.getStatus() != ReservationStatus.PENDING) {
             throw new ApiException("Only pending reservations can be updated");
-        }
-        if (!reservation.getApartment().getId().equals(reservationDTOIn.getApartmentId())
-                || !reservation.getUser().getId().equals(reservationDTOIn.getUserId())) {
-            throw new ApiException("Reservation apartment and user cannot be changed");
         }
         Apartment apartment = reservation.getApartment();
         if (apartment == null) {
@@ -224,7 +222,7 @@ public class ReservationService {
         if (apartment.getStatus() != ApartmentStatus.AVAILABLE) {
             throw new ApiException("Apartment is no longer available");
         }
-        if (contractRepository.existsByReservation_Apartment_IdAndContractStatus(
+        if (contractRepository.existsByApartmentAndStatus(
                 apartment.getId(), ContractStatus.ACTIVE)) {
             throw new ApiException("Apartment already has an active contract");
         }
@@ -245,6 +243,7 @@ public class ReservationService {
     }
 
 
+    @Transactional
     public void rejectReservation(Integer ownerId, Integer reservationId) {
         Reservation reservation = reservationRepository.findReservationById(reservationId);
 
@@ -260,6 +259,7 @@ public class ReservationService {
             throw new ApiException("Only pending reservations can be rejected");
         }
 
+        cancelLinkedContract(reservation);
         reservation.setStatus(ReservationStatus.REJECTED);
         reservationRepository.save(reservation);
     }
@@ -282,7 +282,13 @@ public class ReservationService {
             throw new ApiException("Only pending or approved reservations can be cancelled");
         }
 
+        Contract contract = contractRepository.findByReservation_Id(reservationId);
+        if (contract != null && contract.getContractStatus() == ContractStatus.ACTIVE) {
+            throw new ApiException("An active rental must be ended through the contract");
+        }
+
         boolean wasApproved = reservation.getStatus() == ReservationStatus.APPROVED;
+        cancelLinkedContract(reservation);
         reservation.setStatus(ReservationStatus.CANCELLED);
         reservationRepository.save(reservation);
 
@@ -314,6 +320,18 @@ public class ReservationService {
         }
 
         System.out.println("Ran expiration check: Expired " + expiredReservations.size() + " reservations.");
+    }
+
+    private void cancelLinkedContract(Reservation reservation) {
+        Contract contract = contractRepository.findByReservation_Id(reservation.getId());
+        if (contract != null && contract.getContractStatus() == ContractStatus.ACTIVE) {
+            throw new ApiException("An active rental must be ended through the contract");
+        }
+        if (contract != null && contract.getContractStatus() == ContractStatus.PENDING) {
+            contract.setSigned(false);
+            contract.setContractStatus(ContractStatus.CANCELLED);
+            contractRepository.save(contract);
+        }
     }
 
 

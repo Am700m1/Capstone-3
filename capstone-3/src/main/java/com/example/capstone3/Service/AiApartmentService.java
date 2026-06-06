@@ -46,8 +46,7 @@ public class AiApartmentService {
         String aiResponse = aiService.generateText(buildReviewSummaryPrompt(apartment, reviews), language);
 
         ApartmentReviewSummaryDTOOut response = new ApartmentReviewSummaryDTOOut();
-        response.setApartmentId(apartmentId);
-        response.setSummary(aiResponse);
+        response.setSummary(aiService.cleanAiText(aiResponse));
 
         return response;
     }
@@ -123,9 +122,17 @@ public class AiApartmentService {
 
         String aiResponse = aiService.generateText(buildNeighborhoodPrompt(apartment, amenities), language);
 
+        NeighborhoodSummaryDTOOut.NearbyCounts counts = new NeighborhoodSummaryDTOOut.NearbyCounts();
+        counts.setSchools(amenities.getSchoolCount());
+        counts.setSupermarkets(amenities.getSupermarketCount());
+        counts.setRestaurants(amenities.getRestaurantCount());
+        counts.setHospitals(amenities.getHospitalCount());
+
         NeighborhoodSummaryDTOOut response = new NeighborhoodSummaryDTOOut();
-        response.setApartmentId(apartmentId);
-        response.setSummary(aiResponse);
+        response.setDistrict(apartment.getBuilding().getDistrict());
+        response.setRadiusMetres(3000);
+        response.setNearbyCounts(counts);
+        response.setSummary(aiService.cleanAiText(aiResponse));
 
         return response;
     }
@@ -201,8 +208,7 @@ public class AiApartmentService {
         String aiResponse = aiService.generateText(buildOwnerReputationPrompt(owner, apartments, reviews), language);
 
         OwnerReputationSummaryDTOOut response = new OwnerReputationSummaryDTOOut();
-        response.setOwnerId(ownerId);
-        response.setSummary(aiResponse);
+        response.setSummary(aiService.cleanAiText(aiResponse));
 
         return response;
     }
@@ -274,6 +280,9 @@ public class AiApartmentService {
     public ApartmentComparisonDTOOut compareApartments(List<Integer> apartmentIds, String language) {
         if (apartmentIds == null || apartmentIds.size() < 2 || apartmentIds.size() > 3) {
             throw new ApiException("Please provide 2 or 3 apartment IDs to compare");
+        }
+        if (apartmentIds.stream().distinct().count() != apartmentIds.size()) {
+            throw new ApiException("An apartment cannot be compared with itself");
         }
 
         List<Apartment> apartments = new ArrayList<>();
@@ -411,9 +420,6 @@ public class AiApartmentService {
     // Remove extra spacing so the comparison stays readable in JSON responses.
     private String normalizeComparisonText(String comparison) {
         if (comparison == null) return "";
-        return comparison
-                .replaceAll("[\\t ]+", " ")
-                .replaceAll("(\\R\\s*){2,}", "\n")
-                .trim();
+        return aiService.cleanAiText(comparison);
     }
 }

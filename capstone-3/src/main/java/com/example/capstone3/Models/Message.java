@@ -1,6 +1,5 @@
 package com.example.capstone3.Models;
 
-import com.example.capstone3.Enums.MessageSenderType;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -26,10 +25,6 @@ public class Message {
 
     @Column(name = "content", nullable = false, columnDefinition = "TEXT")
     private String content;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "sender_type", nullable = false, length = 10)
-    private MessageSenderType senderType;
 
     @Column(name = "sender_id", nullable = false)
     private Integer senderId;

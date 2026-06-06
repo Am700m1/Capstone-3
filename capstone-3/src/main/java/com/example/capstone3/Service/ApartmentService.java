@@ -6,17 +6,20 @@ import com.example.capstone3.DTO.Out.ApartmentDTOOut;
 import com.example.capstone3.DTO.Out.ApartmentImageDTOOut;
 import com.example.capstone3.DTO.Out.UnderpricedApartmentDTOOut;
 import com.example.capstone3.Enums.ApartmentStatus;
+import com.example.capstone3.Enums.ContractStatus;
+import com.example.capstone3.Enums.ReservationStatus;
 import com.example.capstone3.Models.*;
 import com.example.capstone3.Repository.ApartmentRepository;
 import com.example.capstone3.Repository.BuildingRepository;
+import com.example.capstone3.Repository.ContractRepository;
 import com.example.capstone3.Repository.OwnerRepository;
+import com.example.capstone3.Repository.ReservationRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,6 +30,8 @@ public class ApartmentService {
     private final ApartmentRepository apartmentRepository;
     private final BuildingRepository buildingRepository;
     private final OwnerRepository ownerRepository;
+    private final ContractRepository contractRepository;
+    private final ReservationRepository reservationRepository;
 
     public List<ApartmentDTOOut> getAll() {
         List<ApartmentDTOOut> apartmentDTOOuts = new ArrayList<>();
@@ -44,14 +49,14 @@ public class ApartmentService {
         return convertToDTO(apartment);
     }
 
-    public void addApartment(ApartmentDTOIn apartmentDTOIn) {
-        Building building = buildingRepository.findBuildingById(apartmentDTOIn.getBuildingId());
-        if (building == null) {
-            throw new ApiException("Building not found");
-        }
-        Owner owner = ownerRepository.findOwnerById(apartmentDTOIn.getOwnerId());
+    public void addApartment(Integer ownerId, Integer buildingId, ApartmentDTOIn apartmentDTOIn) {
+        Owner owner = ownerRepository.findOwnerById(ownerId);
         if (owner == null) {
             throw new ApiException("Owner not found");
+        }
+        Building building = buildingRepository.findBuildingById(buildingId);
+        if (building == null) {
+            throw new ApiException("Building not found");
         }
         if (!building.getOwner().getId().equals(owner.getId())) {
             throw new ApiException("Owner does not own this building");
@@ -81,19 +86,6 @@ public class ApartmentService {
         if (apartment == null) {
             throw new ApiException("Apartment not found");
         }
-        Building building = buildingRepository.findBuildingById(apartmentDTOIn.getBuildingId());
-        if (building == null) {
-            throw new ApiException("Building not found");
-        }
-        Owner owner = ownerRepository.findOwnerById(apartmentDTOIn.getOwnerId());
-        if (owner == null) {
-            throw new ApiException("Owner not found");
-        }
-        if (!building.getOwner().getId().equals(owner.getId())) {
-            throw new ApiException("Owner does not own this building");
-        }
-        apartment.setBuilding(building);
-        apartment.setOwner(owner);
         apartment.setTitle(apartmentDTOIn.getTitle());
         apartment.setDescription(apartmentDTOIn.getDescription());
         apartment.setMonthlyRent(apartmentDTOIn.getMonthlyRent());
@@ -256,9 +248,128 @@ public class ApartmentService {
         if(!apartment.getOwner().getId().equals(ownerId)){
             throw new ApiException("You are not authorized to this action!");
         }
+        if (apartment.getStatus() != ApartmentStatus.UNDER_MAINTENANCE) {
+            throw new ApiException("Only apartments under maintenance can be made available");
+        }
 
         apartment.setStatus(ApartmentStatus.AVAILABLE);
         apartmentRepository.save(apartment);
+    }
+
+    public Map<String, Object> getNextAvailability(Integer apartmentId) {
+        Apartment apartment = apartmentRepository.findApartmentById(apartmentId);
+        if (apartment == null) {
+            throw new ApiException("Apartment not found");
+        }
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("apartmentId", apartment.getId());
+        response.put("status", apartment.getStatus());
+
+        LocalDate today = LocalDate.now();
+        if (apartment.getStatus() == ApartmentStatus.AVAILABLE) {
+            boolean availableNow = apartment.getAvailableFrom() == null
+                    || !apartment.getAvailableFrom().isAfter(today);
+            response.put("availableNow", availableNow);
+            response.put("expectedAvailableDate", availableNow ? null : apartment.getAvailableFrom());
+            response.put("message", availableNow
+                    ? "Apartment is available now."
+                    : "Apartment will be available from the listed available date.");
+            return response;
+        }
+
+        List<Contract> activeContracts =
+                contractRepository.findContractsByReservation_Apartment_IdAndContractStatus(
+                        apartmentId, ContractStatus.ACTIVE);
+        if (!activeContracts.isEmpty()) {
+            LocalDate expectedDate = activeContracts.stream()
+                    .map(Contract::getEndDate)
+                    .max(LocalDate::compareTo)
+                    .orElse(null);
+            response.put("availableNow", false);
+            response.put("expectedAvailableDate", expectedDate);
+            response.put("message",
+                    "Apartment is currently rented and expected to be available after the active contract ends.");
+            return response;
+        }
+
+        response.put("availableNow", false);
+        response.put("expectedAvailableDate", apartment.getAvailableFrom());
+        if (apartment.getStatus() == ApartmentStatus.RESERVED) {
+            response.put("message",
+                    "Apartment is reserved and availability depends on contract completion or acceptance.");
+        } else if (apartment.getStatus() == ApartmentStatus.UNDER_MAINTENANCE) {
+            response.put("message", apartment.getAvailableFrom() == null
+                    ? "Apartment is under maintenance and has no fixed available date."
+                    : "Apartment is under maintenance and may be available from the listed available date.");
+        } else {
+            response.put("message", "Apartment is not currently available.");
+        }
+        return response;
+    }
+
+    public Map<String, Object> checkAvailabilityOnDate(Integer apartmentId, LocalDate date) {
+        Apartment apartment = apartmentRepository.findApartmentById(apartmentId);
+        if (apartment == null) {
+            throw new ApiException("Apartment not found");
+        }
+        if (date.isBefore(LocalDate.now())) {
+            throw new ApiException("Availability date cannot be in the past");
+        }
+
+        boolean activeContractBlocksDate =
+                contractRepository.findContractsByReservation_Apartment_IdAndContractStatus(
+                                apartmentId, ContractStatus.ACTIVE)
+                        .stream()
+                        .anyMatch(contract -> !date.isBefore(contract.getStartDate())
+                                && !date.isAfter(contract.getEndDate()));
+
+        boolean pendingContractBlocksDate =
+                contractRepository.findContractsByReservation_Apartment_IdAndContractStatus(
+                                apartmentId, ContractStatus.PENDING)
+                        .stream()
+                        .anyMatch(contract -> !date.isBefore(contract.getStartDate())
+                                && !date.isAfter(contract.getEndDate()));
+
+        boolean reservationBlocksDate =
+                reservationRepository.findReservationsByApartment_IdAndStatus(
+                                apartmentId, ReservationStatus.PENDING)
+                        .stream()
+                        .anyMatch(reservation -> date.equals(reservation.getReservationDate()))
+                        || reservationRepository.findReservationsByApartment_IdAndStatus(
+                                apartmentId, ReservationStatus.APPROVED)
+                        .stream()
+                        .anyMatch(reservation -> date.equals(reservation.getReservationDate()));
+
+        boolean available = apartment.getStatus() == ApartmentStatus.AVAILABLE
+                && (apartment.getAvailableFrom() == null
+                || !apartment.getAvailableFrom().isAfter(date))
+                && !activeContractBlocksDate
+                && !pendingContractBlocksDate
+                && !reservationBlocksDate;
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("apartmentId", apartment.getId());
+        response.put("date", date);
+        response.put("available", available);
+        response.put("status", apartment.getStatus());
+
+        if (available) {
+            response.put("message", "Apartment is available on this date.");
+        } else if (apartment.getStatus() == ApartmentStatus.UNDER_MAINTENANCE) {
+            response.put("message", "Apartment is under maintenance and is not available on this date.");
+        } else if (activeContractBlocksDate) {
+            response.put("message", "Apartment has an active contract on this date.");
+        } else if (pendingContractBlocksDate || reservationBlocksDate
+                || apartment.getStatus() == ApartmentStatus.RESERVED) {
+            response.put("message", "Apartment is reserved or pending rental completion on this date.");
+        } else if (apartment.getAvailableFrom() != null
+                && apartment.getAvailableFrom().isAfter(date)) {
+            response.put("message", "Apartment is not available before its listed available date.");
+        } else {
+            response.put("message", "Apartment is not available on this date.");
+        }
+        return response;
     }
 
     // this method show the owner apartments and their status. The apartments will be grouped by status.
@@ -285,16 +396,43 @@ public class ApartmentService {
         return groupedApartments;
     }
 
-    public List<ApartmentDTOOut> searchApartments(Double minRent,Double maxRent, Integer bedrooms, String district, Boolean isFurnished){
-        List<Apartment> apartments = apartmentRepository.searchAvailableApartments(
-                ApartmentStatus.AVAILABLE, minRent, maxRent, bedrooms, district, isFurnished);
+    public List<ApartmentDTOOut> searchApartments(Double minRent, Double maxRent, Integer bedrooms, String district, Boolean isFurnished) {
+        if ((minRent != null && minRent < 0) || (maxRent != null && maxRent < 0)) {
+            throw new ApiException("Rent filters cannot be negative");
+        }
+        if (minRent != null && maxRent != null && minRent > maxRent) {
+            throw new ApiException("Minimum rent cannot be greater than maximum rent");
+        }
 
-        if(apartments.isEmpty()){
+        List<Apartment> availableApartments = apartmentRepository.findByStatus(ApartmentStatus.AVAILABLE);
+        List<Apartment> matchingApartments = new ArrayList<>();
+
+        for (Apartment apartment : availableApartments) {
+            if (minRent != null && apartment.getMonthlyRent() < minRent) {
+                continue;
+            }
+            if (maxRent != null && apartment.getMonthlyRent() > maxRent) {
+                continue;
+            }
+            if (bedrooms != null && !apartment.getBedrooms().equals(bedrooms)) {
+                continue;
+            }
+            if (district != null && !district.isBlank()
+                    && !apartment.getBuilding().getDistrict().equalsIgnoreCase(district.trim())) {
+                continue;
+            }
+            if (isFurnished != null && !isFurnished.equals(apartment.getFurnished())) {
+                continue;
+            }
+            matchingApartments.add(apartment);
+        }
+
+        if (matchingApartments.isEmpty()) {
             throw new ApiException("No apartments were found matching your search criteria!");
         }
 
         List<ApartmentDTOOut> apartmentDTOOuts = new ArrayList<>();
-        for(Apartment apartment: apartments){
+        for (Apartment apartment : matchingApartments) {
             apartmentDTOOuts.add(convertToDTO(apartment));
         }
 

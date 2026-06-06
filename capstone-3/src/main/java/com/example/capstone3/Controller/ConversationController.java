@@ -25,6 +25,16 @@ public class ConversationController {
         return ResponseEntity.status(200).body(conversationService.getConversation(id));
     }
 
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<?> getConversationsByUserId(@PathVariable Integer userId) {
+        return ResponseEntity.status(200).body(conversationService.getConversationsByUserId(userId));
+    }
+
+    @GetMapping("/owner/{ownerId}")
+    public ResponseEntity<?> getConversationsByOwnerId(@PathVariable Integer ownerId) {
+        return ResponseEntity.status(200).body(conversationService.getConversationsByOwnerId(ownerId));
+    }
+
     @PostMapping("/add")
     public ResponseEntity<?> addConversation(@RequestBody @Valid ConversationDTOIn conversationDTOIn) {
         conversationService.addConversation(conversationDTOIn);

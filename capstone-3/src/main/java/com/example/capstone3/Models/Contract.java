@@ -24,7 +24,7 @@ public class Contract {
     @JoinColumn(name = "reservation_id", nullable = false, unique = true)
     private Reservation reservation;
 
-    @Column(name = "contract_number", nullable = false, unique = true)
+    @Column(name = "contract_number", nullable = false, unique = true, length = 100)
     private String contractNumber;
 
     @Column(name = "start_date", nullable = false)

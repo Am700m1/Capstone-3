@@ -26,10 +26,16 @@ public class UserPreferenceController {
         return ResponseEntity.status(200).body(userPreferenceService.getUserPreference(id));
     }
 
-    @PostMapping("/add")
-    public ResponseEntity<?> addUserPreference(@RequestBody @Valid UserPreferenceDTOIn userPreferenceDTOIn) {
-        userPreferenceService.addUserPreference(userPreferenceDTOIn);
+    @PostMapping("/add/{userId}")
+    public ResponseEntity<?> addUserPreference(@PathVariable Integer userId,
+                                               @RequestBody @Valid UserPreferenceDTOIn userPreferenceDTOIn) {
+        userPreferenceService.addUserPreference(userId, userPreferenceDTOIn);
         return ResponseEntity.status(200).body(new ApiResponse("User preference added successfully"));
+    }
+
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<?> getUserPreferenceByUserId(@PathVariable Integer userId) {
+        return ResponseEntity.status(200).body(userPreferenceService.getUserPreferenceByUserId(userId));
     }
 
     @PutMapping("/update/{id}")

@@ -31,13 +31,13 @@ public class Review {
 
     // Lazy because reservation details are only needed to validate review history.
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "reservation_id", unique = true)
+    @JoinColumn(name = "reservation_id", nullable = false, unique = true)
     private Reservation reservation;
 
     @Column(name = "rating", nullable = false)
     private Integer rating;
 
-    @Column(name = "comment", columnDefinition = "text")
+    @Column(name = "comment", nullable = false, columnDefinition = "TEXT")
     private String comment;
 
     @CurrentTimestamp

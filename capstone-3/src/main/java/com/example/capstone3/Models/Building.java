@@ -34,7 +34,7 @@ public class Building {
     @Column(name = "district", nullable = false, length = 100)
     private String district;
 
-    @Column(name = "street", nullable = false)
+    @Column(name = "street", nullable = false, length = 255)
     private String street;
 
     @Column(name = "latitude", nullable = false)
