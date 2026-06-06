@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -66,7 +67,6 @@ public class ApartmentController {
     public ResponseEntity<?> searchApartments(@RequestParam(required = false) Double minRent, @RequestParam(required = false) Double maxRent,
                                               @RequestParam(required = false) Integer bedrooms, @RequestParam(required = false) String district,
                                               @RequestParam(required = false) Boolean isFurnished) {
-    public ResponseEntity<List<ApartmentDTOOut>> searchApartments(@RequestParam(required = false) Double minRent, @RequestParam(required = false) Double maxRent, @RequestParam(required = false) Integer bedrooms, @RequestParam(required = false) String district, @RequestParam(required = false) Boolean isFurnished) {
         return ResponseEntity.status(200).body(apartmentService.searchApartments(minRent, maxRent, bedrooms, district, isFurnished));
     }
 
