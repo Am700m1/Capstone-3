@@ -2,14 +2,14 @@ package com.example.capstone3.Controller;
 
 import com.example.capstone3.Api.ApiResponse;
 import com.example.capstone3.DTO.In.ContractDTOIn;
-import com.example.capstone3.DTO.Out.ContractDTOOut;
 import com.example.capstone3.Service.ContractService;
+import jakarta.mail.MessagingException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/v1/contract")
@@ -84,4 +84,12 @@ public class ContractController {
     public ResponseEntity<?> getContractAnalysis(@PathVariable Integer userId, @PathVariable Integer contractId, @RequestParam String language) {
         return ResponseEntity.status(200).body(contractService.getContractAnalysis(userId, contractId, language));
     }
+
+    @PostMapping("/{contractId}/send-pdf")
+    public ResponseEntity<?> sendContractPdfEmail(@PathVariable Integer contractId) throws IOException, MessagingException {
+        contractService.generateAndEmailContractPdf(contractId);
+        return ResponseEntity.status(200).body(new ApiResponse("Contract PDF has been successfully generated and sent via email."));
+    }
+
+
 }

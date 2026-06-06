@@ -4,6 +4,7 @@ import com.example.capstone3.Api.ApiException;
 import com.example.capstone3.DTO.In.ApartmentDTOIn;
 import com.example.capstone3.DTO.Out.ApartmentDTOOut;
 import com.example.capstone3.DTO.Out.ApartmentImageDTOOut;
+import com.example.capstone3.DTO.Out.LowRatedApartmentDTOOut;
 import com.example.capstone3.DTO.Out.UnderpricedApartmentDTOOut;
 import com.example.capstone3.Enums.ApartmentStatus;
 import com.example.capstone3.Models.*;
@@ -11,9 +12,10 @@ import com.example.capstone3.Repository.ApartmentRepository;
 import com.example.capstone3.Repository.BuildingRepository;
 import com.example.capstone3.Repository.OwnerRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.time.LocalDateTime;
@@ -27,6 +29,7 @@ public class ApartmentService {
     private final ApartmentRepository apartmentRepository;
     private final BuildingRepository buildingRepository;
     private final OwnerRepository ownerRepository;
+    private final AiService aiService;
 
     public List<ApartmentDTOOut> getAll() {
         List<ApartmentDTOOut> apartmentDTOOuts = new ArrayList<>();
@@ -220,6 +223,76 @@ public class ApartmentService {
 
         result.sort(Comparator.comparingDouble(UnderpricedApartmentDTOOut::getScore).reversed());
         return result;
+    }
+
+
+    public List<LowRatedApartmentDTOOut> getLowRatedApartmentsByBuilding(Integer ownerId, Integer buildingId) {
+        Owner owner = ownerRepository.findOwnerById(ownerId);
+        if (owner == null) {
+            throw new ApiException("Owner not found");
+        }
+
+        Building building = buildingRepository.findBuildingById(buildingId);
+        if (building == null) {
+            throw new ApiException("Building not found");
+        }
+
+        // Security check: owner must own this building
+        if (!building.getOwner().getId().equals(ownerId)) {
+            throw new ApiException("You do not have permission to view this building");
+        }
+
+        List<LowRatedApartmentDTOOut> result = new ArrayList<>();
+
+        for (Apartment apartment : building.getApartments()) {
+
+            List<Review> reviews = apartment.getReviews();
+            if (reviews.isEmpty()) continue;
+
+            // Calculate average rating
+            double totalRating = 0;
+            for (Review review : reviews) {
+                totalRating += review.getRating();
+            }
+            double avgRating = totalRating / reviews.size();
+
+            // Only include apartments with average rating below 2.0
+            if (avgRating >= 2.0) continue;
+
+            // Build comments string to send to AI
+            StringBuilder comments = new StringBuilder();
+            for (Review review : reviews) {
+                comments.append("- ").append(review.getComment()).append("\n");
+            }
+
+            // Call AI to summarize the issues
+            String aiSummary = getAiSummary(apartment.getTitle(), comments.toString());
+
+            LowRatedApartmentDTOOut dto = new LowRatedApartmentDTOOut();
+            dto.setId(apartment.getId());
+            dto.setTitle(apartment.getTitle());
+            dto.setDistrict(building.getDistrict());
+            dto.setMonthlyRent(apartment.getMonthlyRent());
+            dto.setBedrooms(apartment.getBedrooms());
+            dto.setBathrooms(apartment.getBathrooms());
+            dto.setAverageRating(Math.round(avgRating * 100.0) / 100.0);
+            dto.setAiSummary(aiSummary);
+            result.add(dto);
+        }
+
+        if (result.isEmpty()) {
+            throw new ApiException("No low rated apartments found in this building");
+        }
+
+        result.sort(Comparator.comparingDouble(LowRatedApartmentDTOOut::getAverageRating));
+        return result;
+    }
+
+    private String getAiSummary(String apartmentTitle, String comments) {
+        String prompt = "You are analyzing tenant reviews for an apartment called \"" + apartmentTitle + "\".\n" +
+                "Here are the review comments:\n" + comments + "\n" +
+                "Summarize the main issues tenants are complaining about in one sentence starting with \"Main issues: \"";
+        return aiService.generateText(prompt);
     }
 
 

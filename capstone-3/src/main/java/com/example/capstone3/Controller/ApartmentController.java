@@ -46,9 +46,15 @@ public class ApartmentController {
         return ResponseEntity.status(200).body(new ApiResponse("Apartment deleted successfully"));
     }
 
-    @GetMapping("/get/underpriced")
+
+    @GetMapping("/underpriced")
     public ResponseEntity<?> getUnderpricedApartments() {
         return ResponseEntity.status(200).body(apartmentService.getUnderpricedApartments());
+    }
+
+    @GetMapping("/low-rated/{ownerId}/{buildingId}")
+    public ResponseEntity<?> getLowRatedApartmentsByBuilding(@PathVariable Integer ownerId, @PathVariable Integer buildingId) {
+        return ResponseEntity.status(200).body(apartmentService.getLowRatedApartmentsByBuilding(ownerId, buildingId));
     }
 
     @GetMapping("/dashboard/{ownerId}")
@@ -57,9 +63,12 @@ public class ApartmentController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<ApartmentDTOOut>> searchApartments(
-            @RequestParam(required = false) Double minRent, @RequestParam(required = false) Double maxRent, @RequestParam(required = false) Integer bedrooms, @RequestParam(required = false) String district, @RequestParam(required = false) Boolean isFurnished) {
+    public ResponseEntity<List<ApartmentDTOOut>> searchApartments(@RequestParam(required = false) Double minRent, @RequestParam(required = false) Double maxRent, @RequestParam(required = false) Integer bedrooms, @RequestParam(required = false) String district, @RequestParam(required = false) Boolean isFurnished) {
 
         return ResponseEntity.status(200).body(apartmentService.searchApartments(minRent, maxRent, bedrooms, district, isFurnished));
     }
+
+
+
+
 }

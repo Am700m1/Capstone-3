@@ -8,16 +8,20 @@ import com.example.capstone3.Enums.ContractStatus;
 import com.example.capstone3.Enums.ReservationStatus;
 import com.example.capstone3.Models.*;
 import com.example.capstone3.Repository.*;
+import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
+import jakarta.mail.MessagingException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayOutputStream;
+
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +32,7 @@ public class ContractService {
     private final UserRepository userRepository;
     private final ApartmentRepository apartmentRepository;
     private final OwnerRepository ownerRepository;
+    private final EmailService emailService;
 
     private final AiService aiService;
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
@@ -380,4 +385,93 @@ public class ContractService {
                 "Please make sure to hand over the apartment and submit any final reviews.");
     }
 
-}
+
+    public void generateAndEmailContractPdf(Integer contractId) throws IOException, MessagingException {
+        Contract contract = contractRepository.findContractById(contractId);
+        if (contract == null) {
+            throw new ApiException("Contract not found");
+        }
+
+        String tenantName    = contract.getReservation().getUser().getFullName();
+        String tenantEmail   = contract.getReservation().getUser().getEmail();
+        String tenantPhone   = contract.getReservation().getUser().getPhoneNumber();
+        String apartmentTitle = contract.getReservation().getApartment().getTitle();
+        String contractNum   = contract.getContractNumber();
+        String monthlyRent   = String.valueOf(contract.getMonthlyRent());
+        String ownerName     = contract.getReservation().getApartment().getBuilding().getOwner().getFullName();
+        String ownerEmail    = contract.getReservation().getApartment().getBuilding().getOwner().getEmail();
+        String ownerPhone    = contract.getReservation().getApartment().getBuilding().getOwner().getPhoneNumber();
+        String buildingName  = contract.getReservation().getApartment().getBuilding().getName();
+        String district      = contract.getReservation().getApartment().getBuilding().getDistrict();
+        String startDate     = contract.getStartDate().toString();
+        String endDate       = contract.getEndDate().toString();
+        String secDeposit    = contract.getSecurityDeposit() != null ? String.valueOf(contract.getSecurityDeposit()) : "N/A";
+        String signedDate    = contract.getSignedDate() != null ? contract.getSignedDate().toString() : "Not signed yet";
+        String status        = contract.getContractStatus().toString();
+
+        String pdfHtml = "<html>" +
+                "<head>" +
+                "<style>" +
+                "body { font-family: Arial, sans-serif; padding: 40px; color: #2d3748; }" +
+                "h1 { color: #1a365d; font-size: 24px; margin-bottom: 5px; text-align: center; }" +
+                ".subtitle { color: #718096; font-size: 13px; text-align: center; }" +
+                ".section-title { background-color: #1a365d; color: white; padding: 8px 12px; margin-top: 25px; font-size: 14px; }" +
+                "table { width: 100%; border-collapse: collapse; }" +
+                "td { padding: 10px 12px; border: 1px solid #e2e8f0; font-size: 13px; }" +
+                ".label { font-weight: bold; background-color: #f7fafc; width: 40%; }" +
+                ".footer { margin-top: 40px; font-size: 12px; color: #718096; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 15px; }" +
+                "</style>" +
+                "</head>" +
+                "<body>" +
+                "<h1>OFFICIAL LEASE AGREEMENT</h1>" +
+                "<div class='subtitle'>Contract No: " + contractNum + " | Status: " + status + "</div>" +
+
+                "<div class='section-title'>PROPERTY INFORMATION</div>" +
+                "<table>" +
+                "<tr><td class='label'>Building Name</td><td>" + buildingName + "</td></tr>" +
+                "<tr><td class='label'>Apartment</td><td>" + apartmentTitle + "</td></tr>" +
+                "<tr><td class='label'>District</td><td>" + district + "</td></tr>" +
+                "</table>" +
+
+                "<div class='section-title'>OWNER INFORMATION</div>" +
+                "<table>" +
+                "<tr><td class='label'>Owner Name</td><td>" + ownerName + "</td></tr>" +
+                "<tr><td class='label'>Email</td><td>" + ownerEmail + "</td></tr>" +
+                "<tr><td class='label'>Phone</td><td>" + ownerPhone + "</td></tr>" +
+                "</table>" +
+
+                "<div class='section-title'>TENANT INFORMATION</div>" +
+                "<table>" +
+                "<tr><td class='label'>Tenant Name</td><td>" + tenantName + "</td></tr>" +
+                "<tr><td class='label'>Email</td><td>" + tenantEmail + "</td></tr>" +
+                "<tr><td class='label'>Phone</td><td>" + tenantPhone + "</td></tr>" +
+                "</table>" +
+
+                "<div class='section-title'>CONTRACT TERMS</div>" +
+                "<table>" +
+                "<tr><td class='label'>Start Date</td><td>" + startDate + "</td></tr>" +
+                "<tr><td class='label'>End Date</td><td>" + endDate + "</td></tr>" +
+                "<tr><td class='label'>Monthly Rent</td><td>" + monthlyRent + " SAR</td></tr>" +
+                "<tr><td class='label'>Security Deposit</td><td>" + secDeposit + " SAR</td></tr>" +
+                "<tr><td class='label'>Signed Date</td><td>" + signedDate + "</td></tr>" +
+                "</table>" +
+
+                "<div class='footer'>This document is an official lease agreement generated by the Smart Rental Platform. " +
+                "Both parties are bound by the terms stated above.</div>" +
+                "</body>" +
+                "</html>";
+
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+        PdfRendererBuilder builder = new PdfRendererBuilder();
+        builder.withHtmlContent(pdfHtml, "/");
+        builder.toStream(os);
+        builder.run();
+
+        emailService.sendEmailWithPdf(
+                tenantEmail,
+                "Lease Contract Attachment - " + apartmentTitle,
+                "<p>Dear " + tenantName + ", please find your formalized lease contract attached.</p>",
+                os.toByteArray(),
+                "Contract_" + contractNum + ".pdf"
+        );
+    }}
