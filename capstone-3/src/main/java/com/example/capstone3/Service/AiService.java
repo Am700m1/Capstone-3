@@ -1,6 +1,7 @@
 package com.example.capstone3.Service;
 
 import com.example.capstone3.Api.ApiException;
+import com.example.capstone3.Models.Contract;
 import com.example.capstone3.Models.Owner;
 import com.example.capstone3.Models.Review;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -140,5 +141,48 @@ public class AiService {
                 .path(0)
                 .path("text")
                 .asText("No explanation available.");
+    }
+
+    // CONTRACT ANALYSIS AI ENDPOINT!
+    public String analyzeContract(Contract contract, String language) {
+        String prompt = buildContractAnalysisPrompt(contract, language);
+        String rawResponse = generateText(prompt);
+        return cleanJsonResponse(rawResponse);
+    }
+
+    private String buildContractAnalysisPrompt(Contract contract, String language) {
+        StringBuilder prompt = new StringBuilder();
+        prompt.append("You are an expert legal AI assistant specializing in the Saudi real estate market.\n");
+        prompt.append("Analyze the following contract details.\n\n");
+        prompt.append("Start Date: ").append(contract.getStartDate()).append("\n");
+        prompt.append("End Date: ").append(contract.getEndDate()).append("\n");
+        prompt.append("Monthly Rent: ").append(contract.getMonthlyRent()).append(" SAR\n");
+        prompt.append("Security Deposit: ").append(contract.getSecurityDeposit()).append(" SAR\n\n");
+
+        prompt.append("Task:\n");
+        prompt.append("1. Provide a brief summary of the financial and time commitments.\n");
+        prompt.append("2. Highlight any irregularities, financial risks, or unusual terms (e.g., if the security deposit is unusually high compared to the rent, or if the duration is irregular).\n");
+        prompt.append("3. Give a final recommendation (Proceed, Negotiate, or Walk Away).\n\n");
+
+        prompt.append("CRITICAL INSTRUCTIONS:\n");
+        prompt.append("- You must output ONLY a valid JSON object. Do not add any conversational text.\n");
+        prompt.append("- The JSON keys must be exactly in English: \"summary\", \"irregularities\" (a list of strings), and \"recommendation\".\n");
+        prompt.append("- The actual VALUES inside the JSON must be written entirely in ").append(language).append(".\n");
+
+        return prompt.toString();
+    }
+
+    // Helper method to remove markdown formatting if Gemini adds it
+    private String cleanJsonResponse(String response) {
+        response = response.trim();
+        if (response.startsWith("```json")) {
+            response = response.substring(7);
+        } else if (response.startsWith("```")) {
+            response = response.substring(3);
+        }
+        if (response.endsWith("```")) {
+            response = response.substring(0, response.length() - 3);
+        }
+        return response.trim();
     }
 }
