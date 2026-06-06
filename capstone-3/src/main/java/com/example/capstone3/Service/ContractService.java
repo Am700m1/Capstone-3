@@ -33,6 +33,7 @@ public class ContractService {
     private final ApartmentRepository apartmentRepository;
     private final OwnerRepository ownerRepository;
     private final EmailService emailService;
+    private final WhatsAppService whatsAppService;
 
     private final AiService aiService;
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
@@ -270,6 +271,8 @@ public class ContractService {
         apartment.setStatus(ApartmentStatus.UNDER_MAINTENANCE);
         apartment.setAvailable(false);
         apartmentRepository.save(apartment);
+
+        whatsAppService.notifyTenantContractEnded(reservation.getUser(), apartment);
     }
 
 
@@ -362,28 +365,14 @@ public class ContractService {
             apartmentRepository.save(apartment);
 
             // 5. Trigger Notifications
-            sendEndRentalNotificationToOwner(apartment.getOwner(), apartment);
-            sendEndRentalNotificationToUser(reservation.getUser(), apartment);
+            whatsAppService.notifyOwnerContractEnded(apartment.getOwner(), apartment);
+            whatsAppService.notifyTenantContractEnded(reservation.getUser(), apartment);
         }
 
         System.out.println("Automated Check: Processed and closed " + expiredContracts.size() + " expired contracts.");
     }
 
     // --- NOTIFICATION HOLDING PLACES ---
-
-    private void sendEndRentalNotificationToOwner(Owner owner, Apartment apartment) {
-        // TODO: Implement Email / WhatsApp integration here in the future
-        System.out.println(">> SMS/EMAIL TO OWNER (" + owner.getPhoneNumber() + " / " + owner.getEmail() + "): " +
-                "The contract for apartment '" + apartment.getTitle() + "' has ended. " +
-                "The system has automatically placed the apartment UNDER_MAINTENANCE for your inspection.");
-    }
-
-    private void sendEndRentalNotificationToUser(User user, Apartment apartment) {
-        // TODO: Implement Email / WhatsApp integration here in the future
-        System.out.println(">> SMS/EMAIL TO TENANT (" + user.getPhoneNumber() + " / " + user.getEmail() + "): " +
-                "Dear " + user.getFullName() + ", your rental contract for '" + apartment.getTitle() + "' has officially ended today. " +
-                "Please make sure to hand over the apartment and submit any final reviews.");
-    }
 
 
     public void generateAndEmailContractPdf(Integer contractId) throws IOException, MessagingException {

@@ -30,6 +30,7 @@ public class ReservationService {
     private final ApartmentRepository apartmentRepository;
     private final UserRepository userRepository;
     private final OwnerRepository ownerRepository;
+    private final WhatsAppService whatsAppService;
 
     public List<ReservationDTOOut> getAll() {
         List<ReservationDTOOut> reservationDTOOuts = new ArrayList<>();
@@ -64,6 +65,8 @@ public class ReservationService {
         reservation.setMessage(reservationDTOIn.getMessage());
         reservation.setCreatedAt(LocalDateTime.now());
         reservationRepository.save(reservation);
+
+        whatsAppService.notifyOwnerNewReservation(apartment.getOwner(), reservation);
     }
 
     public void updateReservation(Integer id, ReservationDTOIn reservationDTOIn) {
@@ -191,6 +194,8 @@ public class ReservationService {
         Apartment apartment = reservation.getApartment();
         apartment.setStatus(ApartmentStatus.RESERVED);
         apartmentRepository.save(apartment);
+
+        whatsAppService.notifyTenantReservationAccepted(reservation.getUser(), apartment);
     }
 
 
@@ -213,6 +218,9 @@ public class ReservationService {
         Apartment apartment = reservation.getApartment();
         apartment.setStatus(ApartmentStatus.AVAILABLE);
         apartmentRepository.save(apartment);
+
+        whatsAppService.notifyTenantReservationRejected(reservation.getUser(), apartment);
+
     }
 
 

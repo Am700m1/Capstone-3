@@ -38,6 +38,7 @@ public class MaintenanceRequestService {
     private final BuildingRepository    buildingRepository;
     private final OwnerRepository       ownerRepository;
     private final AiService             aiService;
+    private final WhatsAppService       whatsAppService;
 
     // ─── Get All ──────────────────────────────────────────────────────────────
 
@@ -145,6 +146,8 @@ public class MaintenanceRequestService {
         }
         req.setStatus(MaintenanceStatus.IN_PROGRESS);
         maintenanceRepository.save(req);
+
+        whatsAppService.notifyTenantMaintenanceUpdated(req.getUser(), req);
     }
 
     // ─── Complete ─────────────────────────────────────────────────────────────
@@ -167,6 +170,8 @@ public class MaintenanceRequestService {
         req.setStatus(MaintenanceStatus.COMPLETED);
         req.setCompletedAt(LocalDateTime.now());
         maintenanceRepository.save(req);
+
+        whatsAppService.notifyTenantMaintenanceUpdated(req.getUser(), req);
     }
 
     // ─── Update ───────────────────────────────────────────────────────────────

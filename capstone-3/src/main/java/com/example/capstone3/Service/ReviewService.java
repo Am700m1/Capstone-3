@@ -31,6 +31,7 @@ public class ReviewService {
     private final OwnerRepository ownerRepository;
     private final ReservationRepository reservationRepository;
     private final AiService aiService;
+    private final WhatsAppService whatsAppService;
 
     public List<ReviewDTOOut> getAll() {
         List<ReviewDTOOut> reviewDTOOuts = new ArrayList<>();
@@ -69,6 +70,8 @@ public class ReviewService {
         review.setRating(dto.getRating());
         review.setComment(dto.getComment());
         reviewRepository.save(review);
+
+        whatsAppService.notifyOwnerNewReview(reservation.getApartment().getOwner(), review.getApartment(), review);
     }
 
     public void updateReview(Integer id, ReviewDTOIn dto) {
