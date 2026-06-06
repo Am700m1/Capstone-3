@@ -310,6 +310,9 @@ public class ReservationService {
             apartment.setStatus(ApartmentStatus.AVAILABLE);
             apartmentRepository.save(apartment);
         }
+
+        whatsAppService.notifyOwnerReservationCancelled(
+                reservation.getApartment().getOwner(), reservation);
     }
 
 //    @Scheduled(fixedRate = 60000)
@@ -329,6 +332,8 @@ public class ReservationService {
             // Mark the reservation as expired
             reservation.setStatus(ReservationStatus.EXPIRED);
             reservationRepository.save(reservation);
+            whatsAppService.notifyTenantReservationExpired(
+                    reservation.getUser(), reservation.getApartment());
 
         }
 

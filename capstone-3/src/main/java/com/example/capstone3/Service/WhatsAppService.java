@@ -1,6 +1,7 @@
 package com.example.capstone3.Service;
 
 import com.example.capstone3.Models.Apartment;
+import com.example.capstone3.Models.Contract;
 import com.example.capstone3.Models.MaintenanceRequest;
 import com.example.capstone3.Models.Owner;
 import com.example.capstone3.Models.Reservation;
@@ -71,10 +72,45 @@ public class WhatsAppService {
         sendMessage(tenant.getPhoneNumber(), message);
     }
 
+    public void notifyTenantReservationExpired(User tenant, Apartment apartment) {
+        String message = "Hello " + tenant.getFullName() + ",\n\n" +
+                "Your reservation for *" + apartment.getTitle() + "* has *EXPIRED*.\n\n" +
+                "You can submit a new reservation if the apartment is still available.\n" +
+                "Smart Rental Platform";
+        sendMessage(tenant.getPhoneNumber(), message);
+    }
+
+    public void notifyTenantContractCreated(User tenant, Contract contract) {
+        String message = "Hello " + tenant.getFullName() + ",\n\n" +
+                "A new contract is ready for apartment *" + contract.getReservation().getApartment().getTitle() + "*.\n" +
+                "Contract Number: " + contract.getContractNumber() + "\n" +
+                "Start Date: " + contract.getStartDate() + "\n" +
+                "End Date: " + contract.getEndDate() + "\n\n" +
+                "Please log in to review and accept or reject the contract.\n" +
+                "Smart Rental Platform";
+        sendMessage(tenant.getPhoneNumber(), message);
+    }
+
     public void notifyTenantContractEnded(User tenant, Apartment apartment) {
         String message = "Hello " + tenant.getFullName() + ",\n\n" +
                 "Your rental contract for *" + apartment.getTitle() + "* has officially *ENDED*.\n\n" +
                 "Please make sure to hand over the apartment keys and submit your final review.\n" +
+                "Smart Rental Platform";
+        sendMessage(tenant.getPhoneNumber(), message);
+    }
+
+    public void notifyTenantContractTerminated(User tenant, Apartment apartment) {
+        String message = "Hello " + tenant.getFullName() + ",\n\n" +
+                "Your rental contract for *" + apartment.getTitle() + "* has been *TERMINATED*.\n" +
+                "The rental is now completed and the apartment is under maintenance.\n\n" +
+                "Smart Rental Platform";
+        sendMessage(tenant.getPhoneNumber(), message);
+    }
+
+    public void notifyTenantContractRenewed(User tenant, Contract contract) {
+        String message = "Hello " + tenant.getFullName() + ",\n\n" +
+                "Your rental contract for *" + contract.getReservation().getApartment().getTitle() + "* has been *RENEWED*.\n" +
+                "New End Date: " + contract.getEndDate() + "\n\n" +
                 "Smart Rental Platform";
         sendMessage(tenant.getPhoneNumber(), message);
     }
@@ -121,6 +157,14 @@ public class WhatsAppService {
         sendMessage(owner.getPhoneNumber(), message);
     }
 
+    public void notifyOwnerReservationCancelled(Owner owner, Reservation reservation) {
+        String message = "Hello " + owner.getFullName() + ",\n\n" +
+                "The reservation for apartment *" + reservation.getApartment().getTitle() + "* has been *CANCELLED* by the tenant.\n" +
+                "Tenant: " + reservation.getUser().getFullName() + "\n\n" +
+                "Smart Rental Platform";
+        sendMessage(owner.getPhoneNumber(), message);
+    }
+
     public void notifyOwnerContractEnded(Owner owner, Apartment apartment) {
         String message = "Hello " + owner.getFullName() + ",\n\n" +
                 "The contract for apartment *" + apartment.getTitle() + "* has *ENDED*.\n" +
@@ -128,6 +172,48 @@ public class WhatsAppService {
                 "Please log in to review and update the apartment status.\n" +
                 "Smart Rental Platform";
         sendMessage(owner.getPhoneNumber(), message);
+    }
+
+    public void notifyOwnerContractRenewed(Owner owner, Contract contract) {
+        String message = "Hello " + owner.getFullName() + ",\n\n" +
+                "The contract for apartment *" + contract.getReservation().getApartment().getTitle() + "* has been *RENEWED*.\n" +
+                "New End Date: " + contract.getEndDate() + "\n\n" +
+                "Smart Rental Platform";
+        sendMessage(owner.getPhoneNumber(), message);
+    }
+
+    public void notifyOwnerNewMaintenanceRequest(Owner owner, MaintenanceRequest maintenanceRequest) {
+        String message = "Hello " + owner.getFullName() + ",\n\n" +
+                "A new maintenance request was submitted for *" + maintenanceRequest.getApartment().getTitle() + "*.\n" +
+                "Issue: " + maintenanceRequest.getDescription() + "\n" +
+                "Priority: *" + maintenanceRequest.getPriority() + "*\n\n" +
+                "Please log in to review the request.\n" +
+                "Smart Rental Platform";
+        sendMessage(owner.getPhoneNumber(), message);
+    }
+
+    public void notifyRoommateRequestReceived(User receiver, User sender) {
+        String message = "Hello " + receiver.getFullName() + ",\n\n" +
+                "You received a new roommate request from *" + sender.getFullName() + "*.\n\n" +
+                "Please log in to accept or reject the request.\n" +
+                "Smart Rental Platform";
+        sendMessage(receiver.getPhoneNumber(), message);
+    }
+
+    public void notifyRoommateRequestAccepted(User sender, User receiver) {
+        String message = "Hello " + sender.getFullName() + ",\n\n" +
+                "Your roommate request was *ACCEPTED* by " + receiver.getFullName() + ".\n" +
+                "You are now linked as roommates.\n\n" +
+                "Smart Rental Platform";
+        sendMessage(sender.getPhoneNumber(), message);
+    }
+
+    public void notifyRoommateRequestRejected(User sender, User receiver) {
+        String message = "Hello " + sender.getFullName() + ",\n\n" +
+                "Your roommate request was *REJECTED* by " + receiver.getFullName() + ".\n\n" +
+                "You can continue searching for other roommate matches.\n" +
+                "Smart Rental Platform";
+        sendMessage(sender.getPhoneNumber(), message);
     }
 
     public void notifyOwnerNewReview(Owner owner, Apartment apartment, Review review) {

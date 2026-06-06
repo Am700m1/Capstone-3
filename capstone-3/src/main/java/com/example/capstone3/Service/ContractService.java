@@ -90,6 +90,8 @@ public class ContractService {
         contract.setPdfPath(contractDTOIn.getPdfPath());
         contract.setContractStatus(ContractStatus.PENDING);
         contractRepository.save(contract);
+
+        whatsAppService.notifyTenantContractCreated(reservation.getUser(), contract);
     }
 
     public void updateContract(Integer id, ContractDTOIn contractDTOIn) {
@@ -337,6 +339,7 @@ public class ContractService {
         apartment.setStatus(ApartmentStatus.UNDER_MAINTENANCE);
         apartmentRepository.save(apartment);
 
+        whatsAppService.notifyOwnerContractEnded(apartment.getOwner(), apartment);
         whatsAppService.notifyTenantContractEnded(reservation.getUser(), apartment);
     }
 
@@ -369,6 +372,8 @@ public class ContractService {
         Apartment apartment = reservation.getApartment();
         apartment.setStatus(ApartmentStatus.UNDER_MAINTENANCE);
         apartmentRepository.save(apartment);
+
+        whatsAppService.notifyTenantContractTerminated(reservation.getUser(), apartment);
     }
 
 
@@ -404,6 +409,10 @@ public class ContractService {
 
         contract.setEndDate(newEndDate);
         contractRepository.save(contract);
+
+        whatsAppService.notifyTenantContractRenewed(user, contract);
+        whatsAppService.notifyOwnerContractRenewed(
+                contract.getReservation().getApartment().getOwner(), contract);
     }
 
     public Map<String, Object> getContractAnalysis(Integer userId, Integer contractId, String language) {
@@ -499,9 +508,9 @@ public class ContractService {
 
         Apartment apt         = contract.getReservation().getApartment();
         String furnished      = Boolean.TRUE.equals(apt.getFurnished()) ? "Yes" : "No";
-        String waterIncluded  = Boolean.TRUE.equals(apt.getWaterIncluded()) ? "Yes" : "No";
-        String internetIncluded   = Boolean.TRUE.equals(apt.getInternetIncluded()) ? "Yes" : "No";
-        String electricityIncluded = Boolean.TRUE.equals(apt.getElectricityIncluded()) ? "Yes" : "No";
+        String waterIncluded  = Boolean.TRUE.equals(apt.getWaterIncluded()) ? "Included" : "Not included";
+        String internetIncluded   = Boolean.TRUE.equals(apt.getInternetIncluded()) ? "Included" : "Not included";
+        String electricityIncluded = Boolean.TRUE.equals(apt.getElectricityIncluded()) ? "Included" : "Not included";
         String allowedTenantType  = apt.getAllowedTenantType() != null ? apt.getAllowedTenantType() : "N/A";
         String floorNumber        = apt.getFloorNumber() != null ? String.valueOf(apt.getFloorNumber()) : "N/A";
 
@@ -511,77 +520,120 @@ public class ContractService {
         String hasSecurity    = Boolean.TRUE.equals(building.getHasSecurity()) ? "Yes" : "No";
         String petsAllowed    = Boolean.TRUE.equals(building.getPetsAllowed()) ? "Yes" : "No";
 
-        String pdfHtml = "<html>" +
-                "<head>" +
+        String pdfHtml = "<!DOCTYPE html>" +
+                "<html><head><meta charset='UTF-8'/>" +
                 "<style>" +
-                "body { font-family: Arial, sans-serif; padding: 40px; color: #2d3748; }" +
-                "h1 { color: #1a365d; font-size: 24px; margin-bottom: 5px; text-align: center; }" +
-                ".subtitle { color: #718096; font-size: 13px; text-align: center; }" +
-                ".section-title { background-color: #1a365d; color: white; padding: 8px 12px; margin-top: 25px; font-size: 14px; }" +
-                "table { width: 100%; border-collapse: collapse; }" +
-                "td { padding: 10px 12px; border: 1px solid #e2e8f0; font-size: 13px; }" +
-                ".label { font-weight: bold; background-color: #f7fafc; width: 40%; }" +
-                ".footer { margin-top: 40px; font-size: 12px; color: #718096; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 15px; }" +
-                "</style>" +
-                "</head>" +
-                "<body>" +
-                "<h1>OFFICIAL LEASE AGREEMENT</h1>" +
-                "<div class='subtitle'>Contract No: " + contractNum + " | Status: " + status + "</div>" +
+                "@page { size: A4; margin: 22px; }" +
+                "* { box-sizing: border-box; }" +
+                "body { font-family: Arial, sans-serif; background: #f0fafa; color: #1a2e2c; margin: 0; font-size: 10px; }" +
+                ".container { width: 100%; }" +
+                ".header { text-align: center; margin-bottom: 12px; }" +
+                ".brand-mark { color: #0F766E; font-size: 18px; font-weight: bold; margin-bottom: 2px; }" +
+                ".brand-name { color: #0F766E; font-size: 21px; font-weight: bold; letter-spacing: 2px; }" +
+                ".brand-sub { color: #718096; font-size: 8px; letter-spacing: 1px; margin: 2px 0 9px; }" +
+                ".document-title { font-size: 17px; font-weight: bold; margin: 0 0 5px; }" +
+                ".document-meta { color: #718096; font-size: 9px; }" +
+                ".document-meta strong { color: #1a2e2c; }" +
+                ".status { color: #0F766E; font-weight: bold; }" +
+                ".divider { border-top: 2px solid #0F766E; margin-bottom: 12px; }" +
+                ".layout { width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 10px; }" +
+                ".layout-cell { width: 50%; vertical-align: top; }" +
+                ".layout-left { padding-right: 5px; }" +
+                ".layout-right { padding-left: 5px; }" +
+                ".card { width: 100%; border: 1px solid #d1e8e6; border-collapse: collapse; background: #ffffff; margin-bottom: 10px; }" +
+                ".card-title { background: #0F766E; color: #ffffff; font-size: 10px; font-weight: bold; letter-spacing: 0.4px; padding: 7px 10px; }" +
+                ".card td { border-bottom: 1px solid #e8f5f4; padding: 6px 10px; vertical-align: top; }" +
+                ".card tr:last-child td { border-bottom: 0; }" +
+                ".label { color: #718096; width: 48%; }" +
+                ".value { color: #1a2e2c; }" +
+                ".positive { color: #0F766E; font-weight: bold; }" +
+                ".negative { color: #e24b4a; }" +
+                ".person { padding: 9px 10px; border-bottom: 1px solid #e8f5f4; }" +
+                ".person-name { font-size: 11px; font-weight: bold; }" +
+                ".person-role { color: #718096; font-size: 9px; margin-top: 2px; }" +
+                ".terms { width: 100%; border-collapse: collapse; }" +
+                ".terms td { width: 25%; border-right: 1px solid #e8f5f4; border-bottom: 1px solid #e8f5f4; padding: 7px 10px; }" +
+                ".terms td:last-child { border-right: 0; }" +
+                ".notes-label { color: #718096; width: 18%; }" +
+                ".notes-value { color: #718096; font-style: italic; }" +
+                ".footer { border: 1px solid #d1e8e6; background: #f0fafa; color: #718096; padding: 9px 12px; font-size: 9px; line-height: 1.5; }" +
+                "</style></head><body><div class='container'>" +
 
-                "<div class='section-title'>PROPERTY INFORMATION</div>" +
-                "<table>" +
-                "<tr><td class='label'>Building Name</td><td>" + buildingName + "</td></tr>" +
-                "<tr><td class='label'>Apartment</td><td>" + apartmentTitle + "</td></tr>" +
-                "<tr><td class='label'>District</td><td>" + district + "</td></tr>" +
-                "<tr><td class='label'>Floor Number</td><td>" + floorNumber + "</td></tr>" +
-                "<tr><td class='label'>Allowed Tenant Type</td><td>" + allowedTenantType + "</td></tr>" +
+                "<div class='header'>" +
+                "<div class='brand-mark'>&#9632;</div>" +
+                "<div class='brand-name'>RAWAA</div>" +
+                "<div class='brand-sub'>SMART RENTAL PLATFORM</div>" +
+                "<h1 class='document-title'>Official lease agreement</h1>" +
+                "<div class='document-meta'>Contract no: <strong>" + contractNum + "</strong> &#160; | &#160; Status: <span class='status'>" + status + "</span></div>" +
+                "</div>" +
+                "<div class='divider'></div>" +
+
+                "<table class='layout'><tr>" +
+                "<td class='layout-cell layout-left'>" +
+                "<table class='card'>" +
+                "<tr><td class='card-title' colspan='2'>PROPERTY INFORMATION</td></tr>" +
+                "<tr><td class='label'>Building name</td><td class='value'>" + buildingName + "</td></tr>" +
+                "<tr><td class='label'>Apartment</td><td class='value'>" + apartmentTitle + "</td></tr>" +
+                "<tr><td class='label'>District</td><td class='value'>" + district + "</td></tr>" +
+                "<tr><td class='label'>Floor number</td><td class='value'>" + floorNumber + "</td></tr>" +
+                "<tr><td class='label'>Allowed tenant type</td><td class='value'>" + allowedTenantType + "</td></tr>" +
+                "</table>" +
+                "</td>" +
+                "<td class='layout-cell layout-right'>" +
+                "<table class='card'>" +
+                "<tr><td class='card-title' colspan='2'>BUILDING FACILITIES</td></tr>" +
+                "<tr><td class='label'>Parking</td><td class='" + ("Yes".equals(hasParking) ? "positive" : "negative") + "'>" + hasParking + "</td></tr>" +
+                "<tr><td class='label'>Elevator</td><td class='" + ("Yes".equals(hasElevator) ? "positive" : "negative") + "'>" + hasElevator + "</td></tr>" +
+                "<tr><td class='label'>Security</td><td class='" + ("Yes".equals(hasSecurity) ? "positive" : "negative") + "'>" + hasSecurity + "</td></tr>" +
+                "<tr><td class='label'>Pets allowed</td><td class='" + ("Yes".equals(petsAllowed) ? "positive" : "negative") + "'>" + petsAllowed + "</td></tr>" +
+                "</table>" +
+                "<table class='card'>" +
+                "<tr><td class='card-title' colspan='2'>APARTMENT INCLUSIONS</td></tr>" +
+                "<tr><td class='label'>Furnished</td><td class='" + ("Yes".equals(furnished) ? "positive" : "negative") + "'>" + furnished + "</td></tr>" +
+                "<tr><td class='label'>Water</td><td class='" + ("Included".equals(waterIncluded) ? "positive" : "negative") + "'>" + waterIncluded + "</td></tr>" +
+                "<tr><td class='label'>Internet</td><td class='" + ("Included".equals(internetIncluded) ? "positive" : "negative") + "'>" + internetIncluded + "</td></tr>" +
+                "<tr><td class='label'>Electricity</td><td class='" + ("Included".equals(electricityIncluded) ? "positive" : "negative") + "'>" + electricityIncluded + "</td></tr>" +
+                "</table>" +
+                "</td></tr></table>" +
+
+                "<table class='layout'><tr>" +
+                "<td class='layout-cell layout-left'>" +
+                "<table class='card'>" +
+                "<tr><td class='card-title' colspan='2'>OWNER INFORMATION</td></tr>" +
+                "<tr><td class='person' colspan='2'><div class='person-name'>" + ownerName + "</div><div class='person-role'>Property Owner</div></td></tr>" +
+                "<tr><td class='label'>Email</td><td class='value'>" + ownerEmail + "</td></tr>" +
+                "<tr><td class='label'>Phone</td><td class='value'>" + ownerPhone + "</td></tr>" +
+                "</table>" +
+                "</td>" +
+                "<td class='layout-cell layout-right'>" +
+                "<table class='card'>" +
+                "<tr><td class='card-title' colspan='2'>TENANT INFORMATION</td></tr>" +
+                "<tr><td class='person' colspan='2'><div class='person-name'>" + tenantName + "</div><div class='person-role'>Tenant</div></td></tr>" +
+                "<tr><td class='label'>Email</td><td class='value'>" + tenantEmail + "</td></tr>" +
+                "<tr><td class='label'>Phone</td><td class='value'>" + tenantPhone + "</td></tr>" +
+                "</table>" +
+                "</td></tr></table>" +
+
+                "<table class='card'>" +
+                "<tr><td class='card-title' colspan='4'>CONTRACT TERMS</td></tr>" +
+                "<tr class='terms'>" +
+                "<td class='label'>Start date</td><td class='value'>" + startDate + "</td>" +
+                "<td class='label'>End date</td><td class='value'>" + endDate + "</td>" +
+                "</tr>" +
+                "<tr class='terms'>" +
+                "<td class='label'>Monthly rent</td><td class='positive'>" + monthlyRent + " SAR</td>" +
+                "<td class='label'>Security deposit</td><td class='value'>" + secDeposit + ("N/A".equals(secDeposit) ? "" : " SAR") + "</td>" +
+                "</tr>" +
+                "<tr class='terms'>" +
+                "<td class='label'>Signed</td><td class='" + ("Yes".equals(signed) ? "positive" : "negative") + "'>" + signed + "</td>" +
+                "<td class='label'>Signed date</td><td class='value'>" + signedDate + "</td>" +
+                "</tr>" +
+                "<tr><td class='notes-label'>Tenant notes</td><td class='notes-value' colspan='3'>" + reservationMsg + "</td></tr>" +
                 "</table>" +
 
-                "<div class='section-title'>BUILDING FACILITIES</div>" +
-                "<table>" +
-                "<tr><td class='label'>Parking</td><td>" + hasParking + "</td></tr>" +
-                "<tr><td class='label'>Elevator</td><td>" + hasElevator + "</td></tr>" +
-                "<tr><td class='label'>Security</td><td>" + hasSecurity + "</td></tr>" +
-                "<tr><td class='label'>Pets Allowed</td><td>" + petsAllowed + "</td></tr>" +
-                "</table>" +
-
-                "<div class='section-title'>APARTMENT INCLUSIONS</div>" +
-                "<table>" +
-                "<tr><td class='label'>Furnished</td><td>" + furnished + "</td></tr>" +
-                "<tr><td class='label'>Water Included</td><td>" + waterIncluded + "</td></tr>" +
-                "<tr><td class='label'>Internet Included</td><td>" + internetIncluded + "</td></tr>" +
-                "<tr><td class='label'>Electricity Included</td><td>" + electricityIncluded + "</td></tr>" +
-                "</table>" +
-
-                "<div class='section-title'>OWNER INFORMATION</div>" +
-                "<table>" +
-                "<tr><td class='label'>Owner Name</td><td>" + ownerName + "</td></tr>" +
-                "<tr><td class='label'>Email</td><td>" + ownerEmail + "</td></tr>" +
-                "<tr><td class='label'>Phone</td><td>" + ownerPhone + "</td></tr>" +
-                "</table>" +
-
-                "<div class='section-title'>TENANT INFORMATION</div>" +
-                "<table>" +
-                "<tr><td class='label'>Tenant Name</td><td>" + tenantName + "</td></tr>" +
-                "<tr><td class='label'>Email</td><td>" + tenantEmail + "</td></tr>" +
-                "<tr><td class='label'>Phone</td><td>" + tenantPhone + "</td></tr>" +
-                "</table>" +
-
-                "<div class='section-title'>CONTRACT TERMS</div>" +
-                "<table>" +
-                "<tr><td class='label'>Start Date</td><td>" + startDate + "</td></tr>" +
-                "<tr><td class='label'>End Date</td><td>" + endDate + "</td></tr>" +
-                "<tr><td class='label'>Monthly Rent</td><td>" + monthlyRent + " SAR</td></tr>" +
-                "<tr><td class='label'>Security Deposit</td><td>" + secDeposit + " SAR</td></tr>" +
-                "<tr><td class='label'>Signed</td><td>" + signed + "</td></tr>" +
-                "<tr><td class='label'>Signed Date</td><td>" + signedDate + "</td></tr>" +
-                "<tr><td class='label'>Tenant Notes</td><td>" + reservationMsg + "</td></tr>" +
-                "</table>" +
-
-                "<div class='footer'>This document is an official lease agreement generated by the Smart Rental Platform. " +
+                "<div class='footer'>This document is an official lease agreement generated by Rawaa - Smart Rental Platform. " +
                 "Both parties are bound by the terms stated above.</div>" +
-                "</body>" +
-                "</html>";
+                "</div></body></html>";
 
         ByteArrayOutputStream os = new ByteArrayOutputStream();
         PdfRendererBuilder builder = new PdfRendererBuilder();

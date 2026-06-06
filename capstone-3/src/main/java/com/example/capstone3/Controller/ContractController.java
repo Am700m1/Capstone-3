@@ -87,8 +87,7 @@ public class ContractController {
     }
 
     @GetMapping("/analyze/{contractId}/{userId}")
-    public ResponseEntity<?> getContractAnalysis(@PathVariable Integer userId, @PathVariable Integer contractId,
-                                                 @RequestParam(defaultValue = "EN") String language) {
+    public ResponseEntity<?> getContractAnalysis(@PathVariable Integer userId, @PathVariable Integer contractId, @RequestParam(defaultValue = "EN") String language) {
         return ResponseEntity.status(200).body(contractService.getContractAnalysis(userId, contractId, language));
     }
 

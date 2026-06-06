@@ -128,6 +128,8 @@ public class MaintenanceRequestService {
         req.setPriority(parseAiPriority(aiResponse));
 
         maintenanceRepository.save(req);
+
+        whatsAppService.notifyOwnerNewMaintenanceRequest(apartment.getOwner(), req);
     }
 
     // ─── Start ────────────────────────────────────────────────────────────────

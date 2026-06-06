@@ -2,7 +2,7 @@ package com.example.capstone3.DTO.In;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
@@ -15,7 +15,7 @@ public class ReviewDTOIn {
     @Max(value = 5, message = "Rating must be at most 5")
     private Integer rating;
 
-    @NotBlank(message = "Comment is required")
+    @NotEmpty(message = "Comment is required")
     @Size(max = 2000, message = "Comment must not exceed 2000 characters")
     private String comment;
 }

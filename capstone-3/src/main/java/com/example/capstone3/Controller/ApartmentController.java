@@ -76,8 +76,7 @@ public class ApartmentController {
     }
 
     @PutMapping("/toggle-maintenance/{ownerId}/{apartmentId}")
-    public ResponseEntity<?> makeApartmentUnderMaintenance(@PathVariable Integer ownerId,
-                                                           @PathVariable Integer apartmentId) {
+    public ResponseEntity<?> makeApartmentUnderMaintenance(@PathVariable Integer ownerId, @PathVariable Integer apartmentId) {
         apartmentService.toggleMaintenanceMode(ownerId, apartmentId);
         return ResponseEntity.status(200).body(new ApiResponse("Apartment is now under maintenance"));
     }

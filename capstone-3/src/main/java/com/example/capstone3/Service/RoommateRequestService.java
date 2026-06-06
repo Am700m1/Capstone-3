@@ -22,6 +22,7 @@ public class RoommateRequestService {
     private final RoommateRequestRepository roommateRequestRepository;
     private final UserRepository userRepository;
     private final UserPreferenceRepository userPreferenceRepository;
+    private final WhatsAppService whatsAppService;
 
     public void sendRoommateRequest(Integer senderId, Integer receiverId) {
         if (senderId.equals(receiverId)) {
@@ -64,6 +65,7 @@ public class RoommateRequestService {
         request.setCreatedAt(LocalDate.now());
 
         roommateRequestRepository.save(request);
+        whatsAppService.notifyRoommateRequestReceived(receiver, sender);
     }
 
     @Transactional
@@ -116,6 +118,8 @@ public class RoommateRequestService {
         // 4. The Domino Effect (Cancel all other pending requests involving these two users)
         cancelOtherPendingRequests(sender);
         cancelOtherPendingRequests(receiver);
+
+        whatsAppService.notifyRoommateRequestAccepted(sender, receiver);
     }
 
     // Helper Method for the Domino Effect
@@ -146,6 +150,8 @@ public class RoommateRequestService {
 
         request.setStatus(RoommateStatus.REJECTED);
         roommateRequestRepository.save(request);
+        whatsAppService.notifyRoommateRequestRejected(
+                request.getSender(), request.getReceiver());
     }
 
     @Transactional
