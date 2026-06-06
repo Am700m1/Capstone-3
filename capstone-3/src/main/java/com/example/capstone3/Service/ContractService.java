@@ -158,6 +158,8 @@ public class ContractService {
         Apartment apartment = apartmentRepository.findApartmentById(contract.getReservation().getApartment().getId());
         apartment.setStatus(ApartmentStatus.RENTED);
         apartmentRepository.save(apartment);
+
+        whatsAppService.notifyOwnerContractAccepted(apartment.getOwner(), apartment, user);
     }
 
 
@@ -189,6 +191,8 @@ public class ContractService {
         Apartment apartment = apartmentRepository.findApartmentById(contract.getReservation().getApartment().getId());
         apartment.setStatus(ApartmentStatus.AVAILABLE);
         apartmentRepository.save(apartment);
+
+        whatsAppService.notifyOwnerContractRejected(apartment.getOwner(), apartment, user);
     }
 
 
