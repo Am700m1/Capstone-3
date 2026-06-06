@@ -81,10 +81,6 @@ public class NominatimService {
 
     // Nominatim is spelling-sensitive, so a Riyadh-specific query is used as fallback.
     public NominatimLocationDTOOut resolveWorkplaceCoordinates(String workplaceName) {
-        if (workplaceName == null || workplaceName.isBlank()) {
-            throw new ApiException("Workplace name is required");
-        }
-
         String normalizedWorkplaceName = workplaceName.trim();
         List<NominatimLocationDTOOut> locations = searchLocations(normalizedWorkplaceName);
         if (locations.isEmpty()) {

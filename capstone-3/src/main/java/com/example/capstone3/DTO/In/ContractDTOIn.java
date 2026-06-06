@@ -1,7 +1,7 @@
 package com.example.capstone3.DTO.In;
 
 
-import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
@@ -12,7 +12,7 @@ import java.time.LocalDate;
 @Data
 public class ContractDTOIn {
 
-    @NotEmpty(message = "Contract number is required")
+    @NotBlank(message = "Contract number is required")
     @Size(max = 100, message = "Contract number must not exceed 100 characters")
     private String contractNumber;
 

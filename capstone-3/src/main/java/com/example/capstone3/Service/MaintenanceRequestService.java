@@ -106,7 +106,7 @@ public class MaintenanceRequestService {
             throw new ApiException("Apartment is not currently rented");
         }
 
-        Contract contract = contractRepository.findByReservation_User_IdAndReservation_Apartment_IdAndContractStatus(
+        Contract contract = contractRepository.findByUserAndApartmentAndStatus(
                 userId, apartmentId, ContractStatus.ACTIVE);
         if (contract == null) {
             throw new ApiException("No active contract found for this user and apartment");
@@ -123,7 +123,7 @@ public class MaintenanceRequestService {
         req.setDescription(dto.getDescription());
         req.setStatus(MaintenanceStatus.PENDING);
         req.setAiCategory(extractAiField(aiResponse, "Category"));
-        req.setAiSummary(extractAiField(aiResponse, "Summary"));
+        req.setAiSummary(aiService.cleanAiText(extractAiField(aiResponse, "Summary")));
         req.setPriority(parseAiPriority(aiResponse));
 
         maintenanceRepository.save(req);
@@ -189,7 +189,7 @@ public class MaintenanceRequestService {
         String aiResponse = aiService.generateText(
                 buildMaintenanceAnalysisPrompt(dto.getTitle(), dto.getDescription()), language);
         req.setAiCategory(extractAiField(aiResponse, "Category"));
-        req.setAiSummary(extractAiField(aiResponse, "Summary"));
+        req.setAiSummary(aiService.cleanAiText(extractAiField(aiResponse, "Summary")));
         req.setPriority(parseAiPriority(aiResponse));
 
         maintenanceRepository.save(req);
@@ -226,7 +226,7 @@ public class MaintenanceRequestService {
         String aiResponse = aiService.generateText(buildBuildingSummaryPrompt(building, requests), language);
 
         BuildingMaintenanceSummaryDTOOut response = new BuildingMaintenanceSummaryDTOOut();
-        response.setSummary(aiResponse);
+        response.setSummary(aiService.cleanAiText(aiResponse));
 
         return response;
     }

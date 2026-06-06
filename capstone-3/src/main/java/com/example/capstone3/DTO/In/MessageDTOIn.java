@@ -1,25 +1,13 @@
 package com.example.capstone3.DTO.In;
 
-import com.example.capstone3.Enums.MessageSenderType;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
 public class MessageDTOIn {
 
-    private Integer conversationId;
-
-    private Integer userId;
-    private Integer ownerId;
-    private Integer apartmentId;
-
-    @NotNull(message = "Sender type is required")
-    private MessageSenderType senderType;
-
-    @NotNull(message = "Sender ID is required")
-    private Integer senderId;
-
-    @NotEmpty(message = "Message content is required")
+    @NotBlank(message = "Message content is required")
+    @Size(max = 5000, message = "Message content must not exceed 5000 characters")
     private String content;
 }

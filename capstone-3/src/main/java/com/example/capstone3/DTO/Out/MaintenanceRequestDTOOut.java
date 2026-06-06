@@ -13,9 +13,9 @@ public class MaintenanceRequestDTOOut {
     private Integer userId;
     private Integer apartmentId;
     private String title;
-    private String description;
     private MaintenanceStatus status;
     private MaintenancePriority priority;
+    private String description;
     private String aiCategory;
     private String aiSummary;
     private LocalDateTime createdAt;

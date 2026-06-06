@@ -6,9 +6,9 @@ import lombok.Data;
 public class BuildingDTOOut {
 
     private Integer id;
+    private String name;
     private Integer ownerId;
     private String ownerName;
-    private String name;
     private String city;
     private String district;
     private String street;
@@ -20,4 +20,5 @@ public class BuildingDTOOut {
     private Boolean hasSecurity;
     private Boolean hasParking;
     private Boolean petsAllowed;
+
 }

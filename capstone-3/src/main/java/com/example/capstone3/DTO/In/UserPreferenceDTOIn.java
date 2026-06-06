@@ -12,15 +12,10 @@ import lombok.Data;
 @Data
 public class UserPreferenceDTOIn {
 
-    @NotNull(message = "User ID is required")
-    private Integer userId;
-
-    @NotNull(message = "Work latitude is required")
     @DecimalMin(value = "-90.0", message = "Work latitude must be >= -90")
     @DecimalMax(value = "90.0", message = "Work latitude must be <= 90")
     private Double workLatitude;
 
-    @NotNull(message = "Work longitude is required")
     @DecimalMin(value = "-180.0", message = "Work longitude must be >= -180")
     @DecimalMax(value = "180.0", message = "Work longitude must be <= 180")
     private Double workLongitude;

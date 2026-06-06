@@ -13,12 +13,12 @@ public class ContractDTOOut {
     private Integer apartmentId;
     private Integer userId;
     private String contractNumber;
-    private LocalDate startDate;
-    private LocalDate endDate;
+    private ContractStatus contractStatus;
     private Double monthlyRent;
     private Double securityDeposit;
     private Boolean signed;
-    private LocalDate signedDate;
     private String pdfPath;
-    private ContractStatus contractStatus;            // ACTIVE EXPIRED TERMINATED
+    private LocalDate startDate;
+    private LocalDate endDate;
+    private LocalDate signedDate;
 }

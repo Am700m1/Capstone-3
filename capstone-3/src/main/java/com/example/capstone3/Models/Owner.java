@@ -30,9 +30,6 @@ public class Owner {
     @Column(name = "phone_number", nullable = false, unique = true, length = 20)
     private String phoneNumber;
 
-    @Column(name = "password", nullable = false)
-    private String password;
-
     @CurrentTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

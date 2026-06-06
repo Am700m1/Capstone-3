@@ -4,7 +4,7 @@ import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
@@ -13,19 +13,19 @@ import lombok.Data;
 public class BuildingDTOIn {
 
 
-    @NotEmpty(message = "Building name is required")
+    @NotBlank(message = "Building name is required")
     @Size(max = 150, message = "Building name must not exceed 150 characters")
     private String name;
 
-    @NotEmpty(message = "District is required")
+    @NotBlank(message = "District is required")
     @Size(max = 100, message = "District must not exceed 100 characters")
     private String district;
 
-    @NotEmpty(message = "City is required")
+    @NotBlank(message = "City is required")
     @Size(max = 100, message = "City must not exceed 100 characters")
     private String city;
 
-    @NotEmpty(message = "Street is required")
+    @NotBlank(message = "Street is required")
     @Size(max = 255, message = "Street must not exceed 255 characters")
     private String street;
 

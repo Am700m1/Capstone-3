@@ -79,21 +79,8 @@ public class AIRecommendationService {
         response.setRankedApartments(topMatches);
         // AI explains the final ranking but does not choose apartments.
         String aiResult = aiService.generateText(buildExplanationPrompt(topMatches, preferences, user), language);
-        response.setRecommendation(cleanAiText(aiResult));
+        response.setRecommendation(aiService.cleanAiText(aiResult));
         return response;
-    }
-
-    private String cleanAiText(String text) {
-        if (text == null) {
-            return null;
-        }
-
-        return text
-                .replace("\\n", " ")
-                .replace("\n", " ")
-                .replace("/n", " ")
-                .replaceAll("\\s+", " ")
-                .trim();
     }
 
     // Collect apartment facts and calculate every backend score category.
@@ -156,6 +143,9 @@ public class AIRecommendationService {
 
     // OSRM returns commute duration and distance from the apartment to work.
     private CommuteAnalysisDTOOut getCommuteAnalysis(Apartment apartment, UserPreference preferences) {
+        if (preferences.getWorkLatitude() == null || preferences.getWorkLongitude() == null) {
+            return null;
+        }
         try {
             return osrmCommuteService.analyzeCommute(
                     apartment.getBuilding().getLatitude(),
@@ -182,7 +172,8 @@ public class AIRecommendationService {
                         + amenities.getSupermarketCount() * 3
                         + amenities.getPharmacyCount() * 4
                         + amenities.getGymCount() * 2 * preferenceMultiplier(preferences.getGymPreference())
-                        + amenities.getRestaurantCount();
+                        + amenities.getRestaurantCount()
+                        * preferenceMultiplier(preferences.getCafesPreference());
         return Math.min(20, rawScore / 4);
     }
 
@@ -218,7 +209,20 @@ public class AIRecommendationService {
             score += Math.min(5, amenities.getGymCount() + amenities.getRestaurantCount() / 2.0);
             score += 4;
         }
+        if (matchesAllowedTenantType(apartment.getAllowedTenantType(), familyRenter)) {
+            score += 1;
+        }
         return Math.min(15, score);
+    }
+
+    private boolean matchesAllowedTenantType(String allowedTenantType, boolean familyRenter) {
+        if (allowedTenantType == null || allowedTenantType.isBlank()) {
+            return false;
+        }
+        String normalizedType = allowedTenantType.toLowerCase();
+        return familyRenter
+                ? normalizedType.contains("family")
+                : normalizedType.contains("single") || normalizedType.contains("bachelor");
     }
 
     private double calculateApartmentScore(Apartment apartment, UserPreference preferences,

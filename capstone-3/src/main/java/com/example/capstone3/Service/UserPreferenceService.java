@@ -40,8 +40,9 @@ public class UserPreferenceService {
         return convertToDTO(preference);
     }
 
-    public void addUserPreference(UserPreferenceDTOIn userPreferenceDTOIn) {
-        User user = userRepository.findUserById(userPreferenceDTOIn.getUserId());
+    public void addUserPreference(Integer userId, UserPreferenceDTOIn userPreferenceDTOIn) {
+        validateCoordinatePair(userPreferenceDTOIn.getWorkLatitude(), userPreferenceDTOIn.getWorkLongitude());
+        User user = userRepository.findUserById(userId);
         if (user == null) {
             throw new ApiException("User not found");
         }
@@ -73,21 +74,15 @@ public class UserPreferenceService {
     }
 
     public void updateUserPreference(Integer id, UserPreferenceDTOIn userPreferenceDTOIn) {
+        validateCoordinatePair(userPreferenceDTOIn.getWorkLatitude(), userPreferenceDTOIn.getWorkLongitude());
         UserPreference preference = userPreferenceRepository.findUserPreferenceById(id);
         if (preference == null) {
             throw new ApiException("User preference not found");
         }
-        User user = userRepository.findUserById(userPreferenceDTOIn.getUserId());
-        if (user == null) {
-            throw new ApiException("User not found");
+        if (userPreferenceDTOIn.getWorkLatitude() != null) {
+            preference.setWorkLatitude(userPreferenceDTOIn.getWorkLatitude());
+            preference.setWorkLongitude(userPreferenceDTOIn.getWorkLongitude());
         }
-        UserPreference existingPreference = userPreferenceRepository.findUserPreferenceByUserId(user.getId());
-        if (existingPreference != null && !existingPreference.getId().equals(id)) {
-            throw new ApiException("User preferences already exist");
-        }
-        preference.setUser(user);
-        preference.setWorkLatitude(userPreferenceDTOIn.getWorkLatitude());
-        preference.setWorkLongitude(userPreferenceDTOIn.getWorkLongitude());
         preference.setMaxBudget(userPreferenceDTOIn.getMaxBudget());
         preference.setRequiresParking(userPreferenceDTOIn.getRequiresParking());
         preference.setRequiresElevator(userPreferenceDTOIn.getRequiresElevator());
@@ -114,6 +109,18 @@ public class UserPreferenceService {
             throw new ApiException("User preference not found");
         }
         userPreferenceRepository.deleteById(id);
+    }
+
+    public UserPreferenceDTOOut getUserPreferenceByUserId(Integer userId) {
+        User user = userRepository.findUserById(userId);
+        if (user == null) {
+            throw new ApiException("User not found");
+        }
+        UserPreference preference = userPreferenceRepository.findUserPreferenceByUserId(userId);
+        if (preference == null) {
+            throw new ApiException("User preference not found");
+        }
+        return convertToDTO(preference);
     }
 
     public UserPreferenceDTOOut updateWorkplace(Integer userId, WorkplaceDTOIn workplaceDTOIn) {
@@ -154,6 +161,12 @@ public class UserPreferenceService {
         userPreferenceDTOOut.setPreferredBathrooms(preference.getPreferredBathrooms());
         userPreferenceDTOOut.setPreferredDistrict(preference.getPreferredDistrict());
         return userPreferenceDTOOut;
+    }
+
+    private void validateCoordinatePair(Double latitude, Double longitude) {
+        if ((latitude == null) != (longitude == null)) {
+            throw new ApiException("Work latitude and longitude must be provided together");
+        }
     }
 
 
