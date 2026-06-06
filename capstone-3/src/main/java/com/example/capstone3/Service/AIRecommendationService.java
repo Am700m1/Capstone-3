@@ -78,8 +78,22 @@ public class AIRecommendationService {
         RecommendationResponseDTOOut response = new RecommendationResponseDTOOut();
         response.setRankedApartments(topMatches);
         // AI explains the final ranking but does not choose apartments.
-        response.setRecommendation(aiService.generateText(buildExplanationPrompt(topMatches, preferences, user), language));
+        String aiResult = aiService.generateText(buildExplanationPrompt(topMatches, preferences, user), language);
+        response.setRecommendation(cleanAiText(aiResult));
         return response;
+    }
+
+    private String cleanAiText(String text) {
+        if (text == null) {
+            return null;
+        }
+
+        return text
+                .replace("\\n", " ")
+                .replace("\n", " ")
+                .replace("/n", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
     }
 
     // Collect apartment facts and calculate every backend score category.
