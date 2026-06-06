@@ -341,7 +341,7 @@ public class ApartmentService {
         String prompt = "You are analyzing tenant reviews for an apartment called \"" + apartmentTitle + "\".\n" +
                 "Here are the review comments:\n" + comments + "\n" +
                 "Summarize the main issues tenants are complaining about in one sentence starting with \"Main issues: \"";
-        return aiService.generateText(prompt);
+        return aiService.generateText(prompt, "EN");
     }
 
 
