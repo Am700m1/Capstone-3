@@ -4,6 +4,7 @@ import com.example.capstone3.Api.ApiException;
 import com.example.capstone3.Models.Contract;
 import com.example.capstone3.Models.Owner;
 import com.example.capstone3.Models.Review;
+import com.example.capstone3.Models.UserPreference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -155,5 +156,39 @@ public class AiService {
             response = response.substring(0, response.length() - 3);
         }
         return response.trim();
+    }
+
+
+    public String getRoommateMatches(UserPreference requester, List<UserPreference> candidates) {
+        StringBuilder prompt = new StringBuilder();
+        prompt.append("You are an expert AI roommate matchmaker. Analyze the 'Requester' and compare them to the 'Candidates' list.\n");
+        prompt.append("Note: Work locations are provided as Latitude and Longitude coordinates. Candidates with work coordinates geographically closer to the requester's work coordinates should receive a higher match percentage.\n\n");
+
+        prompt.append("--- REQUESTER ---\n");
+        prompt.append("Work Coordinates: Lat ").append(requester.getWorkLatitude())
+                .append(", Lon ").append(requester.getWorkLongitude()).append("\n");
+        prompt.append("Roommate Budget: ").append(requester.getRoommateBudget()).append(" SAR\n");
+        prompt.append("Lifestyle Preferences - Gym: ").append(requester.getGymPreference())
+                .append(", Cafes: ").append(requester.getCafesPreference())
+                .append(", Schools: ").append(requester.getSchoolPreference()).append("\n\n");
+
+        prompt.append("--- CANDIDATES ---\n");
+        for (UserPreference c : candidates) {
+            prompt.append("Candidate ID: ").append(c.getUser().getId()).append("\n");
+            prompt.append("Roommate Budget: ").append(c.getRoommateBudget()).append(" SAR\n");
+            prompt.append("Work Coordinates: Lat ").append(c.getWorkLatitude())
+                    .append(", Lon ").append(c.getWorkLongitude()).append("\n");
+            prompt.append("Lifestyle Preferences - Gym: ").append(c.getGymPreference())
+                    .append(", Cafes: ").append(c.getCafesPreference())
+                    .append(", Schools: ").append(c.getSchoolPreference()).append("\n\n");
+        }
+
+        prompt.append("CRITICAL INSTRUCTIONS:\n");
+        prompt.append("- Return ONLY a valid JSON array of objects. No markdown, no extra text.\n");
+        prompt.append("- Each object must have exactly these keys: \"candidateId\" (integer), \"matchPercentage\" (integer out of 100), and \"reason\" (a 1-sentence explanation of why they are a good match based on budget, location, and lifestyle).\n");
+        prompt.append("- Sort the array from highest matchPercentage to lowest.\n");
+
+        String rawResponse = generateText(prompt.toString());
+        return cleanJsonResponse(rawResponse);
     }
 }

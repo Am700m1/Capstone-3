@@ -112,7 +112,10 @@ public class ContractService {
         contractDTOOut.setId(contract.getId());
         contractDTOOut.setReservationId(contract.getReservation().getId());
         contractDTOOut.setApartmentId(contract.getReservation().getApartment().getId());
-        contractDTOOut.setUserId(contract.getReservation().getUser().getId());
+
+        User primaryTenant = contract.getReservation().getUser();
+        contractDTOOut.setUserId(primaryTenant.getId());
+
         contractDTOOut.setContractNumber(contract.getContractNumber());
         contractDTOOut.setStartDate(contract.getStartDate());
         contractDTOOut.setEndDate(contract.getEndDate());
@@ -122,6 +125,19 @@ public class ContractService {
         contractDTOOut.setSignedDate(contract.getSignedDate());
         contractDTOOut.setPdfPath(contract.getPdfPath());
         contractDTOOut.setContractStatus(contract.getContractStatus());
+
+        // NEW: Joint Renting Logic
+        if (primaryTenant.getCurrentRoommateId() != null) {
+            User roommate = userRepository.findUserById(primaryTenant.getCurrentRoommateId());
+            contractDTOOut.setIsJointContract(true);
+            contractDTOOut.setCoTenantName(roommate != null ? roommate.getFullName() : "Unknown");
+            contractDTOOut.setRentPerPerson(contract.getMonthlyRent() / 2); // Splits the rent
+        } else {
+            contractDTOOut.setIsJointContract(false);
+            contractDTOOut.setCoTenantName(null);
+            contractDTOOut.setRentPerPerson(contract.getMonthlyRent()); // Pays full amount
+        }
+
         return contractDTOOut;
     }
 

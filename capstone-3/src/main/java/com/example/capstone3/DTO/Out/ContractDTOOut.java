@@ -21,4 +21,8 @@ public class ContractDTOOut {
     private LocalDate signedDate;
     private String pdfPath;
     private ContractStatus contractStatus;            // ACTIVE EXPIRED TERMINATED
+
+    private Boolean isJointContract;
+    private String coTenantName;
+    private Double rentPerPerson;
 }
