@@ -2,11 +2,9 @@ package com.example.capstone3.Service;
 
 import com.example.capstone3.Api.ApiException;
 import com.example.capstone3.DTO.In.ApartmentDTOIn;
-import com.example.capstone3.DTO.Out.ApartmentDTOOut;
-import com.example.capstone3.DTO.Out.ApartmentImageDTOOut;
-import com.example.capstone3.DTO.Out.LowRatedApartmentDTOOut;
-import com.example.capstone3.DTO.Out.UnderpricedApartmentDTOOut;
+import com.example.capstone3.DTO.Out.*;
 import com.example.capstone3.Enums.ApartmentStatus;
+import com.example.capstone3.Enums.ReservationStatus;
 import com.example.capstone3.Models.*;
 import com.example.capstone3.Repository.ApartmentRepository;
 import com.example.capstone3.Repository.BuildingRepository;
@@ -286,6 +284,67 @@ public class ApartmentService {
 
         result.sort(Comparator.comparingDouble(LowRatedApartmentDTOOut::getAverageRating));
         return result;
+    }
+
+    public List<FlaggedApartmentDTOOut> getFlaggedApartmentsByCancellationRate(Integer ownerId) {
+        Owner owner = ownerRepository.findOwnerById(ownerId);
+        if (owner == null) {
+            throw new ApiException("Owner not found");
+        }
+
+        List<Apartment> apartments = apartmentRepository.findApartmentsByOwnerId(ownerId);
+        if (apartments.isEmpty()) {
+            throw new ApiException("No apartments found for this owner");
+        }
+
+        // Step 1: Calculate cancellation rate for each apartment
+        // Rate = total cancellations / total reservations
+        List<FlaggedApartmentDTOOut> allApartmentStats = new ArrayList<>();
+        for (Apartment apartment : apartments) {
+            int total = apartment.getReservations().size();
+            if (total == 0) continue; // skip apartments with no reservations
+
+            int cancelled = 0;
+            for (Reservation r : apartment.getReservations()) {
+                if (r.getStatus() == ReservationStatus.CANCELLED) cancelled++;
+            }
+
+            double rate = (double) cancelled / total;
+
+            FlaggedApartmentDTOOut dto = new FlaggedApartmentDTOOut();
+            dto.setId(apartment.getId());
+            dto.setTitle(apartment.getTitle());
+            dto.setDistrict(apartment.getBuilding().getDistrict());
+            dto.setMonthlyRent(apartment.getMonthlyRent());
+            dto.setTotalReservations(total);
+            dto.setTotalCancellations(cancelled);
+            dto.setCancellationRate(Math.round(rate * 100.0) / 100.0);
+            allApartmentStats.add(dto);
+        }
+
+        // Step 2: Calculate the average cancellation rate across all apartments
+        // This is used as a baseline to detect outliers
+        double averageRate = allApartmentStats.stream()
+                .mapToDouble(FlaggedApartmentDTOOut::getCancellationRate)
+                .average().orElse(0);
+
+        // Step 3: Flag apartments whose cancellation rate is more than 2x the average
+        // 2x is used to identify significant outliers, not just slightly above average
+        List<FlaggedApartmentDTOOut> flagged = new ArrayList<>();
+        for (FlaggedApartmentDTOOut dto : allApartmentStats) {
+            if (dto.getCancellationRate() > averageRate * 2) {
+                dto.setAverageRate(Math.round(averageRate * 100.0) / 100.0);
+                flagged.add(dto);
+            }
+        }
+
+        if (flagged.isEmpty()) {
+            throw new ApiException("No flagged apartments found");
+        }
+
+        // Step 4: Sort by cancellation rate descending so worst apartments appear first
+        flagged.sort(Comparator.comparingDouble(FlaggedApartmentDTOOut::getCancellationRate).reversed());
+        return flagged;
     }
 
     private String getAiSummary(String apartmentTitle, String comments) {

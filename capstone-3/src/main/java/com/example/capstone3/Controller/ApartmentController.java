@@ -64,11 +64,13 @@ public class ApartmentController {
 
     @GetMapping("/search")
     public ResponseEntity<List<ApartmentDTOOut>> searchApartments(@RequestParam(required = false) Double minRent, @RequestParam(required = false) Double maxRent, @RequestParam(required = false) Integer bedrooms, @RequestParam(required = false) String district, @RequestParam(required = false) Boolean isFurnished) {
-
         return ResponseEntity.status(200).body(apartmentService.searchApartments(minRent, maxRent, bedrooms, district, isFurnished));
     }
 
-
+    @GetMapping("/flagged/{ownerId}")
+    public ResponseEntity<?> getFlaggedApartmentsByCancellationRate(@PathVariable Integer ownerId) {
+        return ResponseEntity.status(200).body(apartmentService.getFlaggedApartmentsByCancellationRate(ownerId));
+    }
 
 
 }
