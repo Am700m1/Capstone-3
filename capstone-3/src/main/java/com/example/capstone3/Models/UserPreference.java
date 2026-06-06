@@ -43,6 +43,12 @@ public class UserPreference {
     @Column(name = "requires_furnished")
     private Boolean requiresFurnished;
 
+    @Column(name = "lookingForRoommate")
+    private Boolean lookingForRoommate;
+
+    @Column(name = "roommateBudget")
+    private Double roommateBudget;
+
     // instead of boolean and to be very accurate
     // enumtype.string so its entered as string
     @Enumerated(EnumType.STRING)

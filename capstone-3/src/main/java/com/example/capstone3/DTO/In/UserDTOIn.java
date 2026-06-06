@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.time.LocalDate;
@@ -30,6 +31,11 @@ public class UserDTOIn {
     private LocalDate dateOfBirth;
 
     private Boolean married;
+    @NotEmpty(message = "Gender is required")
+    @Pattern(regexp = "^(MALE|FEMALE)$", message = "Gender must be exactly MALE or FEMALE")
+    private String gender;
+
+    private LocalDateTime dateOfBirth;
 
     @Min(value = 0, message = "Family count cannot be negative")
     private Integer familyCount;

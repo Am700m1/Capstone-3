@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 @Data
@@ -41,4 +42,11 @@ public class UserPreferenceDTOIn {
 
     @Size(max = 100, message = "Preferred district must not exceed 100 characters")
     private String preferredDistrict;
+
+    @NotNull(message = "lookingForRoommate status is required")
+    private Boolean lookingForRoommate;
+
+    @Positive(message = "Roommate budget must be a positive number")
+    private Double roommateBudget;
+
 }

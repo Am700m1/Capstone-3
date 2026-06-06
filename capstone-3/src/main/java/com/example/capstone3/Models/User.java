@@ -31,6 +31,12 @@ public class User {
     @Column(name = "phone_number", nullable = false, unique = true, length = 20)
     private String phoneNumber;
 
+    @Column(name = "password", nullable = false)
+    private String password;
+
+    @Column(name = "gender", nullable = false)
+    private String gender;
+
     @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
 
@@ -47,6 +53,10 @@ public class User {
     @Column(name = "children_count", nullable = false)
     private Integer childrenCount;
 
+    @Column(name = "currentRoommateId")
+    private Integer currentRoommateId;
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     // Lazy because preferences are loaded only for preference and recommendation workflows.
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private UserPreference preference;

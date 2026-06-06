@@ -41,6 +41,8 @@ public class UserService {
         user.setDateOfBirth(userDTOIn.getDateOfBirth());
         user.setMarried(userDTOIn.getMarried());
         user.setFamilyCount(userDTOIn.getFamilyCount());
+        user.setGender(userDTOIn.getGender());
+        user.setMaritalStatus(userDTOIn.getMaritalStatus());
         user.setChildrenCount(userDTOIn.getChildrenCount());
         userRepository.save(user);
     }
@@ -56,6 +58,8 @@ public class UserService {
         user.setDateOfBirth(userDTOIn.getDateOfBirth());
         user.setMarried(userDTOIn.getMarried());
         user.setFamilyCount(userDTOIn.getFamilyCount());
+        user.setGender(userDTOIn.getGender());
+        user.setMaritalStatus(userDTOIn.getMaritalStatus());
         user.setChildrenCount(userDTOIn.getChildrenCount());
         userRepository.save(user);
     }
