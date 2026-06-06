@@ -75,6 +75,13 @@ public class ApartmentController {
         return ResponseEntity.status(200).body(new ApiResponse("Apartment is now available"));
     }
 
+    @PutMapping("/toggle-maintenance/{ownerId}/{apartmentId}")
+    public ResponseEntity<?> makeApartmentUnderMaintenance(@PathVariable Integer ownerId,
+                                                           @PathVariable Integer apartmentId) {
+        apartmentService.toggleMaintenanceMode(ownerId, apartmentId);
+        return ResponseEntity.status(200).body(new ApiResponse("Apartment is now under maintenance"));
+    }
+
     @GetMapping("/next-available/{apartmentId}")
     public ResponseEntity<?> getNextAvailability(@PathVariable Integer apartmentId) {
         return ResponseEntity.status(200).body(apartmentService.getNextAvailability(apartmentId));

@@ -6,7 +6,6 @@ import com.example.capstone3.DTO.Out.*;
 import com.example.capstone3.Enums.ApartmentStatus;
 import com.example.capstone3.Enums.ContractStatus;
 import com.example.capstone3.Enums.ReservationStatus;
-import com.example.capstone3.Enums.ReservationStatus;
 import com.example.capstone3.Models.*;
 import com.example.capstone3.Repository.ApartmentRepository;
 import com.example.capstone3.Repository.BuildingRepository;
@@ -17,8 +16,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.ArrayList;
@@ -341,7 +338,7 @@ public class ApartmentService {
         String prompt = "You are analyzing tenant reviews for an apartment called \"" + apartmentTitle + "\".\n" +
                 "Here are the review comments:\n" + comments + "\n" +
                 "Summarize the main issues tenants are complaining about in one sentence starting with \"Main issues: \"";
-        return aiService.generateText(prompt);
+        return aiService.generateText(prompt, "EN");
     }
 
 
@@ -359,6 +356,9 @@ public class ApartmentService {
 
         if(!apartment.getOwner().getId().equals(ownerId)){
             throw new ApiException("You are not authorized to this action!");
+        }
+        if (apartment.getStatus() != ApartmentStatus.AVAILABLE) {
+            throw new ApiException("Only available apartments can be placed under maintenance");
         }
 
         apartment.setStatus(ApartmentStatus.UNDER_MAINTENANCE);
@@ -385,7 +385,6 @@ public class ApartmentService {
             throw new ApiException("Only apartments under maintenance can be made available");
         }
 
-        apartment.setAvailable(true);
         apartment.setStatus(ApartmentStatus.AVAILABLE);
         apartmentRepository.save(apartment);
     }
@@ -451,15 +450,13 @@ public class ApartmentService {
             throw new ApiException("Availability date cannot be in the past");
         }
 
-        boolean activeContractBlocksDate =
-                contractRepository.findContractsByReservation_Apartment_IdAndContractStatus(
+        boolean activeContractBlocksDate = contractRepository.findContractsByReservation_Apartment_IdAndContractStatus(
                                 apartmentId, ContractStatus.ACTIVE)
                         .stream()
                         .anyMatch(contract -> !date.isBefore(contract.getStartDate())
                                 && !date.isAfter(contract.getEndDate()));
 
-        boolean pendingContractBlocksDate =
-                contractRepository.findContractsByReservation_Apartment_IdAndContractStatus(
+        boolean pendingContractBlocksDate = contractRepository.findContractsByReservation_Apartment_IdAndContractStatus(
                                 apartmentId, ContractStatus.PENDING)
                         .stream()
                         .anyMatch(contract -> !date.isBefore(contract.getStartDate())

@@ -29,6 +29,9 @@ public class Message {
     @Column(name = "sender_id", nullable = false)
     private Integer senderId;
 
+    @Column(name = "sender_role", length = 20)
+    private String senderRole;
+
     @CurrentTimestamp
     @Column(name = "sent_at", nullable = false, updatable = false)
     private LocalDateTime sentAt;

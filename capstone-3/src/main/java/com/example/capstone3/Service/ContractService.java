@@ -72,6 +72,8 @@ public class ContractService {
             throw new ApiException("Apartment already has an active contract");
         }
         validateContractDates(contractDTOIn.getStartDate(), contractDTOIn.getEndDate());
+        validateContractStartAgainstReservation(
+                contractDTOIn.getStartDate(), reservation.getReservationDate());
         if (!reservation.getApartment().getMonthlyRent().equals(contractDTOIn.getMonthlyRent())) {
             throw new ApiException("Contract monthly rent must match the apartment monthly rent");
         }
@@ -103,6 +105,8 @@ public class ContractService {
             throw new ApiException("Reservation not found");
         }
         validateContractDates(contractDTOIn.getStartDate(), contractDTOIn.getEndDate());
+        validateContractStartAgainstReservation(
+                contractDTOIn.getStartDate(), reservation.getReservationDate());
         if (!reservation.getApartment().getMonthlyRent().equals(contractDTOIn.getMonthlyRent())) {
             throw new ApiException("Contract monthly rent must match the apartment monthly rent");
         }
@@ -150,8 +154,11 @@ public class ContractService {
         // NEW: Joint Renting Logic
         if (primaryTenant.getCurrentRoommateId() != null) {
             User roommate = userRepository.findUserById(primaryTenant.getCurrentRoommateId());
+            if (roommate == null || !primaryTenant.getId().equals(roommate.getCurrentRoommateId())) {
+                throw new ApiException("Roommate relationship is invalid");
+            }
             contractDTOOut.setIsJointContract(true);
-            contractDTOOut.setCoTenantName(roommate != null ? roommate.getFullName() : "Unknown");
+            contractDTOOut.setCoTenantName(roommate.getFullName());
             contractDTOOut.setRentPerPerson(contract.getMonthlyRent() / 2); // Splits the rent
         } else {
             contractDTOOut.setIsJointContract(false);
@@ -333,6 +340,37 @@ public class ContractService {
         whatsAppService.notifyTenantContractEnded(reservation.getUser(), apartment);
     }
 
+    @Transactional
+    public void terminateContract(Integer ownerId, Integer contractId) {
+        Owner owner = ownerRepository.findOwnerById(ownerId);
+        if (owner == null) {
+            throw new ApiException("Owner not found!");
+        }
+
+        Contract contract = contractRepository.findContractById(contractId);
+        if (contract == null) {
+            throw new ApiException("Contract not found!");
+        }
+        if (!contract.getReservation().getApartment().getOwner().getId().equals(ownerId)) {
+            throw new ApiException("You are not authorized to terminate this contract");
+        }
+        if (contract.getContractStatus() != ContractStatus.ACTIVE) {
+            throw new ApiException("Only active contracts can be terminated");
+        }
+
+        contract.setContractStatus(ContractStatus.TERMINATED);
+        contract.setEndDate(LocalDate.now());
+        contractRepository.save(contract);
+
+        Reservation reservation = contract.getReservation();
+        reservation.setStatus(ReservationStatus.COMPLETED);
+        reservationRepository.save(reservation);
+
+        Apartment apartment = reservation.getApartment();
+        apartment.setStatus(ApartmentStatus.UNDER_MAINTENANCE);
+        apartmentRepository.save(apartment);
+    }
+
 
     @Transactional
     public void renewContract(Integer userId, Integer contractId, Integer extraMonths) {
@@ -384,7 +422,8 @@ public class ContractService {
             throw new ApiException("You are not authorized to view this contract's analysis.");
         }
 
-        String normalizedLanguage = language == null ? "" : language.toUpperCase();
+        String normalizedLanguage = language == null || language.isBlank()
+                ? "EN" : language.trim().toUpperCase();
         if (!normalizedLanguage.equals("EN") && !normalizedLanguage.equals("AR")) {
             throw new ApiException("Language must be AR or EN");
         }
@@ -562,6 +601,12 @@ public class ContractService {
     private void validateContractDates(LocalDate startDate, LocalDate endDate) {
         if (!endDate.isAfter(startDate)) {
             throw new ApiException("Contract end date must be after start date");
+        }
+    }
+
+    private void validateContractStartAgainstReservation(LocalDate startDate, LocalDate reservationDate) {
+        if (startDate.isBefore(reservationDate)) {
+            throw new ApiException("Contract start date cannot be before the reservation date");
         }
     }
 

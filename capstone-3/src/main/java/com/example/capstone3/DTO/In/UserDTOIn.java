@@ -35,8 +35,6 @@ public class UserDTOIn {
     @Pattern(regexp = "^(MALE|FEMALE)$", message = "Gender must be exactly MALE or FEMALE")
     private String gender;
 
-    private LocalDateTime dateOfBirth;
-
     @Min(value = 0, message = "Family count cannot be negative")
     private Integer familyCount;
 

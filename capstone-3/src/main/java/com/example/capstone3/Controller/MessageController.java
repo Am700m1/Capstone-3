@@ -45,14 +45,19 @@ public class MessageController {
     }
 
     @PutMapping("/update/{id}")
-    public ResponseEntity<?> updateMessage(@PathVariable Integer id, @RequestBody @Valid MessageDTOIn messageDTOIn) {
-        messageService.updateMessage(id, messageDTOIn);
+    public ResponseEntity<?> updateMessage(@PathVariable Integer id,
+                                           @RequestParam Integer senderId,
+                                           @RequestParam String senderRole,
+                                           @RequestBody @Valid MessageDTOIn messageDTOIn) {
+        messageService.updateMessage(id, senderId, senderRole, messageDTOIn);
         return ResponseEntity.status(200).body(new ApiResponse("Message updated successfully"));
     }
 
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<?> deleteMessage(@PathVariable Integer id) {
-        messageService.deleteMessage(id);
+    public ResponseEntity<?> deleteMessage(@PathVariable Integer id,
+                                           @RequestParam Integer senderId,
+                                           @RequestParam String senderRole) {
+        messageService.deleteMessage(id, senderId, senderRole);
         return ResponseEntity.status(200).body(new ApiResponse("Message deleted successfully"));
     }
 }

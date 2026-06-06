@@ -74,6 +74,12 @@ public class ContractController {
         return ResponseEntity.status(200).body(new ApiResponse("Contract officially ended successfully."));
     }
 
+    @PutMapping("/terminate/{contractId}/{ownerId}")
+    public ResponseEntity<?> terminateContract(@PathVariable Integer ownerId, @PathVariable Integer contractId) {
+        contractService.terminateContract(ownerId, contractId);
+        return ResponseEntity.status(200).body(new ApiResponse("Contract terminated successfully."));
+    }
+
     @PutMapping("/renew/{contractId}/{userId}")
     public ResponseEntity<?> renewContract(@PathVariable Integer userId, @PathVariable Integer contractId, @RequestParam Integer extraMonths) {
         contractService.renewContract(userId, contractId, extraMonths);
@@ -81,7 +87,8 @@ public class ContractController {
     }
 
     @GetMapping("/analyze/{contractId}/{userId}")
-    public ResponseEntity<?> getContractAnalysis(@PathVariable Integer userId, @PathVariable Integer contractId, @RequestParam String language) {
+    public ResponseEntity<?> getContractAnalysis(@PathVariable Integer userId, @PathVariable Integer contractId,
+                                                 @RequestParam(defaultValue = "EN") String language) {
         return ResponseEntity.status(200).body(contractService.getContractAnalysis(userId, contractId, language));
     }
 
