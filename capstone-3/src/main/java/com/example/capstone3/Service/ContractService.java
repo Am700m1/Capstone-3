@@ -392,22 +392,38 @@ public class ContractService {
             throw new ApiException("Contract not found");
         }
 
-        String tenantName    = contract.getReservation().getUser().getFullName();
-        String tenantEmail   = contract.getReservation().getUser().getEmail();
-        String tenantPhone   = contract.getReservation().getUser().getPhoneNumber();
+        String tenantName     = contract.getReservation().getUser().getFullName();
+        String tenantEmail    = contract.getReservation().getUser().getEmail();
+        String tenantPhone    = contract.getReservation().getUser().getPhoneNumber();
         String apartmentTitle = contract.getReservation().getApartment().getTitle();
-        String contractNum   = contract.getContractNumber();
-        String monthlyRent   = String.valueOf(contract.getMonthlyRent());
-        String ownerName     = contract.getReservation().getApartment().getBuilding().getOwner().getFullName();
-        String ownerEmail    = contract.getReservation().getApartment().getBuilding().getOwner().getEmail();
-        String ownerPhone    = contract.getReservation().getApartment().getBuilding().getOwner().getPhoneNumber();
-        String buildingName  = contract.getReservation().getApartment().getBuilding().getName();
-        String district      = contract.getReservation().getApartment().getBuilding().getDistrict();
-        String startDate     = contract.getStartDate().toString();
-        String endDate       = contract.getEndDate().toString();
-        String secDeposit    = contract.getSecurityDeposit() != null ? String.valueOf(contract.getSecurityDeposit()) : "N/A";
-        String signedDate    = contract.getSignedDate() != null ? contract.getSignedDate().toString() : "Not signed yet";
-        String status        = contract.getContractStatus().toString();
+        String contractNum    = contract.getContractNumber();
+        String monthlyRent    = String.valueOf(contract.getMonthlyRent());
+        String ownerName      = contract.getReservation().getApartment().getBuilding().getOwner().getFullName();
+        String ownerEmail     = contract.getReservation().getApartment().getBuilding().getOwner().getEmail();
+        String ownerPhone     = contract.getReservation().getApartment().getBuilding().getOwner().getPhoneNumber();
+        String buildingName   = contract.getReservation().getApartment().getBuilding().getName();
+        String district       = contract.getReservation().getApartment().getBuilding().getDistrict();
+        String startDate      = contract.getStartDate().toString();
+        String endDate        = contract.getEndDate().toString();
+        String secDeposit     = contract.getSecurityDeposit() != null ? String.valueOf(contract.getSecurityDeposit()) : "N/A";
+        String signedDate     = contract.getSignedDate() != null ? contract.getSignedDate().toString() : "Not signed yet";
+        String status         = contract.getContractStatus().toString();
+        String signed         = Boolean.TRUE.equals(contract.getSigned()) ? "Yes" : "No";
+        String reservationMsg = contract.getReservation().getMessage() != null ? contract.getReservation().getMessage() : "N/A";
+
+        Apartment apt         = contract.getReservation().getApartment();
+        String furnished      = Boolean.TRUE.equals(apt.getFurnished()) ? "Yes" : "No";
+        String waterIncluded  = Boolean.TRUE.equals(apt.getWaterIncluded()) ? "Yes" : "No";
+        String internetIncluded   = Boolean.TRUE.equals(apt.getInternetIncluded()) ? "Yes" : "No";
+        String electricityIncluded = Boolean.TRUE.equals(apt.getElectricityIncluded()) ? "Yes" : "No";
+        String allowedTenantType  = apt.getAllowedTenantType() != null ? apt.getAllowedTenantType() : "N/A";
+        String floorNumber        = apt.getFloorNumber() != null ? String.valueOf(apt.getFloorNumber()) : "N/A";
+
+        Building building     = contract.getReservation().getApartment().getBuilding();
+        String hasParking     = Boolean.TRUE.equals(building.getHasParking()) ? "Yes" : "No";
+        String hasElevator    = Boolean.TRUE.equals(building.getHasElevator()) ? "Yes" : "No";
+        String hasSecurity    = Boolean.TRUE.equals(building.getHasSecurity()) ? "Yes" : "No";
+        String petsAllowed    = Boolean.TRUE.equals(building.getPetsAllowed()) ? "Yes" : "No";
 
         String pdfHtml = "<html>" +
                 "<head>" +
@@ -431,6 +447,24 @@ public class ContractService {
                 "<tr><td class='label'>Building Name</td><td>" + buildingName + "</td></tr>" +
                 "<tr><td class='label'>Apartment</td><td>" + apartmentTitle + "</td></tr>" +
                 "<tr><td class='label'>District</td><td>" + district + "</td></tr>" +
+                "<tr><td class='label'>Floor Number</td><td>" + floorNumber + "</td></tr>" +
+                "<tr><td class='label'>Allowed Tenant Type</td><td>" + allowedTenantType + "</td></tr>" +
+                "</table>" +
+
+                "<div class='section-title'>BUILDING FACILITIES</div>" +
+                "<table>" +
+                "<tr><td class='label'>Parking</td><td>" + hasParking + "</td></tr>" +
+                "<tr><td class='label'>Elevator</td><td>" + hasElevator + "</td></tr>" +
+                "<tr><td class='label'>Security</td><td>" + hasSecurity + "</td></tr>" +
+                "<tr><td class='label'>Pets Allowed</td><td>" + petsAllowed + "</td></tr>" +
+                "</table>" +
+
+                "<div class='section-title'>APARTMENT INCLUSIONS</div>" +
+                "<table>" +
+                "<tr><td class='label'>Furnished</td><td>" + furnished + "</td></tr>" +
+                "<tr><td class='label'>Water Included</td><td>" + waterIncluded + "</td></tr>" +
+                "<tr><td class='label'>Internet Included</td><td>" + internetIncluded + "</td></tr>" +
+                "<tr><td class='label'>Electricity Included</td><td>" + electricityIncluded + "</td></tr>" +
                 "</table>" +
 
                 "<div class='section-title'>OWNER INFORMATION</div>" +
@@ -453,7 +487,9 @@ public class ContractService {
                 "<tr><td class='label'>End Date</td><td>" + endDate + "</td></tr>" +
                 "<tr><td class='label'>Monthly Rent</td><td>" + monthlyRent + " SAR</td></tr>" +
                 "<tr><td class='label'>Security Deposit</td><td>" + secDeposit + " SAR</td></tr>" +
+                "<tr><td class='label'>Signed</td><td>" + signed + "</td></tr>" +
                 "<tr><td class='label'>Signed Date</td><td>" + signedDate + "</td></tr>" +
+                "<tr><td class='label'>Tenant Notes</td><td>" + reservationMsg + "</td></tr>" +
                 "</table>" +
 
                 "<div class='footer'>This document is an official lease agreement generated by the Smart Rental Platform. " +
@@ -474,4 +510,6 @@ public class ContractService {
                 os.toByteArray(),
                 "Contract_" + contractNum + ".pdf"
         );
-    }}
+    }
+
+}
