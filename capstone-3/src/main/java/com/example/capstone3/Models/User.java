@@ -33,6 +33,9 @@ public class User {
     @Column(name = "password", nullable = false)
     private String password;
 
+    @Column(name = "gender", nullable = false)
+    private String gender;
+
     @Column(name = "date_of_birth")
     private LocalDateTime dateOfBirth;
 
@@ -45,6 +48,9 @@ public class User {
 
     @Column(name = "children_count", nullable = false)
     private Integer childrenCount;
+
+    @Column(name = "currentRoommateId")
+    private Integer currentRoommateId;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     private UserPreference preference;

@@ -51,6 +51,8 @@ public class UserPreferenceService {
         preference.setRequiresParking(userPreferenceDTOIn.getRequiresParking());
         preference.setRequiresElevator(userPreferenceDTOIn.getRequiresElevator());
         preference.setRequiresFurnished(userPreferenceDTOIn.getRequiresFurnished());
+        preference.setLookingForRoommate(userPreferenceDTOIn.getLookingForRoommate());
+        preference.setRoommateBudget(userPreferenceDTOIn.getRoommateBudget());
         preference.setGymPreference(parsePreferenceLevel(userPreferenceDTOIn.getGymPreference()));
         preference.setCafesPreference(parsePreferenceLevel(userPreferenceDTOIn.getCafesPreference()));
         preference.setHospitalPreference(parsePreferenceLevel(userPreferenceDTOIn.getHospitalPreference()));
@@ -79,6 +81,8 @@ public class UserPreferenceService {
         preference.setRequiresParking(userPreferenceDTOIn.getRequiresParking());
         preference.setRequiresElevator(userPreferenceDTOIn.getRequiresElevator());
         preference.setRequiresFurnished(userPreferenceDTOIn.getRequiresFurnished());
+        preference.setLookingForRoommate(userPreferenceDTOIn.getLookingForRoommate());
+        preference.setRoommateBudget(userPreferenceDTOIn.getRoommateBudget());
         preference.setGymPreference(parsePreferenceLevel(userPreferenceDTOIn.getGymPreference()));
         preference.setCafesPreference(parsePreferenceLevel(userPreferenceDTOIn.getCafesPreference()));
         preference.setHospitalPreference(parsePreferenceLevel(userPreferenceDTOIn.getHospitalPreference()));

@@ -40,6 +40,7 @@ public class UserService {
         user.setPhoneNumber(userDTOIn.getPhoneNumber());
         user.setPassword(userDTOIn.getPassword());
         user.setDateOfBirth(userDTOIn.getDateOfBirth());
+        user.setGender(userDTOIn.getGender());
         user.setMaritalStatus(userDTOIn.getMaritalStatus());
         user.setChildrenCount(userDTOIn.getChildrenCount());
         userRepository.save(user);
@@ -55,6 +56,7 @@ public class UserService {
         user.setPhoneNumber(userDTOIn.getPhoneNumber());
         user.setPassword(userDTOIn.getPassword());
         user.setDateOfBirth(userDTOIn.getDateOfBirth());
+        user.setGender(userDTOIn.getGender());
         user.setMaritalStatus(userDTOIn.getMaritalStatus());
         user.setChildrenCount(userDTOIn.getChildrenCount());
         userRepository.save(user);
