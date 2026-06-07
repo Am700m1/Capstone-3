@@ -10,8 +10,7 @@ import java.util.List;
 public class ApartmentDTOOut {
 
     private Integer id;
-    private String title;
-    private String description;
+    private String apartmentNumber;
     private Integer buildingId;
     private Integer ownerId;
     private String district;

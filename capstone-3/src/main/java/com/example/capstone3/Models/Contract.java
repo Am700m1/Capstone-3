@@ -1,12 +1,15 @@
 package com.example.capstone3.Models;
 
 import com.example.capstone3.Enums.ContractStatus;
+import com.example.capstone3.Enums.NegotiationStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CurrentTimestamp;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "contracts")
@@ -49,6 +52,23 @@ public class Contract {
     @Column(name = "contract_status", nullable = false, length = 20)
     private ContractStatus contractStatus;
 
-    @Column(name = "pdf_path", length = 500)
-    private String pdfPath;
+    @CurrentTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "negotiation_status", length = 20)
+    private NegotiationStatus negotiationStatus;
+
+    @Column(name = "requested_rent")
+    private Double requestedRent;
+
+    @Column(name = "counter_offer_rent")
+    private Double counterOfferRent;
+
+    @Column(name = "negotiation_message", length = 1000)
+    private String negotiationMessage;
+
+    @Column(name = "negotiation_updated_at")
+    private LocalDateTime negotiationUpdatedAt;
 }

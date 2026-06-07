@@ -10,13 +10,9 @@ import lombok.Data;
 @Data
 public class ApartmentDTOIn {
 
-    @NotEmpty(message = "Title is required")
-    @Size(max = 200, message = "Title must not exceed 200 characters")
-    private String title;
-
-    @NotEmpty(message = "Description is required")
-    @Size(max = 5000, message = "Description must not exceed 5000 characters")
-    private String description;
+    @NotEmpty(message = "Apartment number is required")
+    @Size(max = 50, message = "Apartment number must not exceed 50 characters")
+    private String apartmentNumber;
 
     @NotNull(message = "Monthly rent is required")
     @Positive(message = "Monthly rent must be positive")

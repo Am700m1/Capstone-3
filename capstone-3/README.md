@@ -106,6 +106,12 @@ AI endpoints accept the optional `language` query parameter with `EN` as the def
 |---|---|---|
 | PUT | `/api/v1/contract/accept/{contractId}/{userId}` | Accepts a pending contract and activates the rental. |
 | PUT | `/api/v1/contract/reject/{contractId}/{userId}` | Rejects a pending contract and cancels the related rental flow. |
+| PUT | `/api/v1/contract/request-negotiation/{userId}/{contractId}` | Allows the reservation user to request a different rent for a pending contract. |
+| PUT | `/api/v1/contract/owner/accept-negotiation/{ownerId}/{contractId}` | Allows the apartment owner to accept the user's pending rent request. |
+| PUT | `/api/v1/contract/owner/reject-negotiation/{ownerId}/{contractId}` | Allows the apartment owner to reject the user's pending rent request. |
+| PUT | `/api/v1/contract/owner/counter-offer/{ownerId}/{contractId}` | Allows the apartment owner to submit a counter-offer for a pending negotiation. |
+| PUT | `/api/v1/contract/user/accept-counter-offer/{userId}/{contractId}` | Allows the reservation user to accept the owner's counter-offer. |
+| PUT | `/api/v1/contract/user/reject-counter-offer/{userId}/{contractId}` | Allows the reservation user to reject the owner's counter-offer. |
 | GET | `/api/v1/contract/user/{userId}` | Returns contracts belonging to a user. |
 | GET | `/api/v1/contract/owner/{ownerId}` | Returns contracts for apartments belonging to an owner. |
 | PUT | `/api/v1/contract/end/{contractId}/{ownerId}` | Officially ends an active contract after rental completion. |
@@ -176,23 +182,16 @@ Both `/api/v1/user-preference` and `/api/v1/user-preferences` are valid controll
 |---|---|---|
 | GET | `/api/v1/location/analyze` | Uses Overpass to count nearby services around `latitude` and `longitude`; accepts an optional `radiusMetres`. |
 
-## Extra Endpoint Count
+## Person 1 Extra Endpoint Count
 
 | Controller | Extra endpoints |
 |---|---:|
-| ApartmentController | 9 |
+| ApartmentController | 7 |
 | RecommendationController | 1 |
 | AiApartmentController | 4 |
-| ReservationController | 6 |
-| ContractController | 9 |
-| MaintenanceRequestController | 6 |
-| ReviewController | 4 |
-| ConversationController | 2 |
-| MessageController | 3 |
 | UserPreferenceController | 2 |
-| RoommateController | 5 |
 | LocationAnalysisController | 1 |
-| **Total** | **52** |
+| **Person 1 Total** | **15** |
 
 ## External Integration Summary
 

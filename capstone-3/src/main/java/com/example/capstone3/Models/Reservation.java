@@ -37,11 +37,11 @@ public class Reservation {
     @Column(name = "status", nullable = false, length = 20)
     private ReservationStatus status;
 
-    @Column(name = "message", columnDefinition = "TEXT")
-    private String message;
-
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "approved_at")
+    private LocalDateTime approvedAt;
 
     // Lazy because a contract may not exist and is only needed in contract workflows.
     @OneToOne(mappedBy = "reservation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)

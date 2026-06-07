@@ -39,7 +39,6 @@ public class UserService {
         user.setEmail(userDTOIn.getEmail());
         user.setPhoneNumber(userDTOIn.getPhoneNumber());
         user.setDateOfBirth(userDTOIn.getDateOfBirth());
-        user.setMarried(userDTOIn.getMarried());
         user.setFamilyCount(userDTOIn.getFamilyCount());
         user.setGender(userDTOIn.getGender());
         user.setChildrenCount(userDTOIn.getChildrenCount());
@@ -55,7 +54,6 @@ public class UserService {
         user.setEmail(userDTOIn.getEmail());
         user.setPhoneNumber(userDTOIn.getPhoneNumber());
         user.setDateOfBirth(userDTOIn.getDateOfBirth());
-        user.setMarried(userDTOIn.getMarried());
         user.setFamilyCount(userDTOIn.getFamilyCount());
         user.setGender(userDTOIn.getGender());
         user.setChildrenCount(userDTOIn.getChildrenCount());
@@ -77,7 +75,6 @@ public class UserService {
         userDTOOut.setEmail(user.getEmail());
         userDTOOut.setPhoneNumber(user.getPhoneNumber());
         userDTOOut.setDateOfBirth(user.getDateOfBirth());
-        userDTOOut.setMarried(user.getMarried());
         userDTOOut.setFamilyCount(user.getFamilyCount());
         userDTOOut.setChildrenCount(user.getChildrenCount());
         userDTOOut.setCreatedAt(user.getCreatedAt());

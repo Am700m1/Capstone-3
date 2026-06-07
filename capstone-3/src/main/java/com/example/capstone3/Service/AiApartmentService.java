@@ -58,7 +58,7 @@ public class AiApartmentService {
         prompt.append("You are a real estate analyst reviewing tenant feedback for a rental apartment in Saudi Arabia.\n\n");
 
         prompt.append("=== APARTMENT ===\n");
-        prompt.append("Title: ").append(apartment.getTitle()).append("\n");
+        prompt.append("Apartment Number: ").append(apartment.getApartmentNumber()).append("\n");
         prompt.append("District: ").append(apartment.getBuilding().getDistrict()).append("\n");
         prompt.append("City: ").append(apartment.getBuilding().getCity()).append("\n");
         prompt.append("Bedrooms: ").append(apartment.getBedrooms()).append("\n");
@@ -142,7 +142,7 @@ public class AiApartmentService {
         prompt.append("You are a real estate analyst describing the neighborhood of a rental apartment in Saudi Arabia.\n\n");
 
         prompt.append("=== APARTMENT LOCATION ===\n");
-        prompt.append("Title: ").append(apartment.getTitle()).append("\n");
+        prompt.append("Apartment Number: ").append(apartment.getApartmentNumber()).append("\n");
         prompt.append("District: ").append(apartment.getBuilding().getDistrict()).append("\n");
         prompt.append("City: ").append(apartment.getBuilding().getCity()).append("\n");
         prompt.append("Street: ").append(apartment.getBuilding().getStreet()).append("\n");
@@ -232,7 +232,7 @@ public class AiApartmentService {
                     .toList();
             double aptAvg = aptReviews.stream().mapToInt(Review::getRating).average().orElse(0);
 
-            prompt.append("\n- ").append(apt.getTitle()).append("\n");
+            prompt.append("\n- Apartment ").append(apt.getApartmentNumber()).append("\n");
             prompt.append("  District: ").append(apt.getBuilding().getDistrict())
                     .append(", ").append(apt.getBuilding().getCity()).append("\n");
             prompt.append("  Bedrooms: ").append(apt.getBedrooms())
@@ -254,7 +254,8 @@ public class AiApartmentService {
         prompt.append("\n=== ALL TENANT REVIEWS ===\n");
         for (int i = 0; i < reviews.size(); i++) {
             Review r = reviews.get(i);
-            prompt.append("\nReview ").append(i + 1).append(" (").append(r.getApartment().getTitle()).append("):\n");
+            prompt.append("\nReview ").append(i + 1).append(" (Apartment ")
+                    .append(r.getApartment().getApartmentNumber()).append("):\n");
             prompt.append("Rating: ").append(r.getRating()).append("/5\n");
             prompt.append("Comment: ").append(r.getComment()).append("\n");
         }
@@ -317,7 +318,8 @@ public class AiApartmentService {
             }
             double avgRating = reviews.isEmpty() ? 0 : (double) ratingSum / reviews.size();
 
-            prompt.append("Apartment ").append(i + 1).append(": ").append(apt.getTitle()).append("\n");
+            prompt.append("Apartment ").append(i + 1).append(" Number: ")
+                    .append(apt.getApartmentNumber()).append("\n");
             prompt.append("District: ").append(apt.getBuilding().getDistrict()).append("\n");
             prompt.append("City: ").append(apt.getBuilding().getCity()).append("\n");
             prompt.append("Building: ").append(apt.getBuilding().getName()).append("\n");
@@ -341,10 +343,6 @@ public class AiApartmentService {
             if (apt.getBuilding().getTotalFloors() != null) {
                 prompt.append("Total Floors in Building: ").append(apt.getBuilding().getTotalFloors()).append("\n");
             }
-            if (apt.getDescription() != null && !apt.getDescription().isBlank()) {
-                prompt.append("Description: ").append(apt.getDescription()).append("\n");
-            }
-
             // Owner reputation
             List<Review> ownerReviews = reviewRepository.findByApartment_Building_Owner_Id(owner.getId());
             List<Apartment> ownerApartments = apartmentRepository.findApartmentsByOwnerId(owner.getId());

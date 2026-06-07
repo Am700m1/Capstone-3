@@ -6,7 +6,7 @@ import lombok.Data;
 public class FlaggedApartmentDTOOut {
 
     private Integer id;
-    private String title;
+    private String apartmentNumber;
     private String district;
     private Double monthlyRent;
     private Integer totalReservations;

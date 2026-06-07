@@ -21,7 +21,13 @@ public interface ReservationRepository extends JpaRepository<Reservation, Intege
 
     List<Reservation> findByStatusAndCreatedAtBefore(ReservationStatus status, LocalDateTime createdAtBefore);
 
+    List<Reservation> findByStatusAndApprovedAtBefore(ReservationStatus status, LocalDateTime approvedAtBefore);
+
     boolean existsByApartment_IdAndStatus(Integer apartmentId, ReservationStatus status);
+
+    boolean existsByApartment_IdAndStatusAndIdNot(Integer apartmentId, ReservationStatus status, Integer reservationId);
+
+    boolean existsByUser_IdAndApartment_IdAndStatusIn(Integer userId, Integer apartmentId, List<ReservationStatus> statuses);
 
     List<Reservation> findReservationsByApartment_IdAndStatus(Integer apartmentId, ReservationStatus status);
 }
