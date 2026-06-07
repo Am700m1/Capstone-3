@@ -206,3 +206,5 @@ Both `/api/v1/user-preference` and `/api/v1/user-preferences` are valid controll
 | UltraMsg | Sends WhatsApp notifications during supported rental workflows. |
 
 Google Places and Google Routes are not used by the current project.
+## Database Class Diagram
+![img.png](img.png)
