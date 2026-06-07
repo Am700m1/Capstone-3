@@ -140,8 +140,6 @@ public class ContractService {
         contract.setEndDate(contractDTOIn.getEndDate());
         contract.setMonthlyRent(contractDTOIn.getMonthlyRent());
         contract.setSecurityDeposit(contractDTOIn.getSecurityDeposit());
-        contract.setSigned(contractDTOIn.getSigned());
-        contract.setSignedDate(contractDTOIn.getSignedDate());
         contract.setPdfPath(contractDTOIn.getPdfPath());
         contractRepository.save(contract);
     }
@@ -247,7 +245,6 @@ public class ContractService {
         contractRepository.save(contract);
 
 
-        Apartment apartment = apartmentRepository.findApartmentById(contract.getReservation().getApartment().getId());
         apartment.setStatus(ApartmentStatus.RENTED);
         apartmentRepository.save(apartment);
 
@@ -369,7 +366,6 @@ public class ContractService {
 
         Apartment apartment = contract.getReservation().getApartment();
         apartment.setStatus(ApartmentStatus.UNDER_MAINTENANCE);
-        apartment.setAvailable(false);
         apartmentRepository.save(apartment);
 
         whatsAppService.notifyOwnerContractEnded(apartment.getOwner(), apartment);
@@ -448,11 +444,6 @@ public class ContractService {
                 contract.getReservation().getApartment().getOwner(), contract);
     }
 
-    private void validateContractDates(LocalDate startDate, LocalDate endDate) {
-        if (startDate == null || endDate == null || !endDate.isAfter(startDate)) {
-            throw new ApiException("Contract end date must be after start date");
-        }
-    }
     public Map<String, Object> getContractAnalysis(Integer userId, Integer contractId, String language) {
         User user = userRepository.findUserById(userId);
         Contract contract = contractRepository.findContractById(contractId);
@@ -506,7 +497,6 @@ public class ContractService {
 
             Apartment apartment = reservation.getApartment();
             apartment.setStatus(ApartmentStatus.UNDER_MAINTENANCE);
-            apartment.setAvailable(false);
             apartmentRepository.save(apartment);
 
             // 5. Trigger Notifications
