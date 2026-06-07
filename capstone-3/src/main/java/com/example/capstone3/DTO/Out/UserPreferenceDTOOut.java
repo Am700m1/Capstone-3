@@ -23,4 +23,6 @@ public class UserPreferenceDTOOut {
     private Integer preferredBedrooms;
     private Integer preferredBathrooms;
     private String preferredDistrict;
+    private Boolean lookingForRoommate;
+    private Double roommateBudget;
 }

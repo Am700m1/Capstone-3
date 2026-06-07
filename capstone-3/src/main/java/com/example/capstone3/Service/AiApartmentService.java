@@ -29,8 +29,6 @@ public class AiApartmentService {
     private final OverpassLocationService overpassLocationService;
     private final AiService aiService;
 
-    // ─── Apartment Review Summary ─────────────────────────────────────────────
-
     // Summarizes tenant reviews for one apartment using stored apartment facts.
     public ApartmentReviewSummaryDTOOut getReviewSummary(Integer apartmentId, String language) {
         Apartment apartment = apartmentRepository.findApartmentById(apartmentId);

@@ -52,6 +52,11 @@ public class ApartmentController {
         return ResponseEntity.status(200).body(apartmentService.getUnderpricedApartments());
     }
 
+    @GetMapping("/low-rated/{ownerId}/{buildingId}")
+    public ResponseEntity<?> getLowRatedApartmentsByBuilding(@PathVariable Integer ownerId, @PathVariable Integer buildingId) {
+        return ResponseEntity.status(200).body(apartmentService.getLowRatedApartmentsByBuilding(ownerId, buildingId));
+    }
+
     @GetMapping("/dashboard/{ownerId}")
     public ResponseEntity<?> getOwnerDashboard(@PathVariable Integer ownerId) {
         return ResponseEntity.status(200).body(apartmentService.getOwnerDashboard(ownerId));
@@ -70,6 +75,12 @@ public class ApartmentController {
         return ResponseEntity.status(200).body(new ApiResponse("Apartment is now available"));
     }
 
+    @PutMapping("/toggle-maintenance/{ownerId}/{apartmentId}")
+    public ResponseEntity<?> makeApartmentUnderMaintenance(@PathVariable Integer ownerId, @PathVariable Integer apartmentId) {
+        apartmentService.toggleMaintenanceMode(ownerId, apartmentId);
+        return ResponseEntity.status(200).body(new ApiResponse("Apartment is now under maintenance"));
+    }
+
     @GetMapping("/next-available/{apartmentId}")
     public ResponseEntity<?> getNextAvailability(@PathVariable Integer apartmentId) {
         return ResponseEntity.status(200).body(apartmentService.getNextAvailability(apartmentId));
@@ -79,4 +90,11 @@ public class ApartmentController {
     public ResponseEntity<?> checkAvailabilityOnDate(@PathVariable Integer apartmentId, @PathVariable LocalDate date) {
         return ResponseEntity.status(200).body(apartmentService.checkAvailabilityOnDate(apartmentId, date));
     }
+
+    @GetMapping("/flagged/{ownerId}")
+    public ResponseEntity<?> getFlaggedApartmentsByCancellationRate(@PathVariable Integer ownerId) {
+        return ResponseEntity.status(200).body(apartmentService.getFlaggedApartmentsByCancellationRate(ownerId));
+    }
+
+
 }

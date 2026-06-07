@@ -39,6 +39,7 @@ public class MaintenanceRequestService {
     private final BuildingRepository    buildingRepository;
     private final OwnerRepository       ownerRepository;
     private final AiService             aiService;
+    private final WhatsAppService       whatsAppService;
 
     // ─── Get All ──────────────────────────────────────────────────────────────
 
@@ -127,6 +128,8 @@ public class MaintenanceRequestService {
         req.setPriority(parseAiPriority(aiResponse));
 
         maintenanceRepository.save(req);
+
+        whatsAppService.notifyOwnerNewMaintenanceRequest(apartment.getOwner(), req);
     }
 
     // ─── Start ────────────────────────────────────────────────────────────────
@@ -148,6 +151,8 @@ public class MaintenanceRequestService {
         }
         req.setStatus(MaintenanceStatus.IN_PROGRESS);
         maintenanceRepository.save(req);
+
+        whatsAppService.notifyTenantMaintenanceUpdated(req.getUser(), req);
     }
 
     // ─── Complete ─────────────────────────────────────────────────────────────
@@ -170,15 +175,19 @@ public class MaintenanceRequestService {
         req.setStatus(MaintenanceStatus.COMPLETED);
         req.setCompletedAt(LocalDateTime.now());
         maintenanceRepository.save(req);
+
+        whatsAppService.notifyTenantMaintenanceUpdated(req.getUser(), req);
     }
 
     // ─── Update ───────────────────────────────────────────────────────────────
 
-    public void updateMaintenanceRequest(Integer id, MaintenanceRequestDTOIn dto, String language) {
+    public void updateMaintenanceRequest(Integer id, MaintenanceRequestDTOIn dto, Integer actorId,
+                                         String actorRole, String language) {
         MaintenanceRequest req = maintenanceRepository.findMaintenanceRequestById(id);
         if (req == null) {
             throw new ApiException("Maintenance request not found");
         }
+        validateMaintenanceActor(req, actorId, actorRole);
         if (req.getStatus() != MaintenanceStatus.PENDING) {
             throw new ApiException("Only PENDING requests can be updated");
         }
@@ -197,15 +206,41 @@ public class MaintenanceRequestService {
 
     // ─── Delete ───────────────────────────────────────────────────────────────
 
-    public void deleteMaintenanceRequest(Integer id) {
+    public void deleteMaintenanceRequest(Integer id, Integer actorId, String actorRole) {
         MaintenanceRequest req = maintenanceRepository.findMaintenanceRequestById(id);
         if (req == null) {
             throw new ApiException("Maintenance request not found");
         }
+        validateMaintenanceActor(req, actorId, actorRole);
         if (req.getStatus() != MaintenanceStatus.PENDING) {
             throw new ApiException("Only PENDING requests can be deleted");
         }
         maintenanceRepository.deleteById(id);
+    }
+
+    private void validateMaintenanceActor(MaintenanceRequest request, Integer actorId, String actorRole) {
+        String normalizedRole = actorRole == null ? "" : actorRole.trim().toUpperCase();
+        if ("USER".equals(normalizedRole)) {
+            User user = userRepository.findUserById(actorId);
+            if (user == null) {
+                throw new ApiException("User not found");
+            }
+            if (!request.getUser().getId().equals(actorId)) {
+                throw new ApiException("Only the tenant who created this request can modify it");
+            }
+            return;
+        }
+        if ("OWNER".equals(normalizedRole)) {
+            Owner owner = ownerRepository.findOwnerById(actorId);
+            if (owner == null) {
+                throw new ApiException("Owner not found");
+            }
+            if (!request.getApartment().getOwner().getId().equals(actorId)) {
+                throw new ApiException("Owner does not own this apartment");
+            }
+            return;
+        }
+        throw new ApiException("Actor role must be USER or OWNER");
     }
 
     // ─── Building Maintenance Summary (AI) ───────────────────────────────────

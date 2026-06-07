@@ -129,6 +129,7 @@ public class ConversationService {
             messageDTOOut.setId(message.getId());
             messageDTOOut.setConversationId(conversation.getId());
             messageDTOOut.setSenderId(message.getSenderId());
+            messageDTOOut.setSenderRole(message.getSenderRole());
             messageDTOOut.setContent(message.getContent());
             messageDTOOut.setSentAt(message.getSentAt());
             messageDTOOut.setIsRead(message.getIsRead());

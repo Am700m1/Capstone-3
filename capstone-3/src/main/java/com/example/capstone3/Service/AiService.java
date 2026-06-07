@@ -232,7 +232,7 @@ public class AiService {
         prompt.append("- Each object must have exactly these keys: \"candidateId\" (integer), \"matchPercentage\" (integer out of 100), and \"reason\" (a 1-sentence explanation of why they are a good match based on budget, location, and lifestyle).\n");
         prompt.append("- Sort the array from highest matchPercentage to lowest.\n");
 
-        String rawResponse = generateText(prompt.toString());
+        String rawResponse = generateText(prompt.toString(), "EN");
         return cleanJsonResponse(rawResponse);
     }
 }

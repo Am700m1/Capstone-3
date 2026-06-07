@@ -34,6 +34,7 @@ public class ReservationService {
     private final UserRepository userRepository;
     private final OwnerRepository ownerRepository;
     private final ContractRepository contractRepository;
+    private final WhatsAppService whatsAppService;
 
     public List<ReservationDTOOut> getAll() {
         List<ReservationDTOOut> reservationDTOOuts = new ArrayList<>();
@@ -83,6 +84,8 @@ public class ReservationService {
         reservation.setMessage(reservationDTOIn.getMessage());
         reservation.setCreatedAt(LocalDateTime.now());
         reservationRepository.save(reservation);
+
+        whatsAppService.notifyOwnerNewReservation(apartment.getOwner(), reservation);
         return convertToDTO(reservation);
     }
 
@@ -240,6 +243,8 @@ public class ReservationService {
 
         reservationRepository.save(reservation);
         apartmentRepository.save(apartment);
+
+        whatsAppService.notifyTenantReservationAccepted(reservation.getUser(), apartment);
     }
 
 
@@ -262,6 +267,14 @@ public class ReservationService {
         cancelLinkedContract(reservation);
         reservation.setStatus(ReservationStatus.REJECTED);
         reservationRepository.save(reservation);
+
+        // Free up the apartment
+        Apartment apartment = reservation.getApartment();
+        apartment.setStatus(ApartmentStatus.AVAILABLE);
+        apartmentRepository.save(apartment);
+
+        whatsAppService.notifyTenantReservationRejected(reservation.getUser(), apartment);
+
     }
 
 
@@ -297,6 +310,9 @@ public class ReservationService {
             apartment.setStatus(ApartmentStatus.AVAILABLE);
             apartmentRepository.save(apartment);
         }
+
+        whatsAppService.notifyOwnerReservationCancelled(
+                reservation.getApartment().getOwner(), reservation);
     }
 
 //    @Scheduled(fixedRate = 60000)
@@ -316,6 +332,8 @@ public class ReservationService {
             // Mark the reservation as expired
             reservation.setStatus(ReservationStatus.EXPIRED);
             reservationRepository.save(reservation);
+            whatsAppService.notifyTenantReservationExpired(
+                    reservation.getUser(), reservation.getApartment());
 
         }
 

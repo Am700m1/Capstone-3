@@ -2,14 +2,14 @@ package com.example.capstone3.Controller;
 
 import com.example.capstone3.Api.ApiResponse;
 import com.example.capstone3.DTO.In.ContractDTOIn;
-import com.example.capstone3.DTO.Out.ContractDTOOut;
 import com.example.capstone3.Service.ContractService;
+import jakarta.mail.MessagingException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/v1/contract")
@@ -46,48 +46,13 @@ public class ContractController {
         return ResponseEntity.status(200).body(new ApiResponse("Contract deleted successfully"));
     }
 
-    @PutMapping("/accept/{userId}/{contractId}")
-    public ResponseEntity<?> acceptContract(@PathVariable Integer userId, @PathVariable Integer contractId) {
-        contractService.acceptContract(userId, contractId);
-        return ResponseEntity.status(200).body(new ApiResponse("Contract accepted successfully"));
-    }
-
-    @PutMapping("/reject/{userId}/{contractId}")
-    public ResponseEntity<?> rejectContract(@PathVariable Integer userId, @PathVariable Integer contractId) {
-        contractService.rejectContract(userId, contractId);
-        return ResponseEntity.status(200).body(new ApiResponse("Contract rejected successfully"));
-    }
-
-    @PutMapping("/end/{ownerId}/{contractId}")
-    public ResponseEntity<?> endContract(@PathVariable Integer ownerId, @PathVariable Integer contractId) {
-        contractService.endContract(ownerId, contractId);
-        return ResponseEntity.status(200).body(new ApiResponse("Contract ended successfully"));
-    }
-
-    @PutMapping("/renew/{userId}/{contractId}/{extraMonths}")
-    public ResponseEntity<?> renewContract(@PathVariable Integer userId, @PathVariable Integer contractId,
-                                           @PathVariable Integer extraMonths) {
-        contractService.renewContract(userId, contractId, extraMonths);
-        return ResponseEntity.status(200).body(new ApiResponse("Contract renewed successfully"));
-    }
-
-    @GetMapping("/get/user/{userId}")
-    public ResponseEntity<?> getContractsByUser(@PathVariable Integer userId) {
-        return ResponseEntity.status(200).body(contractService.getContractsByUserId(userId));
-    }
-
-    @GetMapping("/get/owner/{ownerId}")
-    public ResponseEntity<?> getContractsByOwner(@PathVariable Integer ownerId) {
-        return ResponseEntity.status(200).body(contractService.getContractsByOwnerId(ownerId));
-    }
-
-    @PutMapping("/{contractId}/accept/{userId}")
+    @PutMapping("/accept/{contractId}/{userId}")
     public ResponseEntity<?> acceptContract(@PathVariable Integer userId, @PathVariable Integer contractId) {
         contractService.acceptContract(userId, contractId);
         return ResponseEntity.status(200).body(new ApiResponse("Contract accepted and activated successfully."));
     }
 
-    @PutMapping("/{contractId}/reject/{userId}")
+    @PutMapping("/reject/{contractId}/{userId}")
     public ResponseEntity<?> rejectContract(@PathVariable Integer userId, @PathVariable Integer contractId) {
         contractService.rejectContract(userId, contractId);
         return ResponseEntity.status(200).body(new ApiResponse("Contract rejected and cancelled successfully."));
@@ -103,20 +68,34 @@ public class ContractController {
         return ResponseEntity.status(200).body(contractService.getContractsByOwnerId(ownerId));
     }
 
-    @PutMapping("/{contractId}/end/{ownerId}")
+    @PutMapping("/end/{contractId}/{ownerId}")
     public ResponseEntity<?> endContract(@PathVariable Integer ownerId, @PathVariable Integer contractId) {
         contractService.endContract(ownerId, contractId);
         return ResponseEntity.status(200).body(new ApiResponse("Contract officially ended successfully."));
     }
 
-    @PutMapping("/{contractId}/renew/{userId}")
+    @PutMapping("/terminate/{contractId}/{ownerId}")
+    public ResponseEntity<?> terminateContract(@PathVariable Integer ownerId, @PathVariable Integer contractId) {
+        contractService.terminateContract(ownerId, contractId);
+        return ResponseEntity.status(200).body(new ApiResponse("Contract terminated successfully."));
+    }
+
+    @PutMapping("/renew/{contractId}/{userId}")
     public ResponseEntity<?> renewContract(@PathVariable Integer userId, @PathVariable Integer contractId, @RequestParam Integer extraMonths) {
         contractService.renewContract(userId, contractId, extraMonths);
         return ResponseEntity.status(200).body(new ApiResponse("Contract renewed for " + extraMonths + " extra months."));
     }
 
-    @GetMapping("/{contractId}/analyze/{userId}")
-    public ResponseEntity<?> getContractAnalysis(@PathVariable Integer userId, @PathVariable Integer contractId, @RequestParam String language) {
+    @GetMapping("/analyze/{contractId}/{userId}")
+    public ResponseEntity<?> getContractAnalysis(@PathVariable Integer userId, @PathVariable Integer contractId, @RequestParam(defaultValue = "EN") String language) {
         return ResponseEntity.status(200).body(contractService.getContractAnalysis(userId, contractId, language));
     }
+
+    @PostMapping("/{contractId}/send-pdf")
+    public ResponseEntity<?> sendContractPdfEmail(@PathVariable Integer contractId) throws IOException, MessagingException {
+        contractService.generateAndEmailContractPdf(contractId);
+        return ResponseEntity.status(200).body(new ApiResponse("Contract PDF has been successfully generated and sent via email."));
+    }
+
+
 }
