@@ -11,13 +11,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(
-        name = "conversations",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uk_conversation_participants_apartment",
-                columnNames = {"user_id", "owner_id", "apartment_id"}
-        )
-)
 @Getter
 @Setter
 @NoArgsConstructor

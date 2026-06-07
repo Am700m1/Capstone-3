@@ -47,8 +47,7 @@ public class ApartmentController {
         return ResponseEntity.status(200).body(new ApiResponse("Apartment deleted successfully"));
     }
 
-
-    @GetMapping("/underpriced")
+    @GetMapping("/get/underpriced")
     public ResponseEntity<?> getUnderpricedApartments() {
         return ResponseEntity.status(200).body(apartmentService.getUnderpricedApartments());
     }
@@ -70,17 +69,16 @@ public class ApartmentController {
         return ResponseEntity.status(200).body(apartmentService.searchApartments(minRent, maxRent, bedrooms, district, isFurnished));
     }
 
-    @GetMapping("/flagged/{ownerId}")
-    public ResponseEntity<?> getFlaggedApartmentsByCancellationRate(@PathVariable Integer ownerId) {
-        return ResponseEntity.status(200).body(apartmentService.getFlaggedApartmentsByCancellationRate(ownerId));
-    }
-
-
-
     @PutMapping("/available/{ownerId}/{apartmentId}")
     public ResponseEntity<?> makeApartmentAvailable(@PathVariable Integer ownerId, @PathVariable Integer apartmentId) {
         apartmentService.toggleAvailableMode(ownerId, apartmentId);
         return ResponseEntity.status(200).body(new ApiResponse("Apartment is now available"));
+    }
+
+    @PutMapping("/toggle-maintenance/{ownerId}/{apartmentId}")
+    public ResponseEntity<?> makeApartmentUnderMaintenance(@PathVariable Integer ownerId, @PathVariable Integer apartmentId) {
+        apartmentService.toggleMaintenanceMode(ownerId, apartmentId);
+        return ResponseEntity.status(200).body(new ApiResponse("Apartment is now under maintenance"));
     }
 
     @GetMapping("/next-available/{apartmentId}")
@@ -92,4 +90,11 @@ public class ApartmentController {
     public ResponseEntity<?> checkAvailabilityOnDate(@PathVariable Integer apartmentId, @PathVariable LocalDate date) {
         return ResponseEntity.status(200).body(apartmentService.checkAvailabilityOnDate(apartmentId, date));
     }
+
+    @GetMapping("/flagged/{ownerId}")
+    public ResponseEntity<?> getFlaggedApartmentsByCancellationRate(@PathVariable Integer ownerId) {
+        return ResponseEntity.status(200).body(apartmentService.getFlaggedApartmentsByCancellationRate(ownerId));
+    }
+
+
 }

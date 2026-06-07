@@ -69,11 +69,6 @@ public class UserPreferenceService {
                 ? PreferenceLevel.NOT_IMPORTANT : userPreferenceDTOIn.getPublicTransportPreference());
         preference.setLookingForRoommate(userPreferenceDTOIn.getLookingForRoommate());
         preference.setRoommateBudget(userPreferenceDTOIn.getRoommateBudget());
-        preference.setGymPreference(parsePreferenceLevel(userPreferenceDTOIn.getGymPreference()));
-        preference.setCafesPreference(parsePreferenceLevel(userPreferenceDTOIn.getCafesPreference()));
-        preference.setHospitalPreference(parsePreferenceLevel(userPreferenceDTOIn.getHospitalPreference()));
-        preference.setSchoolPreference(parsePreferenceLevel(userPreferenceDTOIn.getSchoolPreference()));
-        preference.setPublicTransportPreference(parsePreferenceLevel(userPreferenceDTOIn.getPublicTransportPreference()));
         preference.setPreferredBedrooms(userPreferenceDTOIn.getPreferredBedrooms());
         preference.setPreferredBathrooms(userPreferenceDTOIn.getPreferredBathrooms());
         preference.setPreferredDistrict(userPreferenceDTOIn.getPreferredDistrict());
@@ -106,11 +101,6 @@ public class UserPreferenceService {
                 ? PreferenceLevel.NOT_IMPORTANT : userPreferenceDTOIn.getPublicTransportPreference());
         preference.setLookingForRoommate(userPreferenceDTOIn.getLookingForRoommate());
         preference.setRoommateBudget(userPreferenceDTOIn.getRoommateBudget());
-        preference.setGymPreference(parsePreferenceLevel(userPreferenceDTOIn.getGymPreference()));
-        preference.setCafesPreference(parsePreferenceLevel(userPreferenceDTOIn.getCafesPreference()));
-        preference.setHospitalPreference(parsePreferenceLevel(userPreferenceDTOIn.getHospitalPreference()));
-        preference.setSchoolPreference(parsePreferenceLevel(userPreferenceDTOIn.getSchoolPreference()));
-        preference.setPublicTransportPreference(parsePreferenceLevel(userPreferenceDTOIn.getPublicTransportPreference()));
         preference.setPreferredBedrooms(userPreferenceDTOIn.getPreferredBedrooms());
         preference.setPreferredBathrooms(userPreferenceDTOIn.getPreferredBathrooms());
         preference.setPreferredDistrict(userPreferenceDTOIn.getPreferredDistrict());
@@ -174,6 +164,8 @@ public class UserPreferenceService {
         userPreferenceDTOOut.setPreferredBedrooms(preference.getPreferredBedrooms());
         userPreferenceDTOOut.setPreferredBathrooms(preference.getPreferredBathrooms());
         userPreferenceDTOOut.setPreferredDistrict(preference.getPreferredDistrict());
+        userPreferenceDTOOut.setLookingForRoommate(preference.getLookingForRoommate());
+        userPreferenceDTOOut.setRoommateBudget(preference.getRoommateBudget());
         return userPreferenceDTOOut;
     }
 
@@ -187,10 +179,4 @@ public class UserPreferenceService {
     //^^^^^^^CRUD^^^^^^^^
 
 
-    private PreferenceLevel parsePreferenceLevel(String value) {
-        if (value == null || value.isBlank()) {
-            return PreferenceLevel.NOT_IMPORTANT;
-        }
-        return PreferenceLevel.valueOf(value.toUpperCase());
-    }
 }

@@ -10,6 +10,7 @@ public class MessageDTOOut {
     private Integer id;
     private Integer conversationId;
     private Integer senderId;
+    private String senderRole;
     private String content;
     private LocalDateTime sentAt;
     private Boolean isRead;

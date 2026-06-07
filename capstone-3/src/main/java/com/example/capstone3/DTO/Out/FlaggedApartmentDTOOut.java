@@ -11,6 +11,6 @@ public class FlaggedApartmentDTOOut {
     private Double monthlyRent;
     private Integer totalReservations;
     private Integer totalCancellations;
-    private Double cancellationRate;      // e.g. 0.60 = 60%
-    private Double averageRate;           // average across all owner's apartments
+    private Double cancellationRate;
+    private Double averageRate;
 }

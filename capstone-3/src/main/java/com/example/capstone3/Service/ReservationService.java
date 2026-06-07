@@ -21,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +33,7 @@ public class ReservationService {
     private final ApartmentRepository apartmentRepository;
     private final UserRepository userRepository;
     private final OwnerRepository ownerRepository;
+    private final ContractRepository contractRepository;
     private final WhatsAppService whatsAppService;
 
     public List<ReservationDTOOut> getAll() {
@@ -310,6 +310,9 @@ public class ReservationService {
             apartment.setStatus(ApartmentStatus.AVAILABLE);
             apartmentRepository.save(apartment);
         }
+
+        whatsAppService.notifyOwnerReservationCancelled(
+                reservation.getApartment().getOwner(), reservation);
     }
 
 //    @Scheduled(fixedRate = 60000)
@@ -329,6 +332,8 @@ public class ReservationService {
             // Mark the reservation as expired
             reservation.setStatus(ReservationStatus.EXPIRED);
             reservationRepository.save(reservation);
+            whatsAppService.notifyTenantReservationExpired(
+                    reservation.getUser(), reservation.getApartment());
 
         }
 

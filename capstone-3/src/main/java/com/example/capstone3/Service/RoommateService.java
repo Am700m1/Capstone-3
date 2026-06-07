@@ -12,6 +12,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -28,10 +31,13 @@ public class RoommateService {
             throw new ApiException("User not found");
         }
 
-        UserPreference requesterPref = userPreferenceRepository.findUserPreferenceById(userId); // Assuming preference ID matches user ID or use a custom query
+        UserPreference requesterPref = userPreferenceRepository.findUserPreferenceByUserId(userId);
 
-        if (requesterPref == null || !requesterPref.getLookingForRoommate()) {
+        if (requesterPref == null || !Boolean.TRUE.equals(requesterPref.getLookingForRoommate())) {
             throw new ApiException("You must create a user preference and set lookingForRoommate to true to use this feature.");
+        }
+        if (requesterPref.getRoommateBudget() == null) {
+            throw new ApiException("Roommate budget is required to find roommate matches.");
         }
 
         // 1. Database Pre-Filtering (+/- 1500 SAR budget variance)
@@ -57,16 +63,26 @@ public class RoommateService {
             // Parse the JSON array into our DTO list
             List<RoommateMatchDTOOut> matches = objectMapper.readValue(aiJsonString, new TypeReference<List<RoommateMatchDTOOut>>() {});
 
-            // 3. Map the candidate's actual name to the final response
-            for (RoommateMatchDTOOut match : matches) {
-                User candidate = userRepository.findUserById(match.getCandidateId());
-                if (candidate != null) {
-                    match.setCandidateName(candidate.getFullName());
-                }
+            Map<Integer, UserPreference> allowedCandidates = candidates.stream()
+                    .collect(Collectors.toMap(candidate -> candidate.getUser().getId(), Function.identity()));
+
+            // Only return IDs that were included in the backend candidate list.
+            List<RoommateMatchDTOOut> verifiedMatches = matches.stream()
+                    .filter(match -> match.getCandidateId() != null)
+                    .filter(match -> allowedCandidates.containsKey(match.getCandidateId()))
+                    .peek(match -> match.setCandidateName(
+                            allowedCandidates.get(match.getCandidateId()).getUser().getFullName()))
+                    .toList();
+
+            if (verifiedMatches.isEmpty()) {
+                throw new ApiException("AI did not return any valid roommate candidates");
             }
-            return matches;
+            return verifiedMatches;
 
         } catch (Exception e) {
+            if (e instanceof ApiException apiException) {
+                throw apiException;
+            }
             throw new ApiException("Failed to parse AI matches: " + e.getMessage());
         }
     }

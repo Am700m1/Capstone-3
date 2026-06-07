@@ -13,6 +13,8 @@ public interface RoommateRequestRepository extends JpaRepository<RoommateRequest
 
     RoommateRequest findRoommateRequestById(Integer id);
 
+    boolean existsBySenderAndReceiverAndStatus(User sender, User receiver, RoommateStatus status);
+
     List<RoommateRequest> findBySenderAndStatusOrReceiverAndStatus(
             User sender, RoommateStatus status1,
             User receiver, RoommateStatus status2
