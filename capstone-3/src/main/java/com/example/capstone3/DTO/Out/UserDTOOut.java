@@ -16,7 +16,6 @@ public class UserDTOOut {
     private String phoneNumber;
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate dateOfBirth;
-    private Boolean married;
     private Integer familyCount;
     private Integer childrenCount;
     private LocalDateTime createdAt;

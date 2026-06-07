@@ -2,6 +2,7 @@ package com.example.capstone3.Controller;
 
 import com.example.capstone3.Api.ApiResponse;
 import com.example.capstone3.DTO.In.ContractDTOIn;
+import com.example.capstone3.DTO.In.ContractNegotiationDTOIn;
 import com.example.capstone3.Service.ContractService;
 import jakarta.mail.MessagingException;
 import jakarta.validation.Valid;
@@ -56,6 +57,52 @@ public class ContractController {
     public ResponseEntity<?> rejectContract(@PathVariable Integer userId, @PathVariable Integer contractId) {
         contractService.rejectContract(userId, contractId);
         return ResponseEntity.status(200).body(new ApiResponse("Contract rejected and cancelled successfully."));
+    }
+
+    @PutMapping("/request-negotiation/{userId}/{contractId}")
+    public ResponseEntity<?> requestNegotiation(
+            @PathVariable Integer userId,
+            @PathVariable Integer contractId,
+            @RequestBody @Valid ContractNegotiationDTOIn negotiationDTOIn) {
+        contractService.requestNegotiation(userId, contractId, negotiationDTOIn);
+        return ResponseEntity.status(200).body(new ApiResponse("Negotiation requested successfully."));
+    }
+
+    @PutMapping("/owner/accept-negotiation/{ownerId}/{contractId}")
+    public ResponseEntity<?> acceptNegotiation(
+            @PathVariable Integer ownerId, @PathVariable Integer contractId) {
+        contractService.acceptNegotiation(ownerId, contractId);
+        return ResponseEntity.status(200).body(new ApiResponse("Negotiation accepted successfully."));
+    }
+
+    @PutMapping("/owner/reject-negotiation/{ownerId}/{contractId}")
+    public ResponseEntity<?> rejectNegotiation(
+            @PathVariable Integer ownerId, @PathVariable Integer contractId) {
+        contractService.rejectNegotiation(ownerId, contractId);
+        return ResponseEntity.status(200).body(new ApiResponse("Negotiation rejected successfully."));
+    }
+
+    @PutMapping("/owner/counter-offer/{ownerId}/{contractId}")
+    public ResponseEntity<?> counterOffer(
+            @PathVariable Integer ownerId,
+            @PathVariable Integer contractId,
+            @RequestBody @Valid ContractNegotiationDTOIn negotiationDTOIn) {
+        contractService.counterOffer(ownerId, contractId, negotiationDTOIn);
+        return ResponseEntity.status(200).body(new ApiResponse("Counter-offer submitted successfully."));
+    }
+
+    @PutMapping("/user/accept-counter-offer/{userId}/{contractId}")
+    public ResponseEntity<?> acceptCounterOffer(
+            @PathVariable Integer userId, @PathVariable Integer contractId) {
+        contractService.acceptCounterOffer(userId, contractId);
+        return ResponseEntity.status(200).body(new ApiResponse("Counter-offer accepted successfully."));
+    }
+
+    @PutMapping("/user/reject-counter-offer/{userId}/{contractId}")
+    public ResponseEntity<?> rejectCounterOffer(
+            @PathVariable Integer userId, @PathVariable Integer contractId) {
+        contractService.rejectCounterOffer(userId, contractId);
+        return ResponseEntity.status(200).body(new ApiResponse("Counter-offer rejected successfully."));
     }
 
     @GetMapping("/user/{userId}")

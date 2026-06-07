@@ -60,11 +60,15 @@ public class ApartmentService {
         if (!building.getOwner().getId().equals(owner.getId())) {
             throw new ApiException("Owner does not own this building");
         }
+        String apartmentNumber = apartmentDTOIn.getApartmentNumber().trim();
+        if (apartmentRepository.existsByBuilding_IdAndApartmentNumberIgnoreCase(
+                buildingId, apartmentNumber)) {
+            throw new ApiException("Apartment number already exists in this building");
+        }
         Apartment apartment = new Apartment();
         apartment.setBuilding(building);
         apartment.setOwner(owner);
-        apartment.setTitle(apartmentDTOIn.getTitle());
-        apartment.setDescription(apartmentDTOIn.getDescription());
+        apartment.setApartmentNumber(apartmentNumber);
         apartment.setMonthlyRent(apartmentDTOIn.getMonthlyRent());
         apartment.setBedrooms(apartmentDTOIn.getBedrooms());
         apartment.setBathrooms(apartmentDTOIn.getBathrooms());
@@ -85,8 +89,12 @@ public class ApartmentService {
         if (apartment == null) {
             throw new ApiException("Apartment not found");
         }
-        apartment.setTitle(apartmentDTOIn.getTitle());
-        apartment.setDescription(apartmentDTOIn.getDescription());
+        String apartmentNumber = apartmentDTOIn.getApartmentNumber().trim();
+        if (apartmentRepository.existsByBuilding_IdAndApartmentNumberIgnoreCaseAndIdNot(
+                apartment.getBuilding().getId(), apartmentNumber, apartment.getId())) {
+            throw new ApiException("Apartment number already exists in this building");
+        }
+        apartment.setApartmentNumber(apartmentNumber);
         apartment.setMonthlyRent(apartmentDTOIn.getMonthlyRent());
         apartment.setBedrooms(apartmentDTOIn.getBedrooms());
         apartment.setBathrooms(apartmentDTOIn.getBathrooms());
@@ -115,8 +123,7 @@ public class ApartmentService {
         apartmentDTOOut.setBuildingId(apartment.getBuilding().getId());
         apartmentDTOOut.setOwnerId(apartment.getOwner().getId());
         apartmentDTOOut.setDistrict(apartment.getBuilding().getDistrict());
-        apartmentDTOOut.setTitle(apartment.getTitle());
-        apartmentDTOOut.setDescription(apartment.getDescription());
+        apartmentDTOOut.setApartmentNumber(apartment.getApartmentNumber());
         apartmentDTOOut.setMonthlyRent(apartment.getMonthlyRent());
         apartmentDTOOut.setBedrooms(apartment.getBedrooms());
         apartmentDTOOut.setBathrooms(apartment.getBathrooms());
@@ -189,7 +196,7 @@ public class ApartmentService {
 
             UnderpricedApartmentDTOOut dto = new UnderpricedApartmentDTOOut();
             dto.setId(apartment.getId());
-            dto.setTitle(apartment.getTitle());
+            dto.setApartmentNumber(apartment.getApartmentNumber());
             dto.setDistrict(apartment.getBuilding().getDistrict());
             dto.setMonthlyRent(apartment.getMonthlyRent());
             dto.setBedrooms(apartment.getBedrooms());
@@ -251,11 +258,11 @@ public class ApartmentService {
             }
 
             // Call AI to summarize the issues
-            String aiSummary = getAiSummary(apartment.getTitle(), comments.toString());
+            String aiSummary = getAiSummary(apartment.getApartmentNumber(), comments.toString());
 
             LowRatedApartmentDTOOut dto = new LowRatedApartmentDTOOut();
             dto.setId(apartment.getId());
-            dto.setTitle(apartment.getTitle());
+            dto.setApartmentNumber(apartment.getApartmentNumber());
             dto.setDistrict(building.getDistrict());
             dto.setMonthlyRent(apartment.getMonthlyRent());
             dto.setBedrooms(apartment.getBedrooms());
@@ -300,7 +307,7 @@ public class ApartmentService {
 
             FlaggedApartmentDTOOut dto = new FlaggedApartmentDTOOut();
             dto.setId(apartment.getId());
-            dto.setTitle(apartment.getTitle());
+            dto.setApartmentNumber(apartment.getApartmentNumber());
             dto.setDistrict(apartment.getBuilding().getDistrict());
             dto.setMonthlyRent(apartment.getMonthlyRent());
             dto.setTotalReservations(total);
@@ -334,8 +341,8 @@ public class ApartmentService {
         return flagged;
     }
 
-    private String getAiSummary(String apartmentTitle, String comments) {
-        String prompt = "You are analyzing tenant reviews for an apartment called \"" + apartmentTitle + "\".\n" +
+    private String getAiSummary(String apartmentNumber, String comments) {
+        String prompt = "You are analyzing tenant reviews for apartment number \"" + apartmentNumber + "\".\n" +
                 "Here are the review comments:\n" + comments + "\n" +
                 "Summarize the main issues tenants are complaining about in one sentence starting with \"Main issues: \"";
         return aiService.generateText(prompt, "EN");

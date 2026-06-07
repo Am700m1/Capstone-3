@@ -16,4 +16,10 @@ public interface ApartmentRepository extends JpaRepository<Apartment, Integer> {
 
     List<Apartment> findByStatus(ApartmentStatus status);
 
+    boolean existsByBuilding_IdAndApartmentNumberIgnoreCase(
+            Integer buildingId, String apartmentNumber);
+
+    boolean existsByBuilding_IdAndApartmentNumberIgnoreCaseAndIdNot(
+            Integer buildingId, String apartmentNumber, Integer apartmentId);
+
 }

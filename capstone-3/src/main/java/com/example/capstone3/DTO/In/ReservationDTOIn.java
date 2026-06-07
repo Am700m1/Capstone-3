@@ -2,7 +2,6 @@ package com.example.capstone3.DTO.In;
 
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.time.LocalDate;
@@ -13,7 +12,4 @@ public class ReservationDTOIn {
     @NotNull(message = "Reservation date is required")
     @Future(message = "Reservation date must be in the future")
     private LocalDate reservationDate;
-
-    @Size(max = 500, message = "Message must not exceed 500 characters")
-    private String message;
 }

@@ -2,9 +2,11 @@ package com.example.capstone3.Service;
 
 import com.example.capstone3.Api.ApiException;
 import com.example.capstone3.DTO.In.ContractDTOIn;
+import com.example.capstone3.DTO.In.ContractNegotiationDTOIn;
 import com.example.capstone3.DTO.Out.ContractDTOOut;
 import com.example.capstone3.Enums.ApartmentStatus;
 import com.example.capstone3.Enums.ContractStatus;
+import com.example.capstone3.Enums.NegotiationStatus;
 import com.example.capstone3.Enums.ReservationStatus;
 import com.example.capstone3.Models.*;
 import com.example.capstone3.Repository.*;
@@ -19,14 +21,18 @@ import java.io.ByteArrayOutputStream;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class ContractService {
+
+    // Unsigned pending contracts expire after three days
+    private static final long PENDING_CONTRACT_EXPIRY_DAYS = 3;
 
     private final ContractRepository contractRepository;
     private final ReservationRepository reservationRepository;
@@ -61,20 +67,6 @@ public class ContractService {
         if (reservation == null) {
             throw new ApiException("Reservation not found");
         }
-        if (reservation.getStatus() != ReservationStatus.APPROVED) {
-            throw new ApiException("Contract can only be created for an approved reservation");
-        }
-        if (contractRepository.existsByReservation_Id(reservation_id)) {
-            throw new ApiException("A contract already exists for this reservation");
-        }
-        if (contractRepository.existsByReservation_Apartment_IdAndContractStatus(
-                reservation.getApartment().getId(), ContractStatus.ACTIVE)) {
-            throw new ApiException("Apartment already has an active contract");
-        }
-        validateContractDates(contractDTOIn.getStartDate(), contractDTOIn.getEndDate());
-        if (!reservation.getApartment().getMonthlyRent().equals(contractDTOIn.getMonthlyRent())) {
-            throw new ApiException("Contract monthly rent must match the apartment monthly rent");
-        }
 
         if (reservation.getStatus() != ReservationStatus.APPROVED) {
             throw new ApiException("Cannot generate a contract! The reservation must be APPROVED by the owner first.");
@@ -86,23 +78,27 @@ public class ContractService {
                 reservation.getApartment().getId(), ContractStatus.ACTIVE)) {
             throw new ApiException("Apartment already has an active contract");
         }
-        validateContractDates(contractDTOIn.getStartDate(), contractDTOIn.getEndDate());
-        validateContractStartAgainstReservation(
-                contractDTOIn.getStartDate(), reservation.getReservationDate());
+        if (!contractDTOIn.getEndDate().isAfter(contractDTOIn.getStartDate())) {
+            throw new ApiException("Contract end date must be after start date");
+        }
+        if (contractDTOIn.getStartDate().isBefore(reservation.getReservationDate())) {
+            throw new ApiException(
+                    "Contract start date cannot be before the reservation date");
+        }
         if (!reservation.getApartment().getMonthlyRent().equals(contractDTOIn.getMonthlyRent())) {
             throw new ApiException("Contract monthly rent must match the apartment monthly rent");
         }
 
         Contract contract = new Contract();
         contract.setReservation(reservation);
-        contract.setContractNumber(contractDTOIn.getContractNumber());
+        contract.setContractNumber("RAWAA-" + UUID.randomUUID().toString().toUpperCase());
         contract.setStartDate(contractDTOIn.getStartDate());
         contract.setEndDate(contractDTOIn.getEndDate());
         contract.setMonthlyRent(contractDTOIn.getMonthlyRent());
         contract.setSecurityDeposit(contractDTOIn.getSecurityDeposit());
         contract.setSigned(false);
         contract.setSignedDate(null);
-        contract.setPdfPath(contractDTOIn.getPdfPath());
+        contract.setCreatedAt(LocalDateTime.now());
         contract.setContractStatus(ContractStatus.PENDING);
         contractRepository.save(contract);
 
@@ -117,30 +113,25 @@ public class ContractService {
         if (contract.getContractStatus() != ContractStatus.PENDING) {
             throw new ApiException("Only pending contracts can be updated");
         }
-        if (contract.getContractStatus() != ContractStatus.PENDING) {
-            throw new ApiException("Only pending contracts can be updated");
-        }
-        validateContractDates(contractDTOIn.getStartDate(), contractDTOIn.getEndDate());
-        if (!contract.getReservation().getApartment().getMonthlyRent().equals(contractDTOIn.getMonthlyRent())) {
-            throw new ApiException("Contract monthly rent must match the apartment monthly rent");
-        }
         Reservation reservation = contract.getReservation();
         if (reservation == null) {
             throw new ApiException("Reservation not found");
         }
-        validateContractDates(contractDTOIn.getStartDate(), contractDTOIn.getEndDate());
-        validateContractStartAgainstReservation(
-                contractDTOIn.getStartDate(), reservation.getReservationDate());
+        if (!contractDTOIn.getEndDate().isAfter(contractDTOIn.getStartDate())) {
+            throw new ApiException("Contract end date must be after start date");
+        }
+        if (contractDTOIn.getStartDate().isBefore(reservation.getReservationDate())) {
+            throw new ApiException(
+                    "Contract start date cannot be before the reservation date");
+        }
         if (!reservation.getApartment().getMonthlyRent().equals(contractDTOIn.getMonthlyRent())) {
             throw new ApiException("Contract monthly rent must match the apartment monthly rent");
         }
         contract.setReservation(reservation);
-        contract.setContractNumber(contractDTOIn.getContractNumber());
         contract.setStartDate(contractDTOIn.getStartDate());
         contract.setEndDate(contractDTOIn.getEndDate());
         contract.setMonthlyRent(contractDTOIn.getMonthlyRent());
         contract.setSecurityDeposit(contractDTOIn.getSecurityDeposit());
-        contract.setPdfPath(contractDTOIn.getPdfPath());
         contractRepository.save(contract);
     }
 
@@ -172,8 +163,12 @@ public class ContractService {
         contractDTOOut.setSecurityDeposit(contract.getSecurityDeposit());
         contractDTOOut.setSigned(contract.getSigned());
         contractDTOOut.setSignedDate(contract.getSignedDate());
-        contractDTOOut.setPdfPath(contract.getPdfPath());
         contractDTOOut.setContractStatus(contract.getContractStatus());
+        contractDTOOut.setNegotiationStatus(contract.getNegotiationStatus());
+        contractDTOOut.setRequestedRent(contract.getRequestedRent());
+        contractDTOOut.setCounterOfferRent(contract.getCounterOfferRent());
+        contractDTOOut.setNegotiationMessage(contract.getNegotiationMessage());
+        contractDTOOut.setNegotiationUpdatedAt(contract.getNegotiationUpdatedAt());
 
         // NEW: Joint Renting Logic
         if (primaryTenant.getCurrentRoommateId() != null) {
@@ -196,6 +191,189 @@ public class ContractService {
 
     //^^^^^^^CRUD^^^^^^^^
 
+    @Transactional
+    public void requestNegotiation(
+            Integer userId,
+            Integer contractId,
+            ContractNegotiationDTOIn negotiationDTOIn) {
+        User user = userRepository.findUserById(userId);
+        if (user == null) {
+            throw new ApiException("User not found!");
+        }
+
+        Contract contract = contractRepository.findContractById(contractId);
+        if (contract == null) {
+            throw new ApiException("Contract not found!");
+        }
+        if (!userId.equals(contract.getReservation().getUser().getId())) {
+            throw new ApiException("You are not authorized to negotiate this contract");
+        }
+        if (contract.getContractStatus() != ContractStatus.PENDING) {
+            throw new ApiException("Negotiation is allowed only while the contract is pending");
+        }
+        if (contract.getNegotiationStatus() == NegotiationStatus.PENDING
+                || contract.getNegotiationStatus() == NegotiationStatus.COUNTERED) {
+            throw new ApiException("This contract already has an active negotiation");
+        }
+        if (negotiationDTOIn.getRequestedRent() == null
+                || negotiationDTOIn.getRequestedRent() <= 0) {
+            throw new ApiException("Requested rent must be provided and greater than zero");
+        }
+
+        contract.setRequestedRent(negotiationDTOIn.getRequestedRent());
+        contract.setCounterOfferRent(null);
+        contract.setNegotiationMessage(negotiationDTOIn.getNegotiationMessage());
+        contract.setNegotiationStatus(NegotiationStatus.PENDING);
+        contract.setNegotiationUpdatedAt(LocalDateTime.now());
+        contractRepository.save(contract);
+    }
+
+    @Transactional
+    public void acceptNegotiation(Integer ownerId, Integer contractId) {
+        Owner owner = ownerRepository.findOwnerById(ownerId);
+        if (owner == null) {
+            throw new ApiException("Owner not found!");
+        }
+
+        Contract contract = contractRepository.findContractById(contractId);
+        if (contract == null) {
+            throw new ApiException("Contract not found!");
+        }
+        if (!ownerId.equals(contract.getReservation().getApartment().getOwner().getId())) {
+            throw new ApiException("You are not authorized to negotiate this contract");
+        }
+        if (contract.getContractStatus() != ContractStatus.PENDING) {
+            throw new ApiException("Negotiation is allowed only while the contract is pending");
+        }
+        if (contract.getNegotiationStatus() != NegotiationStatus.PENDING) {
+            throw new ApiException("Only a pending negotiation can be accepted");
+        }
+        if (contract.getRequestedRent() == null) {
+            throw new ApiException("Requested rent was not found");
+        }
+
+        contract.setMonthlyRent(contract.getRequestedRent());
+        contract.setNegotiationStatus(NegotiationStatus.ACCEPTED);
+        contract.setNegotiationUpdatedAt(LocalDateTime.now());
+        contractRepository.save(contract);
+    }
+
+    @Transactional
+    public void rejectNegotiation(Integer ownerId, Integer contractId) {
+        Owner owner = ownerRepository.findOwnerById(ownerId);
+        if (owner == null) {
+            throw new ApiException("Owner not found!");
+        }
+
+        Contract contract = contractRepository.findContractById(contractId);
+        if (contract == null) {
+            throw new ApiException("Contract not found!");
+        }
+        if (!ownerId.equals(contract.getReservation().getApartment().getOwner().getId())) {
+            throw new ApiException("You are not authorized to negotiate this contract");
+        }
+        if (contract.getContractStatus() != ContractStatus.PENDING) {
+            throw new ApiException("Negotiation is allowed only while the contract is pending");
+        }
+        if (contract.getNegotiationStatus() != NegotiationStatus.PENDING) {
+            throw new ApiException("Only a pending negotiation can be rejected");
+        }
+
+        contract.setNegotiationStatus(NegotiationStatus.REJECTED);
+        contract.setNegotiationUpdatedAt(LocalDateTime.now());
+        contractRepository.save(contract);
+    }
+
+    @Transactional
+    public void counterOffer(
+            Integer ownerId,
+            Integer contractId,
+            ContractNegotiationDTOIn negotiationDTOIn) {
+        Owner owner = ownerRepository.findOwnerById(ownerId);
+        if (owner == null) {
+            throw new ApiException("Owner not found!");
+        }
+
+        Contract contract = contractRepository.findContractById(contractId);
+        if (contract == null) {
+            throw new ApiException("Contract not found!");
+        }
+        if (!ownerId.equals(contract.getReservation().getApartment().getOwner().getId())) {
+            throw new ApiException("You are not authorized to negotiate this contract");
+        }
+        if (contract.getContractStatus() != ContractStatus.PENDING) {
+            throw new ApiException("Negotiation is allowed only while the contract is pending");
+        }
+        if (contract.getNegotiationStatus() != NegotiationStatus.PENDING) {
+            throw new ApiException("Only a pending negotiation can receive a counter-offer");
+        }
+        if (negotiationDTOIn.getCounterOfferRent() == null
+                || negotiationDTOIn.getCounterOfferRent() <= 0) {
+            throw new ApiException("Counter-offer rent must be provided and greater than zero");
+        }
+
+        contract.setCounterOfferRent(negotiationDTOIn.getCounterOfferRent());
+        contract.setNegotiationStatus(NegotiationStatus.COUNTERED);
+        contract.setNegotiationUpdatedAt(LocalDateTime.now());
+        contractRepository.save(contract);
+    }
+
+    @Transactional
+    public void acceptCounterOffer(Integer userId, Integer contractId) {
+        User user = userRepository.findUserById(userId);
+        if (user == null) {
+            throw new ApiException("User not found!");
+        }
+
+        Contract contract = contractRepository.findContractById(contractId);
+        if (contract == null) {
+            throw new ApiException("Contract not found!");
+        }
+        if (!userId.equals(contract.getReservation().getUser().getId())) {
+            throw new ApiException("You are not authorized to negotiate this contract");
+        }
+        if (contract.getContractStatus() != ContractStatus.PENDING) {
+            throw new ApiException("Negotiation is allowed only while the contract is pending");
+        }
+        if (contract.getNegotiationStatus() != NegotiationStatus.COUNTERED) {
+            throw new ApiException("Only a countered negotiation can be accepted");
+        }
+        if (contract.getCounterOfferRent() == null) {
+            throw new ApiException("Counter-offer rent was not found");
+        }
+
+        contract.setMonthlyRent(contract.getCounterOfferRent());
+        contract.setNegotiationStatus(NegotiationStatus.ACCEPTED);
+        contract.setNegotiationUpdatedAt(LocalDateTime.now());
+        contractRepository.save(contract);
+    }
+
+    @Transactional
+    public void rejectCounterOffer(Integer userId, Integer contractId) {
+        User user = userRepository.findUserById(userId);
+        if (user == null) {
+            throw new ApiException("User not found!");
+        }
+
+        Contract contract = contractRepository.findContractById(contractId);
+        if (contract == null) {
+            throw new ApiException("Contract not found!");
+        }
+        if (!userId.equals(contract.getReservation().getUser().getId())) {
+            throw new ApiException("You are not authorized to negotiate this contract");
+        }
+        if (contract.getContractStatus() != ContractStatus.PENDING) {
+            throw new ApiException("Negotiation is allowed only while the contract is pending");
+        }
+        if (contract.getNegotiationStatus() != NegotiationStatus.COUNTERED) {
+            throw new ApiException("Only a countered negotiation can be rejected");
+        }
+
+        contract.setNegotiationStatus(NegotiationStatus.REJECTED);
+        contract.setNegotiationUpdatedAt(LocalDateTime.now());
+        contractRepository.save(contract);
+    }
+
 
     @Transactional
     public void acceptContract(Integer userId, Integer contractId){
@@ -216,15 +394,16 @@ public class ContractService {
         if (contract.getContractStatus() != ContractStatus.PENDING) {
             throw new ApiException("Only pending contracts can be accepted");
         }
+        if (contract.getNegotiationStatus() == NegotiationStatus.PENDING
+                || contract.getNegotiationStatus() == NegotiationStatus.COUNTERED) {
+            throw new ApiException("Resolve the active negotiation before accepting the contract");
+        }
         LocalDate today = LocalDate.now();
         if (today.isBefore(contract.getStartDate())) {
             throw new ApiException("Contract cannot be activated before its start date");
         }
         if (today.isAfter(contract.getEndDate())) {
             throw new ApiException("Contract cannot be activated after its end date");
-        }
-        if (contract.getContractStatus() != ContractStatus.PENDING) {
-            throw new ApiException("Only pending contracts can be accepted");
         }
 
         Reservation reservation = contract.getReservation();
@@ -238,12 +417,8 @@ public class ContractService {
 
         contract.setSigned(true);
         contract.setSignedDate(LocalDate.now());
-        contract.setSignedDate(contract.getSignedDate() == null ? LocalDate.now() : contract.getSignedDate());
         contract.setContractStatus(ContractStatus.ACTIVE);
-        reservation.setStatus(ReservationStatus.COMPLETED);
-        reservationRepository.save(reservation);
         contractRepository.save(contract);
-
 
         apartment.setStatus(ApartmentStatus.RENTED);
         apartmentRepository.save(apartment);
@@ -480,6 +655,46 @@ public class ContractService {
     public void processExpiredContracts() {
         LocalDate today = LocalDate.now();
 
+        LocalDateTime pendingContractExpiryTime =
+                LocalDateTime.now().minusDays(PENDING_CONTRACT_EXPIRY_DAYS);
+        List<Contract> expiredPendingContracts =
+                contractRepository.findByContractStatusAndCreatedAtBefore(
+                        ContractStatus.PENDING, pendingContractExpiryTime);
+
+        for (Contract contract : expiredPendingContracts) {
+            if (Boolean.TRUE.equals(contract.getSigned())
+                    || contract.getContractStatus() != ContractStatus.PENDING) {
+                continue;
+            }
+
+            Reservation reservation = contract.getReservation();
+            Apartment apartment = reservation.getApartment();
+
+            contract.setSigned(false);
+            contract.setContractStatus(ContractStatus.CANCELLED);
+            contractRepository.save(contract);
+
+            if (reservation.getStatus() == ReservationStatus.APPROVED) {
+                reservation.setStatus(ReservationStatus.EXPIRED);
+                reservationRepository.save(reservation);
+            }
+
+            boolean canReleaseApartment =
+                    apartment.getStatus() == ApartmentStatus.RESERVED
+                            && !contractRepository.existsByApartmentAndStatus(
+                            apartment.getId(), ContractStatus.ACTIVE)
+                            && !reservationRepository
+                            .existsByApartment_IdAndStatusAndIdNot(
+                                    apartment.getId(),
+                                    ReservationStatus.APPROVED,
+                                    reservation.getId());
+
+            if (canReleaseApartment) {
+                apartment.setStatus(ApartmentStatus.AVAILABLE);
+                apartmentRepository.save(apartment);
+            }
+        }
+
         List<Contract> expiredContracts = contractRepository.findContractsByContractStatusAndEndDateBefore(ContractStatus.ACTIVE, today);
 
         if(expiredContracts.isEmpty()) {
@@ -507,6 +722,23 @@ public class ContractService {
         System.out.println("Automated Check: Processed and closed " + expiredContracts.size() + " expired contracts.");
     }
 
+    @Scheduled(cron = "0 0 0 * * *")
+    public void remindAboutEndingContracts() {
+        LocalDate reminderDate = LocalDate.now().plusDays(30);
+        List<Contract> endingContracts =
+                contractRepository.findContractsByContractStatusAndEndDate(
+                        ContractStatus.ACTIVE, reminderDate);
+
+        for (Contract contract : endingContracts) {
+            Reservation reservation = contract.getReservation();
+            Apartment apartment = reservation.getApartment();
+            whatsAppService.notifyTenantContractEndingSoon(
+                    reservation.getUser(), contract);
+            whatsAppService.notifyOwnerContractEndingSoon(
+                    apartment.getOwner(), contract);
+        }
+    }
+
     // --- NOTIFICATION HOLDING PLACES ---
 
 
@@ -519,7 +751,7 @@ public class ContractService {
         String tenantName     = contract.getReservation().getUser().getFullName();
         String tenantEmail    = contract.getReservation().getUser().getEmail();
         String tenantPhone    = contract.getReservation().getUser().getPhoneNumber();
-        String apartmentTitle = contract.getReservation().getApartment().getTitle();
+        String apartmentNumber = contract.getReservation().getApartment().getApartmentNumber();
         String contractNum    = contract.getContractNumber();
         String monthlyRent    = String.valueOf(contract.getMonthlyRent());
         String ownerName      = contract.getReservation().getApartment().getBuilding().getOwner().getFullName();
@@ -533,7 +765,6 @@ public class ContractService {
         String signedDate     = contract.getSignedDate() != null ? contract.getSignedDate().toString() : "Not signed yet";
         String status         = contract.getContractStatus().toString();
         String signed         = Boolean.TRUE.equals(contract.getSigned()) ? "Yes" : "No";
-        String reservationMsg = contract.getReservation().getMessage() != null ? contract.getReservation().getMessage() : "N/A";
 
         Apartment apt         = contract.getReservation().getApartment();
         String furnished      = Boolean.TRUE.equals(apt.getFurnished()) ? "Yes" : "No";
@@ -602,7 +833,7 @@ public class ContractService {
                 "<table class='card'>" +
                 "<tr><td class='card-title' colspan='2'>PROPERTY INFORMATION</td></tr>" +
                 "<tr><td class='label'>Building name</td><td class='value'>" + buildingName + "</td></tr>" +
-                "<tr><td class='label'>Apartment</td><td class='value'>" + apartmentTitle + "</td></tr>" +
+                "<tr><td class='label'>Apartment number</td><td class='value'>" + apartmentNumber + "</td></tr>" +
                 "<tr><td class='label'>District</td><td class='value'>" + district + "</td></tr>" +
                 "<tr><td class='label'>Floor number</td><td class='value'>" + floorNumber + "</td></tr>" +
                 "<tr><td class='label'>Allowed tenant type</td><td class='value'>" + allowedTenantType + "</td></tr>" +
@@ -657,7 +888,6 @@ public class ContractService {
                 "<td class='label'>Signed</td><td class='" + ("Yes".equals(signed) ? "positive" : "negative") + "'>" + signed + "</td>" +
                 "<td class='label'>Signed date</td><td class='value'>" + signedDate + "</td>" +
                 "</tr>" +
-                "<tr><td class='notes-label'>Tenant notes</td><td class='notes-value' colspan='3'>" + reservationMsg + "</td></tr>" +
                 "</table>" +
 
                 "<div class='footer'>This document is an official lease agreement generated by Rawaa - Smart Rental Platform. " +
@@ -672,23 +902,11 @@ public class ContractService {
 
         emailService.sendEmailWithPdf(
                 tenantEmail,
-                "Lease Contract Attachment - " + apartmentTitle,
+                "Lease Contract Attachment - Apartment " + apartmentNumber,
                 "<p>Dear " + tenantName + ", please find your formalized lease contract attached.</p>",
                 os.toByteArray(),
                 "Contract_" + contractNum + ".pdf"
         );
-    }
-
-    private void validateContractDates(LocalDate startDate, LocalDate endDate) {
-        if (!endDate.isAfter(startDate)) {
-            throw new ApiException("Contract end date must be after start date");
-        }
-    }
-
-    private void validateContractStartAgainstReservation(LocalDate startDate, LocalDate reservationDate) {
-        if (startDate.isBefore(reservationDate)) {
-            throw new ApiException("Contract start date cannot be before the reservation date");
-        }
     }
 
 }

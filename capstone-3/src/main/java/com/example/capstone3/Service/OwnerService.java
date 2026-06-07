@@ -38,6 +38,7 @@ public class OwnerService {
         owner.setFullName(ownerDTOIn.getFullName());
         owner.setEmail(ownerDTOIn.getEmail());
         owner.setPhoneNumber(ownerDTOIn.getPhoneNumber());
+        owner.setCommercialRegistrationNumber(ownerDTOIn.getCommercialRegistrationNumber());
         ownerRepository.save(owner);
     }
 
@@ -49,6 +50,7 @@ public class OwnerService {
         owner.setFullName(ownerDTOIn.getFullName());
         owner.setEmail(ownerDTOIn.getEmail());
         owner.setPhoneNumber(ownerDTOIn.getPhoneNumber());
+        owner.setCommercialRegistrationNumber(ownerDTOIn.getCommercialRegistrationNumber());
         ownerRepository.save(owner);
     }
 
@@ -66,6 +68,7 @@ public class OwnerService {
         ownerDTOOut.setFullName(owner.getFullName());
         ownerDTOOut.setEmail(owner.getEmail());
         ownerDTOOut.setPhoneNumber(owner.getPhoneNumber());
+        ownerDTOOut.setCommercialRegistrationNumber(owner.getCommercialRegistrationNumber());
         return ownerDTOOut;
     }
 

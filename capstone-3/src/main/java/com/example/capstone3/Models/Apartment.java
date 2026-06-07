@@ -11,7 +11,11 @@ import java.util.List;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "apartments")
+@Table(
+        name = "apartments",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_apartment_building_number",
+                columnNames = {"building_id", "apartment_number"}))
 @Getter
 @Setter
 @NoArgsConstructor
@@ -31,11 +35,8 @@ public class Apartment {
     @JoinColumn(name = "owner_id", nullable = false)
     private Owner owner;
 
-    @Column(name = "title", nullable = false, length = 200)
-    private String title;
-
-    @Column(name = "description", nullable = false, columnDefinition = "TEXT")
-    private String description;
+    @Column(name = "apartment_number", nullable = false, length = 50)
+    private String apartmentNumber;
 
     @Column(name = "monthly_rent", nullable = false)
     private Double monthlyRent;

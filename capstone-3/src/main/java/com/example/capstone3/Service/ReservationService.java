@@ -29,6 +29,16 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ReservationService {
 
+    // Pending reservations expire after two days without an owner decision.
+    private static final long PENDING_RESERVATION_EXPIRY_DAYS = 2;
+
+    // Approved reservations expire after three days if no contract is generated.
+    private static final long APPROVED_WITHOUT_CONTRACT_EXPIRY_DAYS = 3;
+
+    // Only reservations that can still lead to a contract block a duplicate request.
+    private static final List<ReservationStatus> OPEN_RESERVATION_STATUSES =
+            List.of(ReservationStatus.PENDING, ReservationStatus.APPROVED);
+
     private final ReservationRepository reservationRepository;
     private final ApartmentRepository apartmentRepository;
     private final UserRepository userRepository;
@@ -76,12 +86,32 @@ public class ReservationService {
                 apartment.getId(), ContractStatus.ACTIVE)) {
             throw new ApiException("Apartment already has an active contract");
         }
+        if (apartment.getAllowedTenantType() != null
+                && !apartment.getAllowedTenantType().isBlank()) {
+            String allowedTenantType =
+                    apartment.getAllowedTenantType().trim().toLowerCase();
+            boolean familyTenant =
+                    (user.getChildrenCount() != null && user.getChildrenCount() > 0)
+                            || (user.getFamilyCount() != null
+                            && user.getFamilyCount() > 1);
+
+            if (allowedTenantType.contains("family") && !familyTenant) {
+                throw new ApiException("This apartment is restricted to family tenants");
+            }
+            if ((allowedTenantType.contains("single")
+                    || allowedTenantType.contains("bachelor"))
+                    && familyTenant) {
+                throw new ApiException("This apartment is restricted to single tenants");
+            }
+        }
+        if (reservationRepository.existsByUser_IdAndApartment_IdAndStatusIn(userId, apartmentId, OPEN_RESERVATION_STATUSES)) {
+            throw new ApiException("You already have an open reservation for this apartment");
+        }
         Reservation reservation = new Reservation();
         reservation.setApartment(apartment);
         reservation.setUser(user);
         reservation.setReservationDate(reservationDTOIn.getReservationDate());
         reservation.setStatus(ReservationStatus.PENDING);
-        reservation.setMessage(reservationDTOIn.getMessage());
         reservation.setCreatedAt(LocalDateTime.now());
         reservationRepository.save(reservation);
 
@@ -112,7 +142,6 @@ public class ReservationService {
         reservation.setApartment(apartment);
         reservation.setUser(user);
         reservation.setReservationDate(reservationDTOIn.getReservationDate());
-        reservation.setMessage(reservationDTOIn.getMessage());
         reservationRepository.save(reservation);
     }
 
@@ -134,13 +163,8 @@ public class ReservationService {
         reservationDTOOut.setUserId(reservation.getUser().getId());
         reservationDTOOut.setReservationDate(reservation.getReservationDate());
         reservationDTOOut.setStatus(reservation.getStatus());
-        reservationDTOOut.setMessage(reservation.getMessage());
         return reservationDTOOut;
     }
-
-
-    //^^^^^^^CRUD^^^^^^^^
-
 
     public List<ReservationDTOOut> getPendingReservations(){
         List<Reservation> reservations = reservationRepository.findReservationsByStatus(ReservationStatus.PENDING);
@@ -207,23 +231,26 @@ public class ReservationService {
 
     @Transactional
     public void acceptReservation(Integer ownerId, Integer reservationId) {
-        Reservation reservation = reservationRepository.findReservationById(reservationId);
-
-        if (reservation == null) {
+        Reservation initialReservation = reservationRepository.findReservationById(reservationId);
+        if (initialReservation == null) {
             throw new ApiException("Reservation not found");
         }
+        Apartment apartment = apartmentRepository.findApartmentById(
+                initialReservation.getApartment().getId());
+        Reservation reservation = reservationRepository.findReservationById(reservationId);
 
-        // Security Check: Does this owner own the apartment?
-        if (!reservation.getApartment().getBuilding().getOwner().getId().equals(ownerId)) {
+        if (!apartment.getOwner().getId().equals(ownerId)) {
             throw new ApiException("You do not have permission to accept this reservation");
         }
         if (reservation.getStatus() != ReservationStatus.PENDING) {
             throw new ApiException("Only pending reservations can be accepted");
         }
 
-        Apartment apartment = reservation.getApartment();
         if (apartment.getStatus() != ApartmentStatus.AVAILABLE) {
             throw new ApiException("Apartment is no longer available");
+        }
+        if (reservationRepository.existsByApartment_IdAndStatusAndIdNot(apartment.getId(), ReservationStatus.APPROVED, reservationId)) {
+            throw new ApiException("Apartment already has an approved reservation");
         }
         if (contractRepository.existsByApartmentAndStatus(
                 apartment.getId(), ContractStatus.ACTIVE)) {
@@ -231,6 +258,7 @@ public class ReservationService {
         }
 
         reservation.setStatus(ReservationStatus.APPROVED);
+        reservation.setApprovedAt(LocalDateTime.now());
         apartment.setStatus(ApartmentStatus.RESERVED);
 
         for (Reservation competingReservation :
@@ -264,15 +292,19 @@ public class ReservationService {
             throw new ApiException("Only pending reservations can be rejected");
         }
 
-        cancelLinkedContract(reservation);
+        Contract contract = contractRepository.findByReservation_Id(reservation.getId());
+        if (contract != null && contract.getContractStatus() == ContractStatus.ACTIVE) {
+            throw new ApiException("An active rental must be ended through the contract");
+        }
+        if (contract != null && contract.getContractStatus() == ContractStatus.PENDING) {
+            contract.setSigned(false);
+            contract.setContractStatus(ContractStatus.CANCELLED);
+            contractRepository.save(contract);
+        }
         reservation.setStatus(ReservationStatus.REJECTED);
         reservationRepository.save(reservation);
 
-        // Free up the apartment
         Apartment apartment = reservation.getApartment();
-        apartment.setStatus(ApartmentStatus.AVAILABLE);
-        apartmentRepository.save(apartment);
-
         whatsAppService.notifyTenantReservationRejected(reservation.getUser(), apartment);
 
     }
@@ -301,7 +333,11 @@ public class ReservationService {
         }
 
         boolean wasApproved = reservation.getStatus() == ReservationStatus.APPROVED;
-        cancelLinkedContract(reservation);
+        if (contract != null && contract.getContractStatus() == ContractStatus.PENDING) {
+            contract.setSigned(false);
+            contract.setContractStatus(ContractStatus.CANCELLED);
+            contractRepository.save(contract);
+        }
         reservation.setStatus(ReservationStatus.CANCELLED);
         reservationRepository.save(reservation);
 
@@ -317,42 +353,60 @@ public class ReservationService {
 
 //    @Scheduled(fixedRate = 60000)
     @Scheduled(cron = "0 0 0 * * *") // Runs every day at midnight
+    @Transactional
     public void checkReservationExpiration() {
 
-        // 1. Calculate the date from 2 days ago (48 hours)
-        LocalDateTime twoDaysAgo = LocalDateTime.now().minusDays(2);
+        LocalDateTime pendingExpirationTime =
+                LocalDateTime.now().minusDays(PENDING_RESERVATION_EXPIRY_DAYS);
 
-        // 2. Fetch all reservations that are still PENDING and were made before that date
         List<Reservation> expiredReservations =
-                reservationRepository.findByStatusAndCreatedAtBefore(ReservationStatus.PENDING, twoDaysAgo);
+                reservationRepository.findByStatusAndCreatedAtBefore(
+                        ReservationStatus.PENDING, pendingExpirationTime);
 
-        // 3. Loop through them to update statuses
         for (Reservation reservation : expiredReservations) {
-
-            // Mark the reservation as expired
             reservation.setStatus(ReservationStatus.EXPIRED);
             reservationRepository.save(reservation);
             whatsAppService.notifyTenantReservationExpired(
                     reservation.getUser(), reservation.getApartment());
-
         }
 
-        System.out.println("Ran expiration check: Expired " + expiredReservations.size() + " reservations.");
+        LocalDateTime approvedExpirationTime = LocalDateTime.now()
+                .minusDays(APPROVED_WITHOUT_CONTRACT_EXPIRY_DAYS);
+        List<Reservation> approvedWithoutContract =
+                reservationRepository.findByStatusAndApprovedAtBefore(
+                        ReservationStatus.APPROVED, approvedExpirationTime);
+
+        for (Reservation candidate : approvedWithoutContract) {
+            Apartment apartment = apartmentRepository.findApartmentById(
+                    candidate.getApartment().getId());
+            Reservation reservation =
+                    reservationRepository.findReservationById(candidate.getId());
+
+            if (reservation.getStatus() != ReservationStatus.APPROVED
+                    || contractRepository.findByReservation_Id(reservation.getId()) != null) {
+                continue;
+            }
+
+            reservation.setStatus(ReservationStatus.EXPIRED);
+            reservationRepository.save(reservation);
+
+            boolean canReleaseApartment = apartment.getStatus() == ApartmentStatus.RESERVED
+                    && !contractRepository.existsByApartmentAndStatus(
+                            apartment.getId(), ContractStatus.ACTIVE)
+                    && !reservationRepository.existsByApartment_IdAndStatusAndIdNot(
+                            apartment.getId(),
+                            ReservationStatus.APPROVED,
+                            reservation.getId());
+
+            if (canReleaseApartment) {
+                apartment.setStatus(ApartmentStatus.AVAILABLE);
+                apartmentRepository.save(apartment);
+            }
+
+            whatsAppService.notifyTenantReservationExpired(
+                    reservation.getUser(), apartment);
+        }
+
     }
-
-    private void cancelLinkedContract(Reservation reservation) {
-        Contract contract = contractRepository.findByReservation_Id(reservation.getId());
-        if (contract != null && contract.getContractStatus() == ContractStatus.ACTIVE) {
-            throw new ApiException("An active rental must be ended through the contract");
-        }
-        if (contract != null && contract.getContractStatus() == ContractStatus.PENDING) {
-            contract.setSigned(false);
-            contract.setContractStatus(ContractStatus.CANCELLED);
-            contractRepository.save(contract);
-        }
-    }
-
-
-
 
 }
