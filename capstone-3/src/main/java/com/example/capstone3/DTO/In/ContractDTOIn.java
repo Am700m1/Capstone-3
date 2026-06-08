@@ -7,10 +7,6 @@ import lombok.Data;
 @Data
 public class ContractDTOIn {
 
-    @NotNull(message = "Monthly rent is required")
-    @Positive(message = "Monthly rent must be positive")
-    private Double monthlyRent;
-
     @Positive(message = "Security deposit must be positive")
     private Double securityDeposit;
 

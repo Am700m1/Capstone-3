@@ -101,16 +101,12 @@ public class ContractService {
         if (!contractEndDate.isAfter(contractStartDate)) {
             throw new ApiException("Contract end date must be after start date");
         }
-        if (!reservation.getApartment().getMonthlyRent().equals(contractDTOIn.getMonthlyRent())) {
-            throw new ApiException("Contract monthly rent must match the apartment monthly rent");
-        }
-
         Contract contract = new Contract();
         contract.setReservation(reservation);
         contract.setContractNumber("RAWAA-" + UUID.randomUUID().toString().toUpperCase());
         contract.setStartDate(contractStartDate);
         contract.setEndDate(contractEndDate);
-        contract.setMonthlyRent(contractDTOIn.getMonthlyRent());
+        contract.setMonthlyRent(reservation.getApartment().getMonthlyRent());
         contract.setSecurityDeposit(contractDTOIn.getSecurityDeposit());
         contract.setSigned(false);
         contract.setSignedDate(null);
@@ -149,13 +145,10 @@ public class ContractService {
         if (!contractEndDate.isAfter(contractStartDate)) {
             throw new ApiException("Contract end date must be after start date");
         }
-        if (!reservation.getApartment().getMonthlyRent().equals(contractDTOIn.getMonthlyRent())) {
-            throw new ApiException("Contract monthly rent must match the apartment monthly rent");
-        }
         contract.setReservation(reservation);
         contract.setStartDate(contractStartDate);
         contract.setEndDate(contractEndDate);
-        contract.setMonthlyRent(contractDTOIn.getMonthlyRent());
+        contract.setMonthlyRent(reservation.getApartment().getMonthlyRent());
         contract.setSecurityDeposit(contractDTOIn.getSecurityDeposit());
         contractRepository.save(contract);
     }
