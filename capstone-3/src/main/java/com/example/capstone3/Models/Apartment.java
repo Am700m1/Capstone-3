@@ -81,10 +81,6 @@ public class Apartment {
     @Column(name = "electricity_included")
     private Boolean electricityIncluded;
 
-    // Lazy because apartment images are only needed in detailed apartment responses.
-    @OneToMany(mappedBy = "apartment", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<ApartmentImage> images = new ArrayList<>();
-
     // Lazy because reservation history is not needed for most apartment operations.
     @OneToMany(mappedBy = "apartment", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Reservation> reservations = new ArrayList<>();

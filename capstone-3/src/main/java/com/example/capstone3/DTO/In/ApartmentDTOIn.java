@@ -18,7 +18,7 @@ public class ApartmentDTOIn {
     @Positive(message = "Monthly rent must be positive")
     private Double monthlyRent;
 
-    @NotEmpty(message = "negotiable is required")
+    @NotNull(message = "negotiable is required")
     private Boolean negotiable;
 
     @NotNull(message = "Number of bedrooms is required")

@@ -18,8 +18,7 @@ public class RecommendationController {
 
     // Generates AI explanations for backend-ranked apartment recommendations.
     @GetMapping("/recommend/{userId}")
-    public ResponseEntity<?> recommend(@PathVariable Integer userId,
-                                       @RequestParam(defaultValue = "3000") int radiusMetres,
+    public ResponseEntity<?> recommend(@PathVariable Integer userId, @RequestParam(defaultValue = "3000") int radiusMetres,
                                        @RequestParam(defaultValue = "EN") String language) {
         return ResponseEntity.status(200).body(aiRecommendationService.recommend(userId, radiusMetres, language));
     }

@@ -1,9 +1,13 @@
 package com.example.capstone3.DTO.Out;
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 
+@JsonPropertyOrder({
+        "id", "conversationId", "senderId", "senderRole", "content", "sentAt"
+})
 @Data
 public class MessageDTOOut {
 
@@ -13,5 +17,4 @@ public class MessageDTOOut {
     private String senderRole;
     private String content;
     private LocalDateTime sentAt;
-    private Boolean isRead;
 }

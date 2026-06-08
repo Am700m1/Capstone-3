@@ -355,7 +355,7 @@ public class ContractService {
         return contractDTOOuts;
     }
 
-
+    // check
     @Transactional
     public void endContract(Integer ownerId, Integer contractId){
         Owner owner = ownerRepository.findOwnerById(ownerId);

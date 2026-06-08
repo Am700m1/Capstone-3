@@ -1,11 +1,17 @@
 package com.example.capstone3.DTO.Out;
 
 import com.example.capstone3.Enums.ApartmentStatus;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import lombok.Data;
 
 import java.time.LocalDate;
-import java.util.List;
 
+@JsonPropertyOrder({
+        "id", "apartmentNumber", "buildingId", "ownerId", "district",
+        "monthlyRent", "negotiable", "bedrooms", "bathrooms", "area",
+        "floorNumber", "furnished", "availableFrom", "allowedTenantType",
+        "waterIncluded", "internetIncluded", "electricityIncluded", "status"
+})
 @Data
 public class ApartmentDTOOut {
 
@@ -27,5 +33,4 @@ public class ApartmentDTOOut {
     private Boolean internetIncluded;
     private Boolean electricityIncluded;
     private ApartmentStatus status;
-    private List<ApartmentImageDTOOut> images;
 }

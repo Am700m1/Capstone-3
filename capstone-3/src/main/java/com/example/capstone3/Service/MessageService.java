@@ -175,7 +175,6 @@ public class MessageService {
         messageDTOOut.setSenderRole(message.getSenderRole());
         messageDTOOut.setContent(message.getContent());
         messageDTOOut.setSentAt(message.getSentAt());
-        messageDTOOut.setIsRead(message.getIsRead());
         return messageDTOOut;
     }
 

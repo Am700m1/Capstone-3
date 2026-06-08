@@ -8,7 +8,7 @@ Renters can create profiles and housing preferences, resolve a workplace name in
 
 Owners can manage buildings and apartments, process reservations and contracts, communicate with renters, handle maintenance requests, review apartment performance, and access AI-generated summaries.
 
-The recommendation engine keeps apartment selection under backend control. It filters and scores apartments using user preferences, rent, family suitability, nearby amenities, and commute information. Gemini receives the final ranked results only to generate a readable explanation.
+The recommendation engine keeps apartment selection under backend control. It filters and scores apartments using user preferences, rent, family suitability, nearby amenities, and commute information. OpenAI receives the final ranked results only to generate a readable explanation.
 
 ## Main Business Flow
 
@@ -36,7 +36,7 @@ The recommendation engine keeps apartment selection under backend control. It fi
 - Lombok
 - RestTemplate
 - Jackson ObjectMapper
-- Gemini API for AI explanations and analysis
+- OpenAI API for AI explanations and analysis
 - Overpass API for nearby services
 - OSRM API for commute distance and duration
 - Nominatim API for workplace geocoding
@@ -76,7 +76,7 @@ The table below excludes basic get-all, get-by-ID, create, update, and delete en
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/api/v1/recommendation/recommend/{userId}` | Filters, scores, and ranks apartments, then uses Gemini to explain the backend ranking. Supports `radiusMetres` and `language`. |
+| GET | `/api/v1/recommendation/recommend/{userId}` | Filters, scores, and ranks apartments, then uses OpenAI to explain the backend ranking. Supports `radiusMetres` and `language`. |
 
 ### AiApartmentController
 
@@ -164,7 +164,7 @@ Both `/api/v1/user-preference` and `/api/v1/user-preferences` are valid controll
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/api/v1/roommates/matches/{userId}` | Uses backend eligibility rules and Gemini ranking to return compatible roommate matches. |
+| GET | `/api/v1/roommates/matches/{userId}` | Uses backend eligibility rules and OpenAI ranking to return compatible roommate matches. |
 | GET | `/api/v1/roommates/requests/{userId}` | Returns all sent and received roommate requests for the selected user. |
 | POST | `/api/v1/roommates/request/{senderId}/{receiverId}` | Sends a roommate request while preventing duplicate and reverse-duplicate pending requests. |
 | PUT | `/api/v1/roommates/accept/{receiverId}/{requestId}` | Accepts a request, links both users, and removes them from the roommate search pool. |
@@ -192,7 +192,7 @@ Both `/api/v1/user-preference` and `/api/v1/user-preferences` are valid controll
 
 | Integration | Use in the system |
 |---|---|
-| Gemini | Recommendation explanations, apartment comparison, review summaries, owner analysis, contract analysis, maintenance classification, and roommate ranking. |
+| OpenAI | Recommendation explanations, apartment comparison, review summaries, owner analysis, contract analysis, maintenance classification, and roommate ranking. |
 | Overpass | Counts nearby services such as schools, hospitals, supermarkets, pharmacies, gyms, and restaurants. |
 | OSRM | Calculates driving duration and distance for recommendation commute scoring. |
 | Nominatim | Converts a workplace name into latitude and longitude. |

@@ -316,7 +316,7 @@ public class ReservationService {
 
     }
 
-
+    // check
     @Transactional
     public void endReservation(Integer userId, Integer reservationId) {
         Reservation reservation = reservationRepository.findReservationById(reservationId);

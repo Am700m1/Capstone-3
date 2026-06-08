@@ -31,7 +31,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MaintenanceRequestService {
 
-    // Uses Gemini to classify maintenance requests and summarize building issues.
+    // Uses OpenAI to classify maintenance requests and summarize building issues.
     private final MaintenanceRepository maintenanceRepository;
     private final UserRepository        userRepository;
     private final ApartmentRepository   apartmentRepository;
@@ -41,7 +41,6 @@ public class MaintenanceRequestService {
     private final AiService             aiService;
     private final WhatsAppService       whatsAppService;
 
-    // ─── Get All ──────────────────────────────────────────────────────────────
 
     public List<MaintenanceRequestDTOOut> getAll() {
         List<MaintenanceRequestDTOOut> result = new ArrayList<>();
@@ -51,7 +50,6 @@ public class MaintenanceRequestService {
         return result;
     }
 
-    // ─── Get Single ───────────────────────────────────────────────────────────
 
     public MaintenanceRequestDTOOut getMaintenanceRequest(Integer id) {
         MaintenanceRequest req = maintenanceRepository.findMaintenanceRequestById(id);
@@ -61,7 +59,6 @@ public class MaintenanceRequestService {
         return convertToDTO(req);
     }
 
-    // ─── Get by User ──────────────────────────────────────────────────────────
 
     public List<MaintenanceRequestDTOOut> getUserMaintenanceRequests(Integer userId) {
         User user = userRepository.findUserById(userId);
@@ -75,7 +72,6 @@ public class MaintenanceRequestService {
         return result;
     }
 
-    // ─── Get by Apartment ─────────────────────────────────────────────────────
 
     public List<MaintenanceRequestDTOOut> getApartmentMaintenanceRequests(Integer apartmentId) {
         Apartment apartment = apartmentRepository.findApartmentById(apartmentId);
@@ -89,7 +85,6 @@ public class MaintenanceRequestService {
         return result;
     }
 
-    // ─── Create ───────────────────────────────────────────────────────────────
 
     public void createMaintenanceRequest(Integer userId, Integer apartmentId, MaintenanceRequestDTOIn dto,
                                          String language) {
@@ -113,7 +108,7 @@ public class MaintenanceRequestService {
             throw new ApiException("No active contract found for this user and apartment");
         }
 
-        // Gemini classifies the issue after backend contract checks pass.
+        // OpenAI classifies the issue after backend contract checks pass.
         String aiResponse = aiService.generateText(
                 buildMaintenanceAnalysisPrompt(dto.getTitle(), dto.getDescription()), language);
 
@@ -132,7 +127,6 @@ public class MaintenanceRequestService {
         whatsAppService.notifyOwnerNewMaintenanceRequest(apartment.getOwner(), req);
     }
 
-    // ─── Start ────────────────────────────────────────────────────────────────
 
     public void startMaintenanceRequest(Integer ownerId, Integer requestId) {
         Owner owner = ownerRepository.findOwnerById(ownerId);
@@ -155,7 +149,6 @@ public class MaintenanceRequestService {
         whatsAppService.notifyTenantMaintenanceUpdated(req.getUser(), req);
     }
 
-    // ─── Complete ─────────────────────────────────────────────────────────────
 
     public void completeMaintenanceRequest(Integer ownerId, Integer requestId) {
         Owner owner = ownerRepository.findOwnerById(ownerId);
@@ -179,7 +172,6 @@ public class MaintenanceRequestService {
         whatsAppService.notifyTenantMaintenanceUpdated(req.getUser(), req);
     }
 
-    // ─── Update ───────────────────────────────────────────────────────────────
 
     public void updateMaintenanceRequest(Integer userId, Integer id,
                                          MaintenanceRequestDTOIn dto, String language) {
@@ -210,7 +202,6 @@ public class MaintenanceRequestService {
         maintenanceRepository.save(req);
     }
 
-    // ─── Delete ───────────────────────────────────────────────────────────────
 
     public void deleteMaintenanceRequest(Integer userId, Integer id) {
         User user = userRepository.findUserById(userId);
@@ -230,7 +221,6 @@ public class MaintenanceRequestService {
         maintenanceRepository.deleteById(id);
     }
 
-    // ─── Building Maintenance Summary (AI) ───────────────────────────────────
 
     // Summarizes maintenance patterns across one building using stored requests.
     public BuildingMaintenanceSummaryDTOOut getBuildingMaintenanceSummary(Integer buildingId,
@@ -253,9 +243,8 @@ public class MaintenanceRequestService {
         return response;
     }
 
-    // ─── AI Prompt Builders ───────────────────────────────────────────────────
 
-    // Instruct Gemini to return category, priority, and summary in a fixed format.
+    // Instruct OpenAI to return category, priority, and summary in a fixed format.
     private String buildMaintenanceAnalysisPrompt(String title, String description) {
         StringBuilder prompt = new StringBuilder();
 
@@ -275,7 +264,7 @@ public class MaintenanceRequestService {
         return prompt.toString();
     }
 
-    // Give Gemini current maintenance facts for a short owner-friendly overview.
+    // Give OpenAI current maintenance facts for a short owner-friendly overview.
     private String buildBuildingSummaryPrompt(Building building, List<MaintenanceRequest> requests) {
         StringBuilder prompt = new StringBuilder();
 
@@ -310,9 +299,8 @@ public class MaintenanceRequestService {
         return prompt.toString();
     }
 
-    // ─── AI Response Parsers ──────────────────────────────────────────────────
 
-    // Read a named value from Gemini's structured maintenance response.
+    // Read a named value from OpenAI's structured maintenance response.
     private String extractAiField(String aiResponse, String field) {
         if (aiResponse == null || aiResponse.isBlank()) return null;
         for (String line : aiResponse.split("\n")) {
@@ -324,7 +312,7 @@ public class MaintenanceRequestService {
         return null;
     }
 
-    // Convert Gemini's priority text to the project enum with a safe default.
+    // Convert OpenAI's priority text to the project enum with a safe default.
     private MaintenancePriority parseAiPriority(String aiResponse) {
         String priorityValue = extractAiField(aiResponse, "Priority");
         if (priorityValue != null) {
@@ -337,7 +325,6 @@ public class MaintenanceRequestService {
         return MaintenancePriority.MEDIUM;
     }
 
-    // ─── Converter ────────────────────────────────────────────────────────────
 
     public MaintenanceRequestDTOOut convertToDTO(MaintenanceRequest req) {
         MaintenanceRequestDTOOut dto = new MaintenanceRequestDTOOut();
