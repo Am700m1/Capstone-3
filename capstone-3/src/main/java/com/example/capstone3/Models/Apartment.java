@@ -41,6 +41,12 @@ public class Apartment {
     @Column(name = "monthly_rent", nullable = false)
     private Double monthlyRent;
 
+    @Column(name = "desired_monthly_rent")
+    private Double desiredMonthlyRent;
+
+    @Column(name = "negotiable")
+    private Boolean negotiable;
+
     @Column(name = "bedrooms", nullable = false)
     private Integer bedrooms;
 

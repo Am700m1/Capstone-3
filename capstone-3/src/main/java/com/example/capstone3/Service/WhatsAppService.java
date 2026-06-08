@@ -150,15 +150,27 @@ public class WhatsAppService {
         sendMessage(owner.getPhoneNumber(), message);
     }
 
-    public void notifyOwnerNewReservation(Owner owner, Reservation reservation) {
-        String message = "Hello " + owner.getFullName() + ",\n\n" +
-                "You have a *NEW RESERVATION* request.\n" +
-                "Apartment number: " + reservation.getApartment().getApartmentNumber() + "\n" +
-                "Tenant: " + reservation.getUser().getFullName() + "\n" +
-                "Date: " + reservation.getReservationDate() + "\n\n" +
-                "Please log in to accept or reject the reservation.\n" +
-                "Smart Rental Platform";
-        sendMessage(owner.getPhoneNumber(), message);
+    public void notifyOwnerNewReservation(Apartment apartment, Reservation reservation) {
+        Owner owner = apartment.getOwner();
+
+        StringBuilder message = new StringBuilder();
+        message.append("Hello ").append(owner.getFullName()).append(",\n\n")
+                .append("You have a *NEW RESERVATION* request.\n")
+                .append("Apartment number: ").append(reservation.getApartment().getApartmentNumber()).append("\n")
+                .append("Tenant: ").append(reservation.getUser().getFullName()).append("\n")
+                .append("Requested Start Date: ").append(reservation.getRequestedStartDate()).append("\n")
+                .append("Rental Duration: ").append(reservation.getRentalMonths()).append(" months\n");
+
+        message.append("Monthly Rent: ").append(apartment.getMonthlyRent()).append(" SAR\n");
+
+        if (Boolean.TRUE.equals(apartment.getNegotiable()) && apartment.getDesiredMonthlyRent() != null) {
+            message.append("Desired Monthly Rent: ").append(apartment.getDesiredMonthlyRent()).append(" SAR\n");
+        }
+
+        message.append("\nPlease log in to accept or reject the reservation.\n")
+                .append("Smart Rental Platform");
+
+        sendMessage(owner.getPhoneNumber(), message.toString());
     }
 
     public void notifyOwnerReservationCancelled(Owner owner, Reservation reservation) {

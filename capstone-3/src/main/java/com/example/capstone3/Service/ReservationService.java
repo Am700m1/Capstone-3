@@ -63,7 +63,7 @@ public class ReservationService {
     }
 
     @Transactional
-    public ReservationDTOOut addReservation(Integer userId, Integer apartmentId, ReservationDTOIn reservationDTOIn) {
+    public ReservationDTOOut addReservation(Integer userId, Integer apartmentId, Double desiredMonthlyRent, ReservationDTOIn reservationDTOIn ) {
         Apartment apartment = apartmentRepository.findApartmentById(apartmentId);
         if (apartment == null) {
             throw new ApiException("Apartment not found");
@@ -76,8 +76,8 @@ public class ReservationService {
             throw new ApiException("Apartment is not available for reservation");
         }
         if (apartment.getAvailableFrom() != null
-                && reservationDTOIn.getReservationDate().isBefore(apartment.getAvailableFrom())) {
-            throw new ApiException("Reservation date must be on or after the apartment available date");
+                && reservationDTOIn.getRequestedStartDate().isBefore(apartment.getAvailableFrom())) {
+            throw new ApiException("Requested start date must be on or after the apartment available date");
         }
         if (reservationRepository.existsByApartment_IdAndStatus(apartment.getId(), ReservationStatus.APPROVED)) {
             throw new ApiException("Apartment already has an approved reservation");
@@ -98,9 +98,7 @@ public class ReservationService {
             if (allowedTenantType.contains("family") && !familyTenant) {
                 throw new ApiException("This apartment is restricted to family tenants");
             }
-            if ((allowedTenantType.contains("single")
-                    || allowedTenantType.contains("bachelor"))
-                    && familyTenant) {
+            if ((allowedTenantType.contains("single")) && familyTenant) {
                 throw new ApiException("This apartment is restricted to single tenants");
             }
         }
@@ -110,12 +108,13 @@ public class ReservationService {
         Reservation reservation = new Reservation();
         reservation.setApartment(apartment);
         reservation.setUser(user);
-        reservation.setReservationDate(reservationDTOIn.getReservationDate());
+        reservation.setRequestedStartDate(reservationDTOIn.getRequestedStartDate());
+        reservation.setRentalMonths(reservationDTOIn.getRentalMonths());
         reservation.setStatus(ReservationStatus.PENDING);
         reservation.setCreatedAt(LocalDateTime.now());
         reservationRepository.save(reservation);
 
-        whatsAppService.notifyOwnerNewReservation(apartment.getOwner(), reservation);
+        whatsAppService.notifyOwnerNewReservation(apartment, reservation);
         return convertToDTO(reservation);
     }
 
@@ -136,12 +135,13 @@ public class ReservationService {
             throw new ApiException("User not found");
         }
         if (apartment.getAvailableFrom() != null
-                && reservationDTOIn.getReservationDate().isBefore(apartment.getAvailableFrom())) {
-            throw new ApiException("Reservation date must be on or after the apartment available date");
+                && reservationDTOIn.getRequestedStartDate().isBefore(apartment.getAvailableFrom())) {
+            throw new ApiException("Requested start date must be on or after the apartment available date");
         }
         reservation.setApartment(apartment);
         reservation.setUser(user);
-        reservation.setReservationDate(reservationDTOIn.getReservationDate());
+        reservation.setRequestedStartDate(reservationDTOIn.getRequestedStartDate());
+        reservation.setRentalMonths(reservationDTOIn.getRentalMonths());
         reservationRepository.save(reservation);
     }
 
@@ -161,7 +161,8 @@ public class ReservationService {
         reservationDTOOut.setId(reservation.getId());
         reservationDTOOut.setApartmentId(reservation.getApartment().getId());
         reservationDTOOut.setUserId(reservation.getUser().getId());
-        reservationDTOOut.setReservationDate(reservation.getReservationDate());
+        reservationDTOOut.setRequestedStartDate(reservation.getRequestedStartDate());
+        reservationDTOOut.setRentalMonths(reservation.getRentalMonths());
         reservationDTOOut.setStatus(reservation.getStatus());
         return reservationDTOOut;
     }
@@ -256,10 +257,13 @@ public class ReservationService {
                 apartment.getId(), ContractStatus.ACTIVE)) {
             throw new ApiException("Apartment already has an active contract");
         }
-
         reservation.setStatus(ReservationStatus.APPROVED);
         reservation.setApprovedAt(LocalDateTime.now());
         apartment.setStatus(ApartmentStatus.RESERVED);
+
+        if (Boolean.TRUE.equals(apartment.getNegotiable()) && apartment.getDesiredMonthlyRent() != null) {
+            apartment.setMonthlyRent(apartment.getDesiredMonthlyRent());
+        }
 
         for (Reservation competingReservation :
                 reservationRepository.findReservationsByApartment_IdAndStatus(
@@ -343,8 +347,18 @@ public class ReservationService {
 
         if (wasApproved) {
             Apartment apartment = reservation.getApartment();
-            apartment.setStatus(ApartmentStatus.AVAILABLE);
-            apartmentRepository.save(apartment);
+            boolean canReleaseApartment = apartment.getStatus() == ApartmentStatus.RESERVED
+                            && !contractRepository.existsByApartmentAndStatus(
+                            apartment.getId(), ContractStatus.ACTIVE)
+                            && !reservationRepository
+                            .existsByApartment_IdAndStatusAndIdNot(
+                                    apartment.getId(),
+                                    ReservationStatus.APPROVED,
+                                    reservation.getId());
+            if (canReleaseApartment) {
+                apartment.setStatus(ApartmentStatus.AVAILABLE);
+                apartmentRepository.save(apartment);
+            }
         }
 
         whatsAppService.notifyOwnerReservationCancelled(

@@ -30,8 +30,11 @@ public class Reservation {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "reservation_date", nullable = false)
-    private LocalDate reservationDate;
+    @Column(name = "requested_start_date", nullable = false)
+    private LocalDate requestedStartDate;
+
+    @Column(name = "rental_months", nullable = false)
+    private Integer rentalMonths;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)

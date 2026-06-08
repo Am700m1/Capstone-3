@@ -78,20 +78,34 @@ public class ReviewService {
         whatsAppService.notifyOwnerNewReview(reservation.getApartment().getOwner(), review.getApartment(), review);
     }
 
-    public void updateReview(Integer id, ReviewDTOIn dto) {
+    public void updateReview(Integer userId, Integer id, ReviewDTOIn dto) {
+        User user = userRepository.findUserById(userId);
+        if (user == null) {
+            throw new ApiException("User not found");
+        }
         Review review = reviewRepository.findReviewById(id);
         if (review == null) {
             throw new ApiException("Review not found");
+        }
+        if (!review.getUser().getId().equals(userId)) {
+            throw new ApiException("You can only update your own review");
         }
         review.setRating(dto.getRating());
         review.setComment(dto.getComment());
         reviewRepository.save(review);
     }
 
-    public void deleteReview(Integer id) {
+    public void deleteReview(Integer userId, Integer id) {
+        User user = userRepository.findUserById(userId);
+        if (user == null) {
+            throw new ApiException("User not found");
+        }
         Review review = reviewRepository.findReviewById(id);
         if (review == null) {
             throw new ApiException("Review not found");
+        }
+        if (!review.getUser().getId().equals(userId)) {
+            throw new ApiException("You can only delete your own review");
         }
         reviewRepository.deleteById(id);
     }
@@ -130,7 +144,7 @@ public class ReviewService {
             throw new ApiException("Owner not found");
         }
         List<ReviewDTOOut> reviewDTOOuts = new ArrayList<>();
-        for (Review review : loadOwnerReviews(ownerId)) {
+        for (Review review : reviewRepository.findByApartment_Building_Owner_Id(ownerId)) {
             reviewDTOOuts.add(convertToDTO(review));
         }
         return reviewDTOOuts;
@@ -142,7 +156,8 @@ public class ReviewService {
         if (owner == null) {
             throw new ApiException("Owner not found");
         }
-        List<Review> reviews = loadOwnerReviews(ownerId);
+        List<Review> reviews =
+                reviewRepository.findByApartment_Building_Owner_Id(ownerId);
         if (reviews.isEmpty()) {
             throw new ApiException("No reviews found for this owner");
         }
@@ -164,11 +179,6 @@ public class ReviewService {
         reviewDTOOut.setComment(review.getComment());
         reviewDTOOut.setCreatedAt(review.getCreatedAt());
         return reviewDTOOut;
-    }
-
-    // Collect all reviews linked to apartments owned by the selected owner.
-    private List<Review> loadOwnerReviews(Integer ownerId) {
-        return reviewRepository.findByApartment_Building_Owner_Id(ownerId);
     }
 
 }

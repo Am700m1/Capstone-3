@@ -1,8 +1,7 @@
 package com.example.capstone3.Enums;
 
-public enum NegotiationStatus {
+public enum RenewalStatus {
     PENDING,
-    COUNTERED,
-    ACCEPTED,
+    APPROVED,
     REJECTED
 }
