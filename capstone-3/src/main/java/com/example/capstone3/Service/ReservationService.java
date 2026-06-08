@@ -257,7 +257,6 @@ public class ReservationService {
                 apartment.getId(), ContractStatus.ACTIVE)) {
             throw new ApiException("Apartment already has an active contract");
         }
-
         reservation.setStatus(ReservationStatus.APPROVED);
         reservation.setApprovedAt(LocalDateTime.now());
         apartment.setStatus(ApartmentStatus.RESERVED);

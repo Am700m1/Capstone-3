@@ -15,6 +15,9 @@ public interface RoommateRequestRepository extends JpaRepository<RoommateRequest
 
     boolean existsBySenderAndReceiverAndStatus(User sender, User receiver, RoommateStatus status);
 
+    List<RoommateRequest> findBySenderOrReceiverOrderByCreatedAtDesc(
+            User sender, User receiver);
+
     List<RoommateRequest> findBySenderAndStatusOrReceiverAndStatus(
             User sender, RoommateStatus status1,
             User receiver, RoommateStatus status2

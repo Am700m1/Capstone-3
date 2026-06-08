@@ -1,6 +1,7 @@
 package com.example.capstone3.Service;
 
 import com.example.capstone3.Api.ApiException;
+import com.example.capstone3.DTO.Out.RoommateRequestDTOOut;
 import com.example.capstone3.Enums.RoommateStatus;
 import com.example.capstone3.Models.RoommateRequest;
 import com.example.capstone3.Models.User;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -23,6 +25,31 @@ public class RoommateRequestService {
     private final UserRepository userRepository;
     private final UserPreferenceRepository userPreferenceRepository;
     private final WhatsAppService whatsAppService;
+
+    public List<RoommateRequestDTOOut> getUserRoommateRequests(Integer userId) {
+        User user = userRepository.findUserById(userId);
+        if (user == null) {
+            throw new ApiException("User not found!");
+        }
+
+        List<RoommateRequestDTOOut> result = new ArrayList<>();
+        for (RoommateRequest request :
+                roommateRequestRepository.findBySenderOrReceiverOrderByCreatedAtDesc(
+                        user, user)) {
+            RoommateRequestDTOOut dto = new RoommateRequestDTOOut();
+            dto.setId(request.getId());
+            dto.setSenderId(request.getSender().getId());
+            dto.setSenderName(request.getSender().getFullName());
+            dto.setReceiverId(request.getReceiver().getId());
+            dto.setReceiverName(request.getReceiver().getFullName());
+            dto.setStatus(request.getStatus());
+            dto.setCreatedAt(request.getCreatedAt());
+            dto.setDirection(request.getSender().getId().equals(userId)
+                    ? "SENT" : "RECEIVED");
+            result.add(dto);
+        }
+        return result;
+    }
 
     public void sendRoommateRequest(Integer senderId, Integer receiverId) {
         if (senderId.equals(receiverId)) {
