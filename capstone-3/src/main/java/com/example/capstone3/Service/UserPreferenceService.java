@@ -41,7 +41,11 @@ public class UserPreferenceService {
     }
 
     public void addUserPreference(Integer userId, UserPreferenceDTOIn userPreferenceDTOIn) {
-        validateCoordinatePair(userPreferenceDTOIn.getWorkLatitude(), userPreferenceDTOIn.getWorkLongitude());
+        if ((userPreferenceDTOIn.getWorkLatitude() == null)
+                != (userPreferenceDTOIn.getWorkLongitude() == null)) {
+            throw new ApiException(
+                    "Work latitude and longitude must be provided together");
+        }
         User user = userRepository.findUserById(userId);
         if (user == null) {
             throw new ApiException("User not found");
@@ -76,7 +80,11 @@ public class UserPreferenceService {
     }
 
     public void updateUserPreference(Integer id, UserPreferenceDTOIn userPreferenceDTOIn) {
-        validateCoordinatePair(userPreferenceDTOIn.getWorkLatitude(), userPreferenceDTOIn.getWorkLongitude());
+        if ((userPreferenceDTOIn.getWorkLatitude() == null)
+                != (userPreferenceDTOIn.getWorkLongitude() == null)) {
+            throw new ApiException(
+                    "Work latitude and longitude must be provided together");
+        }
         UserPreference preference = userPreferenceRepository.findUserPreferenceById(id);
         if (preference == null) {
             throw new ApiException("User preference not found");
@@ -168,13 +176,6 @@ public class UserPreferenceService {
         userPreferenceDTOOut.setRoommateBudget(preference.getRoommateBudget());
         return userPreferenceDTOOut;
     }
-
-    private void validateCoordinatePair(Double latitude, Double longitude) {
-        if ((latitude == null) != (longitude == null)) {
-            throw new ApiException("Work latitude and longitude must be provided together");
-        }
-    }
-
 
     //^^^^^^^CRUD^^^^^^^^
 

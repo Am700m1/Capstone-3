@@ -155,7 +155,8 @@ public class WhatsAppService {
                 "You have a *NEW RESERVATION* request.\n" +
                 "Apartment number: " + reservation.getApartment().getApartmentNumber() + "\n" +
                 "Tenant: " + reservation.getUser().getFullName() + "\n" +
-                "Date: " + reservation.getReservationDate() + "\n\n" +
+                "Requested Start Date: " + reservation.getRequestedStartDate() + "\n" +
+                "Rental Duration: " + reservation.getRentalMonths() + " months\n\n" +
                 "Please log in to accept or reject the reservation.\n" +
                 "Smart Rental Platform";
         sendMessage(owner.getPhoneNumber(), message);

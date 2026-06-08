@@ -2,6 +2,7 @@ package com.example.capstone3.Models;
 
 import com.example.capstone3.Enums.ContractStatus;
 import com.example.capstone3.Enums.NegotiationStatus;
+import com.example.capstone3.Enums.RenewalStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -71,4 +72,14 @@ public class Contract {
 
     @Column(name = "negotiation_updated_at")
     private LocalDateTime negotiationUpdatedAt;
+
+    @Column(name = "termination_reason", length = 1000)
+    private String terminationReason;
+
+    @Column(name = "renewal_requested_months")
+    private Integer renewalRequestedMonths;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "renewal_status", length = 20)
+    private RenewalStatus renewalStatus;
 }

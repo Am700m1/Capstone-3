@@ -29,9 +29,11 @@ public class ContractController {
         return ResponseEntity.status(200).body(contractService.getContract(id));
     }
 
-    @PostMapping("/add/{reservation_id}")
-    public ResponseEntity<?> addContract(@RequestBody @Valid ContractDTOIn contractDTOIn, @PathVariable Integer reservation_id) {
-        contractService.addContract(contractDTOIn, reservation_id);
+    @PostMapping("/add/{ownerId}/{reservation_id}")
+    public ResponseEntity<?> addContract(@RequestBody @Valid ContractDTOIn contractDTOIn,
+                                         @PathVariable Integer ownerId,
+                                         @PathVariable Integer reservation_id) {
+        contractService.addContract(contractDTOIn, ownerId, reservation_id);
         return ResponseEntity.status(200).body(new ApiResponse("Contract added successfully"));
     }
 
@@ -122,15 +124,31 @@ public class ContractController {
     }
 
     @PutMapping("/terminate/{contractId}/{ownerId}")
-    public ResponseEntity<?> terminateContract(@PathVariable Integer ownerId, @PathVariable Integer contractId) {
-        contractService.terminateContract(ownerId, contractId);
+    public ResponseEntity<?> terminateContract(@PathVariable Integer ownerId,
+                                               @PathVariable Integer contractId,
+                                               @RequestParam String reason) {
+        contractService.terminateContract(ownerId, contractId, reason);
         return ResponseEntity.status(200).body(new ApiResponse("Contract terminated successfully."));
     }
 
     @PutMapping("/renew/{contractId}/{userId}")
     public ResponseEntity<?> renewContract(@PathVariable Integer userId, @PathVariable Integer contractId, @RequestParam Integer extraMonths) {
-        contractService.renewContract(userId, contractId, extraMonths);
-        return ResponseEntity.status(200).body(new ApiResponse("Contract renewed for " + extraMonths + " extra months."));
+        contractService.requestRenewal(userId, contractId, extraMonths);
+        return ResponseEntity.status(200).body(new ApiResponse("Renewal request submitted successfully."));
+    }
+
+    @PutMapping("/renew/approve/{contractId}/{ownerId}")
+    public ResponseEntity<?> approveRenewal(@PathVariable Integer ownerId,
+                                            @PathVariable Integer contractId) {
+        contractService.approveRenewal(ownerId, contractId);
+        return ResponseEntity.status(200).body(new ApiResponse("Contract renewal approved."));
+    }
+
+    @PutMapping("/renew/reject/{contractId}/{ownerId}")
+    public ResponseEntity<?> rejectRenewal(@PathVariable Integer ownerId,
+                                           @PathVariable Integer contractId) {
+        contractService.rejectRenewal(ownerId, contractId);
+        return ResponseEntity.status(200).body(new ApiResponse("Contract renewal rejected."));
     }
 
     @GetMapping("/analyze/{contractId}/{userId}")

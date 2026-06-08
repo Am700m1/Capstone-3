@@ -119,7 +119,24 @@ public class MessageService {
         if (message == null) {
             throw new ApiException("Message not found");
         }
-        validateOriginalSender(message, senderId, senderRole);
+        String normalizedRole = senderRole == null
+                ? "" : senderRole.trim().toUpperCase();
+        if (!"USER".equals(normalizedRole) && !"OWNER".equals(normalizedRole)) {
+            throw new ApiException("Sender role must be USER or OWNER");
+        }
+        if ("USER".equals(normalizedRole)
+                && userRepository.findUserById(senderId) == null) {
+            throw new ApiException("User not found");
+        }
+        if ("OWNER".equals(normalizedRole)
+                && ownerRepository.findOwnerById(senderId) == null) {
+            throw new ApiException("Owner not found");
+        }
+        if (!senderId.equals(message.getSenderId())
+                || !normalizedRole.equalsIgnoreCase(message.getSenderRole())) {
+            throw new ApiException(
+                    "Only the original sender can modify this message");
+        }
         message.setContent(messageDTOIn.getContent());
         messageRepository.save(message);
     }
@@ -129,25 +146,25 @@ public class MessageService {
         if (message == null) {
             throw new ApiException("Message not found");
         }
-        validateOriginalSender(message, senderId, senderRole);
-        messageRepository.deleteById(id);
-    }
-
-    private void validateOriginalSender(Message message, Integer senderId, String senderRole) {
-        String normalizedRole = senderRole == null ? "" : senderRole.trim().toUpperCase();
+        String normalizedRole = senderRole == null
+                ? "" : senderRole.trim().toUpperCase();
         if (!"USER".equals(normalizedRole) && !"OWNER".equals(normalizedRole)) {
             throw new ApiException("Sender role must be USER or OWNER");
         }
-        if ("USER".equals(normalizedRole) && userRepository.findUserById(senderId) == null) {
+        if ("USER".equals(normalizedRole)
+                && userRepository.findUserById(senderId) == null) {
             throw new ApiException("User not found");
         }
-        if ("OWNER".equals(normalizedRole) && ownerRepository.findOwnerById(senderId) == null) {
+        if ("OWNER".equals(normalizedRole)
+                && ownerRepository.findOwnerById(senderId) == null) {
             throw new ApiException("Owner not found");
         }
         if (!senderId.equals(message.getSenderId())
                 || !normalizedRole.equalsIgnoreCase(message.getSenderRole())) {
-            throw new ApiException("Only the original sender can modify this message");
+            throw new ApiException(
+                    "Only the original sender can modify this message");
         }
+        messageRepository.deleteById(id);
     }
 
     public MessageDTOOut convertToDTO(Message message) {

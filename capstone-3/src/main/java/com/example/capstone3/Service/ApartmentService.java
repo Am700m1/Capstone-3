@@ -89,6 +89,10 @@ public class ApartmentService {
         if (apartment == null) {
             throw new ApiException("Apartment not found");
         }
+        if (apartment.getStatus() == ApartmentStatus.RESERVED
+                || apartment.getStatus() == ApartmentStatus.RENTED) {
+            throw new ApiException("Reserved or rented apartments cannot be updated");
+        }
         String apartmentNumber = apartmentDTOIn.getApartmentNumber().trim();
         if (apartmentRepository.existsByBuilding_IdAndApartmentNumberIgnoreCaseAndIdNot(
                 apartment.getBuilding().getId(), apartmentNumber, apartment.getId())) {
@@ -113,6 +117,14 @@ public class ApartmentService {
         Apartment apartment = apartmentRepository.findApartmentById(id);
         if (apartment == null) {
             throw new ApiException("Apartment not found");
+        }
+        if (!apartment.getReservations().isEmpty()
+                || !apartment.getReviews().isEmpty()
+                || !apartment.getMaintenanceRequests().isEmpty()
+                || apartment.getReservations().stream()
+                .anyMatch(reservation -> reservation.getContract() != null)) {
+            throw new ApiException(
+                    "Apartment has rental history and cannot be deleted. Mark it INACTIVE instead");
         }
         apartmentRepository.deleteById(id);
     }
@@ -168,7 +180,9 @@ public class ApartmentService {
             if (!reservations.isEmpty()) {
                 long totalDays = 0;
                 for (Reservation reservation : reservations) {
-                    totalDays += ChronoUnit.DAYS.between(reservation.getCreatedAt().toLocalDate(), reservation.getReservationDate());
+                    totalDays += ChronoUnit.DAYS.between(
+                            reservation.getCreatedAt().toLocalDate(),
+                            reservation.getRequestedStartDate());
                 }
                 avgDaysToReserve = (double) totalDays / reservations.size();
             }
@@ -391,6 +405,12 @@ public class ApartmentService {
         if (apartment.getStatus() != ApartmentStatus.UNDER_MAINTENANCE) {
             throw new ApiException("Only apartments under maintenance can be made available");
         }
+        if (contractRepository.existsByApartmentAndStatus(
+                apartmentId, ContractStatus.ACTIVE)
+                || reservationRepository.existsByApartment_IdAndStatus(
+                apartmentId, ReservationStatus.APPROVED)) {
+            throw new ApiException("Apartment still has an active rental lock");
+        }
 
         apartment.setStatus(ApartmentStatus.AVAILABLE);
         apartmentRepository.save(apartment);
@@ -473,11 +493,11 @@ public class ApartmentService {
                 reservationRepository.findReservationsByApartment_IdAndStatus(
                                 apartmentId, ReservationStatus.PENDING)
                         .stream()
-                        .anyMatch(reservation -> date.equals(reservation.getReservationDate()))
+                        .anyMatch(reservation -> date.equals(reservation.getRequestedStartDate()))
                         || reservationRepository.findReservationsByApartment_IdAndStatus(
                                 apartmentId, ReservationStatus.APPROVED)
                         .stream()
-                        .anyMatch(reservation -> date.equals(reservation.getReservationDate()));
+                        .anyMatch(reservation -> date.equals(reservation.getRequestedStartDate()));
 
         boolean available = apartment.getStatus() == ApartmentStatus.AVAILABLE
                 && (apartment.getAvailableFrom() == null
@@ -546,6 +566,10 @@ public class ApartmentService {
         List<Apartment> matchingApartments = new ArrayList<>();
 
         for (Apartment apartment : availableApartments) {
+            if (apartment.getAvailableFrom() != null
+                    && apartment.getAvailableFrom().isAfter(LocalDate.now())) {
+                continue;
+            }
             if (minRent != null && apartment.getMonthlyRent() < minRent) {
                 continue;
             }
