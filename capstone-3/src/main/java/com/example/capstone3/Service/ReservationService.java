@@ -105,8 +105,10 @@ public class ReservationService {
         if (reservationRepository.existsByUser_IdAndApartment_IdAndStatusIn(userId, apartmentId, OPEN_RESERVATION_STATUSES)) {
             throw new ApiException("You already have an open reservation for this apartment");
         }
-        if (Boolean.TRUE.equals(apartment.getNegotiable()) && apartment.getDesiredMonthlyRent() != null) {
+        if (Boolean.TRUE.equals(apartment.getNegotiable())
+                && desiredMonthlyRent != null) {
             apartment.setDesiredMonthlyRent(desiredMonthlyRent);
+            apartmentRepository.save(apartment);
         }
         Reservation reservation = new Reservation();
         reservation.setApartment(apartment);
