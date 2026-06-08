@@ -15,6 +15,7 @@ public class ApartmentDTOOut {
     private Integer ownerId;
     private String district;
     private Double monthlyRent;
+    private Boolean negotiable;
     private Integer bedrooms;
     private Integer bathrooms;
     private Double area;

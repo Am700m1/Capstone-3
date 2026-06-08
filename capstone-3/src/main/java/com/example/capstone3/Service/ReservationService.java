@@ -114,7 +114,7 @@ public class ReservationService {
         reservation.setCreatedAt(LocalDateTime.now());
         reservationRepository.save(reservation);
 
-        whatsAppService.notifyOwnerNewReservation(apartment.getOwner(), reservation);
+        whatsAppService.notifyOwnerNewReservation(apartment, reservation);
         return convertToDTO(reservation);
     }
 
@@ -261,6 +261,10 @@ public class ReservationService {
         reservation.setStatus(ReservationStatus.APPROVED);
         reservation.setApprovedAt(LocalDateTime.now());
         apartment.setStatus(ApartmentStatus.RESERVED);
+
+        if (Boolean.TRUE.equals(apartment.getNegotiable()) && apartment.getDesiredMonthlyRent() != null) {
+            apartment.setMonthlyRent(apartment.getDesiredMonthlyRent());
+        }
 
         for (Reservation competingReservation :
                 reservationRepository.findReservationsByApartment_IdAndStatus(

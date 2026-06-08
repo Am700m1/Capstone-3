@@ -70,6 +70,7 @@ public class ApartmentService {
         apartment.setOwner(owner);
         apartment.setApartmentNumber(apartmentNumber);
         apartment.setMonthlyRent(apartmentDTOIn.getMonthlyRent());
+        apartment.setNegotiable(apartmentDTOIn.getNegotiable());
         apartment.setBedrooms(apartmentDTOIn.getBedrooms());
         apartment.setBathrooms(apartmentDTOIn.getBathrooms());
         apartment.setArea(apartmentDTOIn.getArea());
@@ -137,6 +138,7 @@ public class ApartmentService {
         apartmentDTOOut.setDistrict(apartment.getBuilding().getDistrict());
         apartmentDTOOut.setApartmentNumber(apartment.getApartmentNumber());
         apartmentDTOOut.setMonthlyRent(apartment.getMonthlyRent());
+        apartmentDTOOut.setNegotiable(apartment.getNegotiable());
         apartmentDTOOut.setBedrooms(apartment.getBedrooms());
         apartmentDTOOut.setBathrooms(apartment.getBathrooms());
         apartmentDTOOut.setArea(apartment.getArea());
