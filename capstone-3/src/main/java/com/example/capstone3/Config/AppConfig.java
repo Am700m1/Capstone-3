@@ -12,7 +12,7 @@ import org.springframework.web.client.RestTemplate;
 @Configuration
 public class AppConfig {
 
-    // This bean lets services send HTTP requests to Gemini, OSRM, Overpass, and Nominatim.
+    // This bean lets services send HTTP requests to OpenAI, OSRM, Overpass, and Nominatim.
     @Bean
     public RestTemplate restTemplate() {
         // Spring injects this shared client into external API services.

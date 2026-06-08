@@ -22,7 +22,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AiApartmentService {
 
-    // Backend loads trusted facts; Gemini only writes summaries and comparisons.
+    // Backend loads trusted facts; OpenAI only writes summaries and comparisons.
     private final ApartmentRepository apartmentRepository;
     private final ReviewRepository reviewRepository;
     private final OwnerRepository ownerRepository;
@@ -49,7 +49,7 @@ public class AiApartmentService {
         return response;
     }
 
-    // Sends apartment details, ratings, and comments to Gemini for summarization.
+    // Sends apartment details, ratings, and comments to OpenAI for summarization.
     private String buildReviewSummaryPrompt(Apartment apartment, List<Review> reviews) {
         StringBuilder prompt = new StringBuilder();
 
@@ -128,14 +128,13 @@ public class AiApartmentService {
 
         NeighborhoodSummaryDTOOut response = new NeighborhoodSummaryDTOOut();
         response.setDistrict(apartment.getBuilding().getDistrict());
-        response.setRadiusMetres(3000);
         response.setNearbyCounts(counts);
         response.setSummary(aiService.cleanAiText(aiResponse));
 
         return response;
     }
 
-    // Gives Gemini location, building, and Overpass service data to describe.
+    // Gives OpenAI location, building, and Overpass service data to describe.
     private String buildNeighborhoodPrompt(Apartment apartment, ApartmentServicesDTOOut amenities) {
         StringBuilder prompt = new StringBuilder();
 
@@ -211,7 +210,7 @@ public class AiApartmentService {
         return response;
     }
 
-    // Gives Gemini owner facts and review evidence for reputation analysis.
+    // Gives OpenAI owner facts and review evidence for reputation analysis.
     private String buildOwnerReputationPrompt(Owner owner, List<Apartment> apartments, List<Review> reviews) {
         StringBuilder prompt = new StringBuilder();
 
@@ -275,7 +274,7 @@ public class AiApartmentService {
     }
 
 
-    // get the selected apartments before Gemini compares their supplied facts.
+    // Get the selected apartments before OpenAI compares their supplied facts.
     public ApartmentComparisonDTOOut compareApartments(List<Integer> apartmentIds, String language) {
         if (apartmentIds == null || apartmentIds.size() < 2 || apartmentIds.size() > 3) {
             throw new ApiException("Please provide 2 or 3 apartment IDs to compare");
@@ -301,7 +300,7 @@ public class AiApartmentService {
         return response;
     }
 
-    // Limits Gemini to the apartment, owner, review, and service data provided.
+    // Limits OpenAI to the apartment, owner, review, and service data provided.
     private String buildComparisonPrompt(List<Apartment> apartments) {
         StringBuilder prompt = new StringBuilder();
 

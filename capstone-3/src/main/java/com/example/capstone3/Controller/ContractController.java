@@ -77,8 +77,7 @@ public class ContractController {
     }
 
     @PutMapping("/terminate/{contractId}/{ownerId}")
-    public ResponseEntity<?> terminateContract(@PathVariable Integer ownerId,
-                                               @PathVariable Integer contractId,
+    public ResponseEntity<?> terminateContract(@PathVariable Integer ownerId, @PathVariable Integer contractId,
                                                @RequestParam String reason) {
         contractService.terminateContract(ownerId, contractId, reason);
         return ResponseEntity.status(200).body(new ApiResponse("Contract terminated successfully."));

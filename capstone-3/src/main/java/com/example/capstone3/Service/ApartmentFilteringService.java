@@ -23,11 +23,6 @@ public class ApartmentFilteringService {
 
         for (Apartment apartment : allAvailable) {
 
-            if (apartment.getAvailableFrom() != null
-                    && apartment.getAvailableFrom().isAfter(java.time.LocalDate.now())) {
-                continue;
-            }
-
             // Filter by budget
             if (apartment.getMonthlyRent() > preferences.getMaxBudget()) {
                 continue;

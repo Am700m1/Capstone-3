@@ -161,7 +161,7 @@ public class ReviewService {
         if (reviews.isEmpty()) {
             throw new ApiException("No reviews found for this owner");
         }
-        // Gemini writes the analysis; review count and average rating stay backend-calculated.
+        // OpenAI writes the analysis; review count and average rating stay backend-calculated.
         String analysis = aiService.generateOwnerReviewAnalysis(owner, reviews, language);
 
         OwnerReviewAnalysisDTOOut dto = new OwnerReviewAnalysisDTOOut();

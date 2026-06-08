@@ -151,18 +151,6 @@ public class ApartmentService {
         apartmentDTOOut.setInternetIncluded(apartment.getInternetIncluded());
         apartmentDTOOut.setElectricityIncluded(apartment.getElectricityIncluded());
 
-        List<ApartmentImageDTOOut> imageDTOOuts = new ArrayList<>();
-        for (ApartmentImage image : apartment.getImages()) {
-            ApartmentImageDTOOut imageDTOOut = new ApartmentImageDTOOut();
-            imageDTOOut.setId(image.getId());
-            imageDTOOut.setApartmentId(apartment.getId());
-            imageDTOOut.setImageUrl(image.getImageUrl());
-            imageDTOOut.setIsPrimary(image.getIsPrimary());
-            imageDTOOut.setDisplayOrder(image.getDisplayOrder());
-            imageDTOOuts.add(imageDTOOut);
-        }
-        apartmentDTOOut.setImages(imageDTOOuts);
-
         return apartmentDTOOut;
     }
 
@@ -434,9 +422,6 @@ public class ApartmentService {
                     || !apartment.getAvailableFrom().isAfter(today);
             response.put("availableNow", availableNow);
             response.put("expectedAvailableDate", availableNow ? null : apartment.getAvailableFrom());
-            response.put("message", availableNow
-                    ? "Apartment is available now."
-                    : "Apartment will be available from the listed available date.");
             return response;
         }
 
@@ -450,23 +435,11 @@ public class ApartmentService {
                     .orElse(null);
             response.put("availableNow", false);
             response.put("expectedAvailableDate", expectedDate);
-            response.put("message",
-                    "Apartment is currently rented and expected to be available after the active contract ends.");
             return response;
         }
 
         response.put("availableNow", false);
         response.put("expectedAvailableDate", apartment.getAvailableFrom());
-        if (apartment.getStatus() == ApartmentStatus.RESERVED) {
-            response.put("message",
-                    "Apartment is reserved and availability depends on contract completion or acceptance.");
-        } else if (apartment.getStatus() == ApartmentStatus.UNDER_MAINTENANCE) {
-            response.put("message", apartment.getAvailableFrom() == null
-                    ? "Apartment is under maintenance and has no fixed available date."
-                    : "Apartment is under maintenance and may be available from the listed available date.");
-        } else {
-            response.put("message", "Apartment is not currently available.");
-        }
         return response;
     }
 
@@ -569,7 +542,7 @@ public class ApartmentService {
 
         for (Apartment apartment : availableApartments) {
             if (apartment.getAvailableFrom() != null
-                    && apartment.getAvailableFrom().isAfter(LocalDate.now())) {
+                    && apartment.getAvailableFrom().isBefore(LocalDate.now())) {
                 continue;
             }
             if (minRent != null && apartment.getMonthlyRent() < minRent) {

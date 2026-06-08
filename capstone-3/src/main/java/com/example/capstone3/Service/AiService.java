@@ -7,7 +7,6 @@ import com.example.capstone3.Models.Review;
 import com.example.capstone3.Models.UserPreference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,66 +25,63 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AiService {
 
-    // This constant stores the Gemini endpoint used to generate text.
-    private static final String GEMINI_BASE_URL =
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+    // OpenAI Responses API endpoint used for all AI text generation.
+    private static final String OPENAI_RESPONSES_URL =
+            "https://api.openai.com/v1/responses";
 
-    // Spring reads the Gemini API key from application configuration.
-    @Value("${GEMINI_API}")
+    // Secrets stay outside source control and are supplied through environment variables.
+    @Value("${openai.api.key}")
     private String apiKey;
 
-    // RestTemplate sends prompts to Gemini.
+    @Value("${openai.model}")
+    private String model;
+
+    // RestTemplate sends prompts to OpenAI.
     private final RestTemplate restTemplate;
-    // ObjectMapper builds Gemini request JSON and reads response JSON.
+    // ObjectMapper builds OpenAI request JSON and reads response JSON.
     private final ObjectMapper objectMapper;
 
-    // Gemini only writes text from supplied facts; it does not read or update project data.
+    // OpenAI only writes text from supplied facts; it does not read or update project data.
     public String generateText(String prompt, String language) {
         if (!"AR".equals(language) && !"EN".equals(language)) {
             throw new ApiException("Language must be AR or EN");
         }
-        // The API key is sent as a query parameter required by Gemini.
-        String url = GEMINI_BASE_URL + "?key=" + apiKey;
 
         try {
-            // Language changes Gemini's response only; stored project data is unchanged.
+            // Language changes OpenAI's response only; stored project data is unchanged.
             String languageInstruction = "AR".equals(language)
                     ? "Respond in Arabic.\n\n"
                     : "Respond in English.\n\n";
-            // Build the JSON body in the format required by generateContent.
             String requestBody = buildRequestBody(languageInstruction + prompt);
 
-            // HttpHeaders stores metadata about the request.
             HttpHeaders headers = new HttpHeaders();
-            // Gemini expects the request body to contain JSON.
             headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setBearerAuth(apiKey);
 
-            // HttpEntity combines the JSON request body and its headers.
             HttpEntity<String> request = new HttpEntity<>(requestBody, headers);
 
-            // exchange sends a POST request and returns the full HTTP response.
-            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+            ResponseEntity<String> response = restTemplate.exchange(
+                    OPENAI_RESPONSES_URL, HttpMethod.POST, request, String.class);
 
-            // Return only Gemini's generated text instead of its full JSON response.
             return extractGeneratedText(response.getBody());
 
         } catch (HttpClientErrorException e) {
-            // Keep Gemini's HTTP status and response details for a clear API error.
-            throw new ApiException("Gemini error " + e.getStatusCode() + ": " + e.getResponseBodyAsString());
+            throw new ApiException(
+                    "OpenAI error " + e.getStatusCode() + ": "
+                            + e.getResponseBodyAsString());
 
         } catch (Exception e) {
-            // Convert other HTTP or JSON failures into the project's API exception.
-            throw new ApiException("Gemini call failed: " + e.getMessage());
+            throw new ApiException("OpenAI call failed: " + e.getMessage());
         }
     }
 
-    // Sends owner details and tenant reviews to Gemini for a written analysis.
+    // Sends owner details and tenant reviews to OpenAI for a written analysis.
     public String generateOwnerReviewAnalysis(Owner owner, List<Review> reviews, String language) {
         String prompt = buildOwnerAnalysisPrompt(owner, reviews);
         return generateText(prompt, language);
     }
 
-    // Builds the owner-review facts and instructions Gemini is allowed to analyze.
+    // Builds the owner-review facts and instructions OpenAI is allowed to analyze.
     private String buildOwnerAnalysisPrompt(Owner owner, List<Review> reviews) {
         StringBuilder prompt = new StringBuilder();
         prompt.append("Analyze the following tenant reviews for a property owner and provide a concise professional summary.\n\n");
@@ -106,37 +102,31 @@ public class AiService {
         return prompt.toString();
     }
 
-    // Creates the JSON structure required by the Gemini generateContent API.
+    // Creates the JSON structure required by the OpenAI Responses API.
     private String buildRequestBody(String prompt) throws Exception {
-        // ObjectNode represents a JSON object and ArrayNode represents a JSON array.
         ObjectNode root = objectMapper.createObjectNode();
-        ArrayNode contents = objectMapper.createArrayNode();
-        ObjectNode content = objectMapper.createObjectNode();
-        ArrayNode parts = objectMapper.createArrayNode();
-        ObjectNode part = objectMapper.createObjectNode();
-
-        // Place the prompt inside Gemini's contents, parts, and text structure.
-        part.put("text", prompt);
-        parts.add(part);
-        content.set("parts", parts);
-        contents.add(content);
-        root.set("contents", contents);
+        root.put("model", model);
+        root.put("input", prompt);
 
         return objectMapper.writeValueAsString(root);
     }
 
-    // Reads the first generated text result from the Gemini response.
+    // Reads generated text from the OpenAI Responses API output items.
     private String extractGeneratedText(String responseBody) throws Exception {
-        // readTree converts Gemini's JSON text into nodes that can be navigated.
+        if (responseBody == null || responseBody.isBlank()) {
+            throw new ApiException("OpenAI returned an empty response");
+        }
+
         JsonNode root = objectMapper.readTree(responseBody);
-        // path follows the response fields to the first generated candidate.
-        return root.path("candidates")
-                .path(0)
-                .path("content")
-                .path("parts")
-                .path(0)
-                .path("text")
-                .asText("No explanation available.");
+        for (JsonNode output : root.path("output")) {
+            for (JsonNode content : output.path("content")) {
+                if ("output_text".equals(content.path("type").asText())
+                        && !content.path("text").asText().isBlank()) {
+                    return content.path("text").asText();
+                }
+            }
+        }
+        throw new ApiException("OpenAI returned no generated text");
     }
 
     public String cleanAiText(String text) {
@@ -188,7 +178,7 @@ public class AiService {
         return prompt.toString();
     }
 
-    // Helper method to remove markdown formatting if Gemini adds it
+    // Helper method to remove markdown formatting if the AI adds it.
     private String cleanJsonResponse(String response) {
         response = response.trim();
         if (response.startsWith("```json")) {

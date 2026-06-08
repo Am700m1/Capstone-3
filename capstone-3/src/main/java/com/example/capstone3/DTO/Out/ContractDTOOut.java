@@ -2,10 +2,18 @@ package com.example.capstone3.DTO.Out;
 
 import com.example.capstone3.Enums.ContractStatus;
 import com.example.capstone3.Enums.RenewalStatus;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import lombok.Data;
 
 import java.time.LocalDate;
 
+@JsonPropertyOrder({
+        "id", "reservationId", "apartmentId", "userId", "contractNumber",
+        "contractStatus", "monthlyRent", "securityDeposit", "signed",
+        "startDate", "endDate", "signedDate", "isJointContract",
+        "coTenantName", "rentPerPerson", "terminationReason",
+        "renewalRequestedMonths", "renewalStatus"
+})
 @Data
 public class ContractDTOOut {
 
