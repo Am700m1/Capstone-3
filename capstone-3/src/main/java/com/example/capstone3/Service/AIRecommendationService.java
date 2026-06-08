@@ -103,7 +103,7 @@ public class AIRecommendationService {
 
         RankedApartmentDTOOut result = new RankedApartmentDTOOut();
         result.setApartmentId(apartment.getId());
-        result.setTitle(apartment.getTitle());
+        result.setApartmentNumber(apartment.getApartmentNumber());
         result.setDistrict(apartment.getBuilding().getDistrict());
         result.setMonthlyRent(apartment.getMonthlyRent());
         result.setBedrooms(apartment.getBedrooms());
@@ -192,9 +192,8 @@ public class AIRecommendationService {
         int childrenCount = user.getChildrenCount() == null ? 0 : user.getChildrenCount();
         // Use familyCount when provided; otherwise preserve the children-based estimate.
         int householdSize = user.getFamilyCount() == null ? 1 + childrenCount : user.getFamilyCount();
-        // Married, family size, and children identify family-oriented renters.
-        boolean familyRenter = Boolean.TRUE.equals(user.getMarried())
-                || childrenCount > 0
+        // Family size and children identify family-oriented renters.
+        boolean familyRenter = childrenCount > 0
                 || (user.getFamilyCount() != null && user.getFamilyCount() > 1);
 
         // Reward enough bedrooms for the estimated household size.
@@ -264,14 +263,13 @@ public class AIRecommendationService {
         prompt.append("Do not invent data, change the order, or recommend apartments outside this list.\n");
         prompt.append("Do not mention apartment IDs or internal score category names.\n");
         prompt.append("Return plain text only. Do not use Markdown headings, bold text, or hash symbols.\n\n");
-        prompt.append("User married: ").append(user.getMarried()).append("\n");
         prompt.append("Family count: ").append(user.getFamilyCount()).append("\n");
         prompt.append("Children: ").append(user.getChildrenCount()).append("\n");
         prompt.append("Maximum budget: SAR ").append(preferences.getMaxBudget()).append("\n\n");
 
         for (RankedApartmentDTOOut apartment : rankedApartments) {
             prompt.append("Rank ").append(apartment.getRank()).append(": ")
-                    .append(apartment.getTitle()).append("\n");
+                    .append("Apartment ").append(apartment.getApartmentNumber()).append("\n");
             prompt.append("District: ").append(apartment.getDistrict()).append("\n");
             prompt.append("Monthly rent: SAR ").append(apartment.getMonthlyRent()).append("\n");
             prompt.append("Bedrooms: ").append(apartment.getBedrooms()).append("\n");
@@ -301,7 +299,7 @@ public class AIRecommendationService {
 
         prompt.append("Use this plain-text format:\n\n");
         prompt.append("Top Matches\n\n");
-        prompt.append("1. Apartment title\n");
+        prompt.append("1. Apartment number\n");
         prompt.append("A short user-friendly explanation.\n\n");
         prompt.append("Repeat for each supplied apartment in the exact rank order.\n\n");
         prompt.append("Why the first apartment ranked highest:\n");

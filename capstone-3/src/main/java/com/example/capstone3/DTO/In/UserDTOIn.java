@@ -1,11 +1,5 @@
 package com.example.capstone3.DTO.In;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Past;
-import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
@@ -30,7 +24,6 @@ public class UserDTOIn {
     @Past(message = "Date of birth must be in the past")
     private LocalDate dateOfBirth;
 
-    private Boolean married;
     @NotEmpty(message = "Gender is required")
     @Pattern(regexp = "^(MALE|FEMALE)$", message = "Gender must be exactly MALE or FEMALE")
     private String gender;

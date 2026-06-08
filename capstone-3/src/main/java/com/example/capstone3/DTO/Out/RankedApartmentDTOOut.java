@@ -8,7 +8,7 @@ public class RankedApartmentDTOOut {
 
     private Integer rank;
     private Integer apartmentId;
-    private String title;
+    private String apartmentNumber;
     private String district;
     private Double monthlyRent;
     private Integer bedrooms;

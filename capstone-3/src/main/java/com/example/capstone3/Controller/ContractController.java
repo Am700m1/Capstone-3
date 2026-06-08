@@ -2,6 +2,7 @@ package com.example.capstone3.Controller;
 
 import com.example.capstone3.Api.ApiResponse;
 import com.example.capstone3.DTO.In.ContractDTOIn;
+import com.example.capstone3.DTO.In.ContractNegotiationDTOIn;
 import com.example.capstone3.Service.ContractService;
 import jakarta.mail.MessagingException;
 import jakarta.validation.Valid;
@@ -28,9 +29,11 @@ public class ContractController {
         return ResponseEntity.status(200).body(contractService.getContract(id));
     }
 
-    @PostMapping("/add/{reservation_id}")
-    public ResponseEntity<?> addContract(@RequestBody @Valid ContractDTOIn contractDTOIn, @PathVariable Integer reservation_id) {
-        contractService.addContract(contractDTOIn, reservation_id);
+    @PostMapping("/add/{ownerId}/{reservation_id}")
+    public ResponseEntity<?> addContract(@RequestBody @Valid ContractDTOIn contractDTOIn,
+                                         @PathVariable Integer ownerId,
+                                         @PathVariable Integer reservation_id) {
+        contractService.addContract(contractDTOIn, ownerId, reservation_id);
         return ResponseEntity.status(200).body(new ApiResponse("Contract added successfully"));
     }
 
@@ -58,6 +61,52 @@ public class ContractController {
         return ResponseEntity.status(200).body(new ApiResponse("Contract rejected and cancelled successfully."));
     }
 
+    @PutMapping("/request-negotiation/{userId}/{contractId}")
+    public ResponseEntity<?> requestNegotiation(
+            @PathVariable Integer userId,
+            @PathVariable Integer contractId,
+            @RequestBody @Valid ContractNegotiationDTOIn negotiationDTOIn) {
+        contractService.requestNegotiation(userId, contractId, negotiationDTOIn);
+        return ResponseEntity.status(200).body(new ApiResponse("Negotiation requested successfully."));
+    }
+
+    @PutMapping("/owner/accept-negotiation/{ownerId}/{contractId}")
+    public ResponseEntity<?> acceptNegotiation(
+            @PathVariable Integer ownerId, @PathVariable Integer contractId) {
+        contractService.acceptNegotiation(ownerId, contractId);
+        return ResponseEntity.status(200).body(new ApiResponse("Negotiation accepted successfully."));
+    }
+
+    @PutMapping("/owner/reject-negotiation/{ownerId}/{contractId}")
+    public ResponseEntity<?> rejectNegotiation(
+            @PathVariable Integer ownerId, @PathVariable Integer contractId) {
+        contractService.rejectNegotiation(ownerId, contractId);
+        return ResponseEntity.status(200).body(new ApiResponse("Negotiation rejected successfully."));
+    }
+
+    @PutMapping("/owner/counter-offer/{ownerId}/{contractId}")
+    public ResponseEntity<?> counterOffer(
+            @PathVariable Integer ownerId,
+            @PathVariable Integer contractId,
+            @RequestBody @Valid ContractNegotiationDTOIn negotiationDTOIn) {
+        contractService.counterOffer(ownerId, contractId, negotiationDTOIn);
+        return ResponseEntity.status(200).body(new ApiResponse("Counter-offer submitted successfully."));
+    }
+
+    @PutMapping("/user/accept-counter-offer/{userId}/{contractId}")
+    public ResponseEntity<?> acceptCounterOffer(
+            @PathVariable Integer userId, @PathVariable Integer contractId) {
+        contractService.acceptCounterOffer(userId, contractId);
+        return ResponseEntity.status(200).body(new ApiResponse("Counter-offer accepted successfully."));
+    }
+
+    @PutMapping("/user/reject-counter-offer/{userId}/{contractId}")
+    public ResponseEntity<?> rejectCounterOffer(
+            @PathVariable Integer userId, @PathVariable Integer contractId) {
+        contractService.rejectCounterOffer(userId, contractId);
+        return ResponseEntity.status(200).body(new ApiResponse("Counter-offer rejected successfully."));
+    }
+
     @GetMapping("/user/{userId}")
     public ResponseEntity<?> getContractsByUserId(@PathVariable Integer userId) {
         return ResponseEntity.status(200).body(contractService.getContractsByUserId(userId));
@@ -75,15 +124,31 @@ public class ContractController {
     }
 
     @PutMapping("/terminate/{contractId}/{ownerId}")
-    public ResponseEntity<?> terminateContract(@PathVariable Integer ownerId, @PathVariable Integer contractId) {
-        contractService.terminateContract(ownerId, contractId);
+    public ResponseEntity<?> terminateContract(@PathVariable Integer ownerId,
+                                               @PathVariable Integer contractId,
+                                               @RequestParam String reason) {
+        contractService.terminateContract(ownerId, contractId, reason);
         return ResponseEntity.status(200).body(new ApiResponse("Contract terminated successfully."));
     }
 
     @PutMapping("/renew/{contractId}/{userId}")
     public ResponseEntity<?> renewContract(@PathVariable Integer userId, @PathVariable Integer contractId, @RequestParam Integer extraMonths) {
-        contractService.renewContract(userId, contractId, extraMonths);
-        return ResponseEntity.status(200).body(new ApiResponse("Contract renewed for " + extraMonths + " extra months."));
+        contractService.requestRenewal(userId, contractId, extraMonths);
+        return ResponseEntity.status(200).body(new ApiResponse("Renewal request submitted successfully."));
+    }
+
+    @PutMapping("/renew/approve/{contractId}/{ownerId}")
+    public ResponseEntity<?> approveRenewal(@PathVariable Integer ownerId,
+                                            @PathVariable Integer contractId) {
+        contractService.approveRenewal(ownerId, contractId);
+        return ResponseEntity.status(200).body(new ApiResponse("Contract renewal approved."));
+    }
+
+    @PutMapping("/renew/reject/{contractId}/{ownerId}")
+    public ResponseEntity<?> rejectRenewal(@PathVariable Integer ownerId,
+                                           @PathVariable Integer contractId) {
+        contractService.rejectRenewal(ownerId, contractId);
+        return ResponseEntity.status(200).body(new ApiResponse("Contract renewal rejected."));
     }
 
     @GetMapping("/analyze/{contractId}/{userId}")

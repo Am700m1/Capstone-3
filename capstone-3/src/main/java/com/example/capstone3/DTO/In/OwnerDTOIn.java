@@ -2,6 +2,7 @@ package com.example.capstone3.DTO.In;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -20,5 +21,9 @@ public class OwnerDTOIn {
     @NotEmpty(message = "Phone number is required")
     @Size(max = 20, message = "Phone number must not exceed 20 characters")
     private String phoneNumber;
+
+    @NotEmpty(message = "Commercial registration number is required")
+    @Pattern(regexp = "^\\d{10}$", message = "Commercial registration number must contain exactly 10 digits")
+    private String commercialRegistrationNumber;
 
 }

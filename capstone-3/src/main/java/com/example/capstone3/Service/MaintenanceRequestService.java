@@ -181,13 +181,19 @@ public class MaintenanceRequestService {
 
     // ─── Update ───────────────────────────────────────────────────────────────
 
-    public void updateMaintenanceRequest(Integer id, MaintenanceRequestDTOIn dto, Integer actorId,
-                                         String actorRole, String language) {
+    public void updateMaintenanceRequest(Integer userId, Integer id,
+                                         MaintenanceRequestDTOIn dto, String language) {
+        User user = userRepository.findUserById(userId);
+        if (user == null) {
+            throw new ApiException("User not found");
+        }
         MaintenanceRequest req = maintenanceRepository.findMaintenanceRequestById(id);
         if (req == null) {
             throw new ApiException("Maintenance request not found");
         }
-        validateMaintenanceActor(req, actorId, actorRole);
+        if (!req.getUser().getId().equals(userId)) {
+            throw new ApiException("Only the tenant who created this request can update it");
+        }
         if (req.getStatus() != MaintenanceStatus.PENDING) {
             throw new ApiException("Only PENDING requests can be updated");
         }
@@ -206,41 +212,22 @@ public class MaintenanceRequestService {
 
     // ─── Delete ───────────────────────────────────────────────────────────────
 
-    public void deleteMaintenanceRequest(Integer id, Integer actorId, String actorRole) {
+    public void deleteMaintenanceRequest(Integer userId, Integer id) {
+        User user = userRepository.findUserById(userId);
+        if (user == null) {
+            throw new ApiException("User not found");
+        }
         MaintenanceRequest req = maintenanceRepository.findMaintenanceRequestById(id);
         if (req == null) {
             throw new ApiException("Maintenance request not found");
         }
-        validateMaintenanceActor(req, actorId, actorRole);
+        if (!req.getUser().getId().equals(userId)) {
+            throw new ApiException("Only the tenant who created this request can delete it");
+        }
         if (req.getStatus() != MaintenanceStatus.PENDING) {
             throw new ApiException("Only PENDING requests can be deleted");
         }
         maintenanceRepository.deleteById(id);
-    }
-
-    private void validateMaintenanceActor(MaintenanceRequest request, Integer actorId, String actorRole) {
-        String normalizedRole = actorRole == null ? "" : actorRole.trim().toUpperCase();
-        if ("USER".equals(normalizedRole)) {
-            User user = userRepository.findUserById(actorId);
-            if (user == null) {
-                throw new ApiException("User not found");
-            }
-            if (!request.getUser().getId().equals(actorId)) {
-                throw new ApiException("Only the tenant who created this request can modify it");
-            }
-            return;
-        }
-        if ("OWNER".equals(normalizedRole)) {
-            Owner owner = ownerRepository.findOwnerById(actorId);
-            if (owner == null) {
-                throw new ApiException("Owner not found");
-            }
-            if (!request.getApartment().getOwner().getId().equals(actorId)) {
-                throw new ApiException("Owner does not own this apartment");
-            }
-            return;
-        }
-        throw new ApiException("Actor role must be USER or OWNER");
     }
 
     // ─── Building Maintenance Summary (AI) ───────────────────────────────────

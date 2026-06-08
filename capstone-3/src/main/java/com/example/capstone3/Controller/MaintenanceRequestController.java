@@ -63,20 +63,19 @@ public class MaintenanceRequestController {
         return ResponseEntity.status(200).body(new ApiResponse("Maintenance request completed"));
     }
 
-    @PutMapping("/update/{id}")
-    public ResponseEntity<?> updateMaintenanceRequest(@PathVariable Integer id, @RequestBody @Valid MaintenanceRequestDTOIn dto,
-                                                      @RequestParam Integer actorId,
-                                                      @RequestParam String actorRole,
+    @PutMapping("/update/{userId}/{id}")
+    public ResponseEntity<?> updateMaintenanceRequest(@PathVariable Integer userId,
+                                                      @PathVariable Integer id,
+                                                      @RequestBody @Valid MaintenanceRequestDTOIn dto,
                                                       @RequestParam(defaultValue = "EN") String language) {
-        maintenanceRequestService.updateMaintenanceRequest(id, dto, actorId, actorRole, language);
+        maintenanceRequestService.updateMaintenanceRequest(userId, id, dto, language);
         return ResponseEntity.status(200).body(new ApiResponse("Maintenance request updated successfully"));
     }
 
-    @DeleteMapping("/delete/{id}")
-    public ResponseEntity<?> deleteMaintenanceRequest(@PathVariable Integer id,
-                                                      @RequestParam Integer actorId,
-                                                      @RequestParam String actorRole) {
-        maintenanceRequestService.deleteMaintenanceRequest(id, actorId, actorRole);
+    @DeleteMapping("/delete/{userId}/{id}")
+    public ResponseEntity<?> deleteMaintenanceRequest(@PathVariable Integer userId,
+                                                      @PathVariable Integer id) {
+        maintenanceRequestService.deleteMaintenanceRequest(userId, id);
         return ResponseEntity.status(200).body(new ApiResponse("Maintenance request deleted successfully"));
     }
 }

@@ -30,8 +30,6 @@ public class WhatsAppService {
     @Value("${ultramsg.instance.id}")
     private String instanceId;
 
-    // ===================== CORE SEND METHOD =====================
-
     private void sendMessage(String phoneNumber, String message) {
         try {
             String url = "https://api.ultramsg.com/" + instanceId + "/messages/chat";
@@ -52,11 +50,10 @@ public class WhatsAppService {
         }
     }
 
-    // ===================== TENANT NOTIFICATIONS =====================
 
     public void notifyTenantReservationAccepted(User tenant, Apartment apartment) {
         String message = "Hello " + tenant.getFullName() + ",\n\n" +
-                "Your reservation for *" + apartment.getTitle() + "* has been *ACCEPTED*.\n" +
+                "Your reservation for apartment *" + apartment.getApartmentNumber() + "* has been *ACCEPTED*.\n" +
                 "District: " + apartment.getBuilding().getDistrict() + "\n" +
                 "Monthly Rent: " + apartment.getMonthlyRent() + " SAR\n\n" +
                 "Please wait for your contract to be generated.\n" +
@@ -66,7 +63,7 @@ public class WhatsAppService {
 
     public void notifyTenantReservationRejected(User tenant, Apartment apartment) {
         String message = "Hello " + tenant.getFullName() + ",\n\n" +
-                "Unfortunately, your reservation for *" + apartment.getTitle() + "* has been *REJECTED*.\n\n" +
+                "Unfortunately, your reservation for apartment *" + apartment.getApartmentNumber() + "* has been *REJECTED*.\n\n" +
                 "You can browse other available apartments on the platform.\n" +
                 "Smart Rental Platform";
         sendMessage(tenant.getPhoneNumber(), message);
@@ -74,7 +71,7 @@ public class WhatsAppService {
 
     public void notifyTenantReservationExpired(User tenant, Apartment apartment) {
         String message = "Hello " + tenant.getFullName() + ",\n\n" +
-                "Your reservation for *" + apartment.getTitle() + "* has *EXPIRED*.\n\n" +
+                "Your reservation for apartment *" + apartment.getApartmentNumber() + "* has *EXPIRED*.\n\n" +
                 "You can submit a new reservation if the apartment is still available.\n" +
                 "Smart Rental Platform";
         sendMessage(tenant.getPhoneNumber(), message);
@@ -82,7 +79,7 @@ public class WhatsAppService {
 
     public void notifyTenantContractCreated(User tenant, Contract contract) {
         String message = "Hello " + tenant.getFullName() + ",\n\n" +
-                "A new contract is ready for apartment *" + contract.getReservation().getApartment().getTitle() + "*.\n" +
+                "A new contract is ready for apartment *" + contract.getReservation().getApartment().getApartmentNumber() + "*.\n" +
                 "Contract Number: " + contract.getContractNumber() + "\n" +
                 "Start Date: " + contract.getStartDate() + "\n" +
                 "End Date: " + contract.getEndDate() + "\n\n" +
@@ -93,7 +90,7 @@ public class WhatsAppService {
 
     public void notifyTenantContractEnded(User tenant, Apartment apartment) {
         String message = "Hello " + tenant.getFullName() + ",\n\n" +
-                "Your rental contract for *" + apartment.getTitle() + "* has officially *ENDED*.\n\n" +
+                "Your rental contract for apartment *" + apartment.getApartmentNumber() + "* has officially *ENDED*.\n\n" +
                 "Please make sure to hand over the apartment keys and submit your final review.\n" +
                 "Smart Rental Platform";
         sendMessage(tenant.getPhoneNumber(), message);
@@ -101,7 +98,7 @@ public class WhatsAppService {
 
     public void notifyTenantContractTerminated(User tenant, Apartment apartment) {
         String message = "Hello " + tenant.getFullName() + ",\n\n" +
-                "Your rental contract for *" + apartment.getTitle() + "* has been *TERMINATED*.\n" +
+                "Your rental contract for apartment *" + apartment.getApartmentNumber() + "* has been *TERMINATED*.\n" +
                 "The rental is now completed and the apartment is under maintenance.\n\n" +
                 "Smart Rental Platform";
         sendMessage(tenant.getPhoneNumber(), message);
@@ -109,8 +106,17 @@ public class WhatsAppService {
 
     public void notifyTenantContractRenewed(User tenant, Contract contract) {
         String message = "Hello " + tenant.getFullName() + ",\n\n" +
-                "Your rental contract for *" + contract.getReservation().getApartment().getTitle() + "* has been *RENEWED*.\n" +
+                "Your rental contract for apartment *" + contract.getReservation().getApartment().getApartmentNumber() + "* has been *RENEWED*.\n" +
                 "New End Date: " + contract.getEndDate() + "\n\n" +
+                "Smart Rental Platform";
+        sendMessage(tenant.getPhoneNumber(), message);
+    }
+
+    public void notifyTenantContractEndingSoon(User tenant, Contract contract) {
+        String message = "Hello " + tenant.getFullName() + ",\n\n" +
+                "Your rental contract for apartment *" + contract.getReservation().getApartment().getApartmentNumber() + "* will end in 30 days.\n" +
+                "End Date: " + contract.getEndDate() + "\n\n" +
+                "Please review your renewal or move-out plans.\n" +
                 "Smart Rental Platform";
         sendMessage(tenant.getPhoneNumber(), message);
     }
@@ -124,11 +130,9 @@ public class WhatsAppService {
         sendMessage(tenant.getPhoneNumber(), message);
     }
 
-    // ===================== OWNER NOTIFICATIONS =====================
-
     public void notifyOwnerContractAccepted(Owner owner, Apartment apartment, User tenant) {
         String message = "Hello " + owner.getFullName() + ",\n\n" +
-                "The contract for apartment *" + apartment.getTitle() + "* has been *ACCEPTED* by the tenant.\n" +
+                "The contract for apartment *" + apartment.getApartmentNumber() + "* has been *ACCEPTED* by the tenant.\n" +
                 "Tenant: " + tenant.getFullName() + "\n" +
                 "Phone: " + tenant.getPhoneNumber() + "\n\n" +
                 "The apartment status has been updated to RENTED.\n" +
@@ -138,7 +142,7 @@ public class WhatsAppService {
 
     public void notifyOwnerContractRejected(Owner owner, Apartment apartment, User tenant) {
         String message = "Hello " + owner.getFullName() + ",\n\n" +
-                "The contract for apartment *" + apartment.getTitle() + "* has been *REJECTED* by the tenant.\n" +
+                "The contract for apartment *" + apartment.getApartmentNumber() + "* has been *REJECTED* by the tenant.\n" +
                 "Tenant: " + tenant.getFullName() + "\n" +
                 "Phone: " + tenant.getPhoneNumber() + "\n\n" +
                 "The apartment status has been updated back to AVAILABLE.\n" +
@@ -149,9 +153,10 @@ public class WhatsAppService {
     public void notifyOwnerNewReservation(Owner owner, Reservation reservation) {
         String message = "Hello " + owner.getFullName() + ",\n\n" +
                 "You have a *NEW RESERVATION* request.\n" +
-                "Apartment: " + reservation.getApartment().getTitle() + "\n" +
+                "Apartment number: " + reservation.getApartment().getApartmentNumber() + "\n" +
                 "Tenant: " + reservation.getUser().getFullName() + "\n" +
-                "Date: " + reservation.getReservationDate() + "\n\n" +
+                "Requested Start Date: " + reservation.getRequestedStartDate() + "\n" +
+                "Rental Duration: " + reservation.getRentalMonths() + " months\n\n" +
                 "Please log in to accept or reject the reservation.\n" +
                 "Smart Rental Platform";
         sendMessage(owner.getPhoneNumber(), message);
@@ -159,7 +164,7 @@ public class WhatsAppService {
 
     public void notifyOwnerReservationCancelled(Owner owner, Reservation reservation) {
         String message = "Hello " + owner.getFullName() + ",\n\n" +
-                "The reservation for apartment *" + reservation.getApartment().getTitle() + "* has been *CANCELLED* by the tenant.\n" +
+                "The reservation for apartment *" + reservation.getApartment().getApartmentNumber() + "* has been *CANCELLED* by the tenant.\n" +
                 "Tenant: " + reservation.getUser().getFullName() + "\n\n" +
                 "Smart Rental Platform";
         sendMessage(owner.getPhoneNumber(), message);
@@ -167,7 +172,7 @@ public class WhatsAppService {
 
     public void notifyOwnerContractEnded(Owner owner, Apartment apartment) {
         String message = "Hello " + owner.getFullName() + ",\n\n" +
-                "The contract for apartment *" + apartment.getTitle() + "* has *ENDED*.\n" +
+                "The contract for apartment *" + apartment.getApartmentNumber() + "* has *ENDED*.\n" +
                 "The apartment has been placed *UNDER MAINTENANCE* for your inspection.\n\n" +
                 "Please log in to review and update the apartment status.\n" +
                 "Smart Rental Platform";
@@ -176,15 +181,25 @@ public class WhatsAppService {
 
     public void notifyOwnerContractRenewed(Owner owner, Contract contract) {
         String message = "Hello " + owner.getFullName() + ",\n\n" +
-                "The contract for apartment *" + contract.getReservation().getApartment().getTitle() + "* has been *RENEWED*.\n" +
+                "The contract for apartment *" + contract.getReservation().getApartment().getApartmentNumber() + "* has been *RENEWED*.\n" +
                 "New End Date: " + contract.getEndDate() + "\n\n" +
+                "Smart Rental Platform";
+        sendMessage(owner.getPhoneNumber(), message);
+    }
+
+    public void notifyOwnerContractEndingSoon(Owner owner, Contract contract) {
+        String message = "Hello " + owner.getFullName() + ",\n\n" +
+                "The contract for apartment *" + contract.getReservation().getApartment().getApartmentNumber() + "* will end in 30 days.\n" +
+                "End Date: " + contract.getEndDate() + "\n" +
+                "Tenant: " + contract.getReservation().getUser().getFullName() + "\n\n" +
+                "Please review the renewal or move-out arrangements.\n" +
                 "Smart Rental Platform";
         sendMessage(owner.getPhoneNumber(), message);
     }
 
     public void notifyOwnerNewMaintenanceRequest(Owner owner, MaintenanceRequest maintenanceRequest) {
         String message = "Hello " + owner.getFullName() + ",\n\n" +
-                "A new maintenance request was submitted for *" + maintenanceRequest.getApartment().getTitle() + "*.\n" +
+                "A new maintenance request was submitted for apartment *" + maintenanceRequest.getApartment().getApartmentNumber() + "*.\n" +
                 "Issue: " + maintenanceRequest.getDescription() + "\n" +
                 "Priority: *" + maintenanceRequest.getPriority() + "*\n\n" +
                 "Please log in to review the request.\n" +
@@ -218,7 +233,7 @@ public class WhatsAppService {
 
     public void notifyOwnerNewReview(Owner owner, Apartment apartment, Review review) {
         String message = "Hello " + owner.getFullName() + ",\n\n" +
-                "A new review has been posted on *" + apartment.getTitle() + "*.\n" +
+                "A new review has been posted on apartment *" + apartment.getApartmentNumber() + "*.\n" +
                 "Rating: " + review.getRating() + "/5\n" +
                 "Comment: " + review.getComment() + "\n\n" +
                 "Smart Rental Platform";

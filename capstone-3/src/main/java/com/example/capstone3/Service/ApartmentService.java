@@ -60,11 +60,15 @@ public class ApartmentService {
         if (!building.getOwner().getId().equals(owner.getId())) {
             throw new ApiException("Owner does not own this building");
         }
+        String apartmentNumber = apartmentDTOIn.getApartmentNumber().trim();
+        if (apartmentRepository.existsByBuilding_IdAndApartmentNumberIgnoreCase(
+                buildingId, apartmentNumber)) {
+            throw new ApiException("Apartment number already exists in this building");
+        }
         Apartment apartment = new Apartment();
         apartment.setBuilding(building);
         apartment.setOwner(owner);
-        apartment.setTitle(apartmentDTOIn.getTitle());
-        apartment.setDescription(apartmentDTOIn.getDescription());
+        apartment.setApartmentNumber(apartmentNumber);
         apartment.setMonthlyRent(apartmentDTOIn.getMonthlyRent());
         apartment.setBedrooms(apartmentDTOIn.getBedrooms());
         apartment.setBathrooms(apartmentDTOIn.getBathrooms());
@@ -85,8 +89,16 @@ public class ApartmentService {
         if (apartment == null) {
             throw new ApiException("Apartment not found");
         }
-        apartment.setTitle(apartmentDTOIn.getTitle());
-        apartment.setDescription(apartmentDTOIn.getDescription());
+        if (apartment.getStatus() == ApartmentStatus.RESERVED
+                || apartment.getStatus() == ApartmentStatus.RENTED) {
+            throw new ApiException("Reserved or rented apartments cannot be updated");
+        }
+        String apartmentNumber = apartmentDTOIn.getApartmentNumber().trim();
+        if (apartmentRepository.existsByBuilding_IdAndApartmentNumberIgnoreCaseAndIdNot(
+                apartment.getBuilding().getId(), apartmentNumber, apartment.getId())) {
+            throw new ApiException("Apartment number already exists in this building");
+        }
+        apartment.setApartmentNumber(apartmentNumber);
         apartment.setMonthlyRent(apartmentDTOIn.getMonthlyRent());
         apartment.setBedrooms(apartmentDTOIn.getBedrooms());
         apartment.setBathrooms(apartmentDTOIn.getBathrooms());
@@ -106,6 +118,14 @@ public class ApartmentService {
         if (apartment == null) {
             throw new ApiException("Apartment not found");
         }
+        if (!apartment.getReservations().isEmpty()
+                || !apartment.getReviews().isEmpty()
+                || !apartment.getMaintenanceRequests().isEmpty()
+                || apartment.getReservations().stream()
+                .anyMatch(reservation -> reservation.getContract() != null)) {
+            throw new ApiException(
+                    "Apartment has rental history and cannot be deleted. Mark it INACTIVE instead");
+        }
         apartmentRepository.deleteById(id);
     }
 
@@ -115,8 +135,7 @@ public class ApartmentService {
         apartmentDTOOut.setBuildingId(apartment.getBuilding().getId());
         apartmentDTOOut.setOwnerId(apartment.getOwner().getId());
         apartmentDTOOut.setDistrict(apartment.getBuilding().getDistrict());
-        apartmentDTOOut.setTitle(apartment.getTitle());
-        apartmentDTOOut.setDescription(apartment.getDescription());
+        apartmentDTOOut.setApartmentNumber(apartment.getApartmentNumber());
         apartmentDTOOut.setMonthlyRent(apartment.getMonthlyRent());
         apartmentDTOOut.setBedrooms(apartment.getBedrooms());
         apartmentDTOOut.setBathrooms(apartment.getBathrooms());
@@ -161,7 +180,9 @@ public class ApartmentService {
             if (!reservations.isEmpty()) {
                 long totalDays = 0;
                 for (Reservation reservation : reservations) {
-                    totalDays += ChronoUnit.DAYS.between(reservation.getCreatedAt().toLocalDate(), reservation.getReservationDate());
+                    totalDays += ChronoUnit.DAYS.between(
+                            reservation.getCreatedAt().toLocalDate(),
+                            reservation.getRequestedStartDate());
                 }
                 avgDaysToReserve = (double) totalDays / reservations.size();
             }
@@ -189,7 +210,7 @@ public class ApartmentService {
 
             UnderpricedApartmentDTOOut dto = new UnderpricedApartmentDTOOut();
             dto.setId(apartment.getId());
-            dto.setTitle(apartment.getTitle());
+            dto.setApartmentNumber(apartment.getApartmentNumber());
             dto.setDistrict(apartment.getBuilding().getDistrict());
             dto.setMonthlyRent(apartment.getMonthlyRent());
             dto.setBedrooms(apartment.getBedrooms());
@@ -251,11 +272,11 @@ public class ApartmentService {
             }
 
             // Call AI to summarize the issues
-            String aiSummary = getAiSummary(apartment.getTitle(), comments.toString());
+            String aiSummary = getAiSummary(apartment.getApartmentNumber(), comments.toString());
 
             LowRatedApartmentDTOOut dto = new LowRatedApartmentDTOOut();
             dto.setId(apartment.getId());
-            dto.setTitle(apartment.getTitle());
+            dto.setApartmentNumber(apartment.getApartmentNumber());
             dto.setDistrict(building.getDistrict());
             dto.setMonthlyRent(apartment.getMonthlyRent());
             dto.setBedrooms(apartment.getBedrooms());
@@ -300,7 +321,7 @@ public class ApartmentService {
 
             FlaggedApartmentDTOOut dto = new FlaggedApartmentDTOOut();
             dto.setId(apartment.getId());
-            dto.setTitle(apartment.getTitle());
+            dto.setApartmentNumber(apartment.getApartmentNumber());
             dto.setDistrict(apartment.getBuilding().getDistrict());
             dto.setMonthlyRent(apartment.getMonthlyRent());
             dto.setTotalReservations(total);
@@ -334,8 +355,8 @@ public class ApartmentService {
         return flagged;
     }
 
-    private String getAiSummary(String apartmentTitle, String comments) {
-        String prompt = "You are analyzing tenant reviews for an apartment called \"" + apartmentTitle + "\".\n" +
+    private String getAiSummary(String apartmentNumber, String comments) {
+        String prompt = "You are analyzing tenant reviews for apartment number \"" + apartmentNumber + "\".\n" +
                 "Here are the review comments:\n" + comments + "\n" +
                 "Summarize the main issues tenants are complaining about in one sentence starting with \"Main issues: \"";
         return aiService.generateText(prompt, "EN");
@@ -383,6 +404,12 @@ public class ApartmentService {
         }
         if (apartment.getStatus() != ApartmentStatus.UNDER_MAINTENANCE) {
             throw new ApiException("Only apartments under maintenance can be made available");
+        }
+        if (contractRepository.existsByApartmentAndStatus(
+                apartmentId, ContractStatus.ACTIVE)
+                || reservationRepository.existsByApartment_IdAndStatus(
+                apartmentId, ReservationStatus.APPROVED)) {
+            throw new ApiException("Apartment still has an active rental lock");
         }
 
         apartment.setStatus(ApartmentStatus.AVAILABLE);
@@ -466,11 +493,11 @@ public class ApartmentService {
                 reservationRepository.findReservationsByApartment_IdAndStatus(
                                 apartmentId, ReservationStatus.PENDING)
                         .stream()
-                        .anyMatch(reservation -> date.equals(reservation.getReservationDate()))
+                        .anyMatch(reservation -> date.equals(reservation.getRequestedStartDate()))
                         || reservationRepository.findReservationsByApartment_IdAndStatus(
                                 apartmentId, ReservationStatus.APPROVED)
                         .stream()
-                        .anyMatch(reservation -> date.equals(reservation.getReservationDate()));
+                        .anyMatch(reservation -> date.equals(reservation.getRequestedStartDate()));
 
         boolean available = apartment.getStatus() == ApartmentStatus.AVAILABLE
                 && (apartment.getAvailableFrom() == null
@@ -539,6 +566,10 @@ public class ApartmentService {
         List<Apartment> matchingApartments = new ArrayList<>();
 
         for (Apartment apartment : availableApartments) {
+            if (apartment.getAvailableFrom() != null
+                    && apartment.getAvailableFrom().isAfter(LocalDate.now())) {
+                continue;
+            }
             if (minRent != null && apartment.getMonthlyRent() < minRent) {
                 continue;
             }

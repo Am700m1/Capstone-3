@@ -33,15 +33,17 @@ public class ReviewController {
         return ResponseEntity.status(200).body(new ApiResponse("Review added successfully"));
     }
 
-    @PutMapping("/update/{id}")
-    public ResponseEntity<?> updateReview(@PathVariable Integer id, @RequestBody @Valid ReviewDTOIn dto) {
-        reviewService.updateReview(id, dto);
+    @PutMapping("/update/{userId}/{id}")
+    public ResponseEntity<?> updateReview(@PathVariable Integer userId,
+                                          @PathVariable Integer id,
+                                          @RequestBody @Valid ReviewDTOIn dto) {
+        reviewService.updateReview(userId, id, dto);
         return ResponseEntity.status(200).body(new ApiResponse("Review updated successfully"));
     }
 
-    @DeleteMapping("/delete/{id}")
-    public ResponseEntity<?> deleteReview(@PathVariable Integer id) {
-        reviewService.deleteReview(id);
+    @DeleteMapping("/delete/{userId}/{id}")
+    public ResponseEntity<?> deleteReview(@PathVariable Integer userId, @PathVariable Integer id) {
+        reviewService.deleteReview(userId, id);
         return ResponseEntity.status(200).body(new ApiResponse("Review deleted successfully"));
     }
 
