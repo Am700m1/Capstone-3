@@ -28,8 +28,9 @@ public class ReservationController {
     @PostMapping("/add/{userId}/{apartmentId}")
     public ResponseEntity<?> addReservation(@PathVariable Integer userId,
                                             @PathVariable Integer apartmentId,
+                                            @RequestParam(required = false) Double desiredMonthlyRent,
                                             @RequestBody @Valid ReservationDTOIn reservationDTOIn) {
-        return ResponseEntity.status(200).body(reservationService.addReservation(userId, apartmentId, reservationDTOIn));
+        return ResponseEntity.status(200).body(reservationService.addReservation(userId, apartmentId, desiredMonthlyRent, reservationDTOIn));
     }
 
     @PutMapping("/update/{id}")
