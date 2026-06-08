@@ -547,7 +547,7 @@ public class ApartmentService {
         }
 
         for (Apartment apartment : apartments) {
-            ApartmentDTOOut dto = convertToDTO(apartment); // Assuming you have this method
+            ApartmentDTOOut dto = convertToDTO(apartment);
             groupedApartments.get(apartment.getStatus()).add(dto);
         }
 
