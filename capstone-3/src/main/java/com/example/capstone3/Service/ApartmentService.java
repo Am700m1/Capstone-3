@@ -420,7 +420,6 @@ public class ApartmentService {
         if (apartment.getStatus() == ApartmentStatus.AVAILABLE) {
             boolean availableNow = apartment.getAvailableFrom() == null
                     || !apartment.getAvailableFrom().isAfter(today);
-            response.put("availableNow", availableNow);
             response.put("expectedAvailableDate", availableNow ? null : apartment.getAvailableFrom());
             return response;
         }
@@ -433,12 +432,10 @@ public class ApartmentService {
                     .map(Contract::getEndDate)
                     .max(LocalDate::compareTo)
                     .orElse(null);
-            response.put("availableNow", false);
             response.put("expectedAvailableDate", expectedDate);
             return response;
         }
 
-        response.put("availableNow", false);
         response.put("expectedAvailableDate", apartment.getAvailableFrom());
         return response;
     }
@@ -484,24 +481,8 @@ public class ApartmentService {
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("apartmentId", apartment.getId());
         response.put("date", date);
-        response.put("available", available);
         response.put("status", apartment.getStatus());
 
-        if (available) {
-            response.put("message", "Apartment is available on this date.");
-        } else if (apartment.getStatus() == ApartmentStatus.UNDER_MAINTENANCE) {
-            response.put("message", "Apartment is under maintenance and is not available on this date.");
-        } else if (activeContractBlocksDate) {
-            response.put("message", "Apartment has an active contract on this date.");
-        } else if (pendingContractBlocksDate || reservationBlocksDate
-                || apartment.getStatus() == ApartmentStatus.RESERVED) {
-            response.put("message", "Apartment is reserved or pending rental completion on this date.");
-        } else if (apartment.getAvailableFrom() != null
-                && apartment.getAvailableFrom().isAfter(date)) {
-            response.put("message", "Apartment is not available before its listed available date.");
-        } else {
-            response.put("message", "Apartment is not available on this date.");
-        }
         return response;
     }
 

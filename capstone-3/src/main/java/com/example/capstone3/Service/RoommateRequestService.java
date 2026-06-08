@@ -34,8 +34,9 @@ public class RoommateRequestService {
 
         List<RoommateRequestDTOOut> result = new ArrayList<>();
         for (RoommateRequest request :
-                roommateRequestRepository.findBySenderOrReceiverOrderByCreatedAtDesc(
-                        user, user)) {
+                roommateRequestRepository.findBySenderAndStatusOrReceiverAndStatus(
+                        user, RoommateStatus.PENDING,
+                        user, RoommateStatus.PENDING)) {
             RoommateRequestDTOOut dto = new RoommateRequestDTOOut();
             dto.setId(request.getId());
             dto.setSenderId(request.getSender().getId());
