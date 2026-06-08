@@ -1,10 +1,12 @@
 package com.example.capstone3.DTO.Out;
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+@JsonPropertyOrder({"id", "userId", "ownerId", "apartmentId", "createdAt", "messages"})
 @Data
 public class ConversationDTOOut {
 

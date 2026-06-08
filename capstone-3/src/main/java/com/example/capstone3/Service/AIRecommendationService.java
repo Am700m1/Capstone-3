@@ -24,7 +24,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AIRecommendationService {
 
-    // Filters, scores, and ranks apartments before Gemini explains the result.
+    // Filters, scores, and ranks apartments before OpenAI explains the result.
     private final ApartmentFilteringService filteringService;
     private final OverpassLocationService overpassLocationService;
     private final OsrmCommuteService osrmCommuteService;
@@ -254,7 +254,7 @@ public class AIRecommendationService {
         return 1.0;
     }
 
-    // Give Gemini final ranked data so it explains rather than recalculates results.
+    // Give OpenAI final ranked data so it explains rather than recalculates results.
     private String buildExplanationPrompt(List<RankedApartmentDTOOut> rankedApartments,
                                           UserPreference preferences, User user) {
         StringBuilder prompt = new StringBuilder();

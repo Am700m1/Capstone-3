@@ -1,7 +1,13 @@
 package com.example.capstone3.DTO.Out;
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import lombok.Data;
 
+@JsonPropertyOrder({
+        "id", "name", "ownerId", "ownerName", "city", "district", "street",
+        "latitude", "longitude", "constructionYear", "totalFloors",
+        "hasElevator", "hasSecurity", "hasParking", "petsAllowed"
+})
 @Data
 public class BuildingDTOOut {
 
