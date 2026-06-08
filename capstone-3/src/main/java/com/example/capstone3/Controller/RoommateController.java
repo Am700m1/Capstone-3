@@ -18,6 +18,13 @@ public class RoommateController {
     private final RoommateService roommateService;
     private final RoommateRequestService roommateRequestService;
 
+    @GetMapping("/requests/{userId}")
+    public ResponseEntity<?> getUserRoommateRequests(
+            @PathVariable Integer userId) {
+        return ResponseEntity.status(200)
+                .body(roommateRequestService.getUserRoommateRequests(userId));
+    }
+
     @GetMapping("/matches/{userId}")
     public ResponseEntity<?> getAiRoommateMatches(@PathVariable Integer userId) {
         return ResponseEntity.status(200).body(roommateService.getAiRoommateMatches(userId));

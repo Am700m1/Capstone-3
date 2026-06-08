@@ -106,12 +106,6 @@ AI endpoints accept the optional `language` query parameter with `EN` as the def
 |---|---|---|
 | PUT | `/api/v1/contract/accept/{contractId}/{userId}` | Accepts a pending contract and activates the rental. |
 | PUT | `/api/v1/contract/reject/{contractId}/{userId}` | Rejects a pending contract and cancels the related rental flow. |
-| PUT | `/api/v1/contract/request-negotiation/{userId}/{contractId}` | Allows the reservation user to request a different rent for a pending contract. |
-| PUT | `/api/v1/contract/owner/accept-negotiation/{ownerId}/{contractId}` | Allows the apartment owner to accept the user's pending rent request. |
-| PUT | `/api/v1/contract/owner/reject-negotiation/{ownerId}/{contractId}` | Allows the apartment owner to reject the user's pending rent request. |
-| PUT | `/api/v1/contract/owner/counter-offer/{ownerId}/{contractId}` | Allows the apartment owner to submit a counter-offer for a pending negotiation. |
-| PUT | `/api/v1/contract/user/accept-counter-offer/{userId}/{contractId}` | Allows the reservation user to accept the owner's counter-offer. |
-| PUT | `/api/v1/contract/user/reject-counter-offer/{userId}/{contractId}` | Allows the reservation user to reject the owner's counter-offer. |
 | GET | `/api/v1/contract/user/{userId}` | Returns contracts belonging to a user. |
 | GET | `/api/v1/contract/owner/{ownerId}` | Returns contracts for apartments belonging to an owner. |
 | PUT | `/api/v1/contract/end/{contractId}/{ownerId}` | Officially ends an active contract after rental completion. |
@@ -171,6 +165,7 @@ Both `/api/v1/user-preference` and `/api/v1/user-preferences` are valid controll
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/api/v1/roommates/matches/{userId}` | Uses backend eligibility rules and Gemini ranking to return compatible roommate matches. |
+| GET | `/api/v1/roommates/requests/{userId}` | Returns all sent and received roommate requests for the selected user. |
 | POST | `/api/v1/roommates/request/{senderId}/{receiverId}` | Sends a roommate request while preventing duplicate and reverse-duplicate pending requests. |
 | PUT | `/api/v1/roommates/accept/{receiverId}/{requestId}` | Accepts a request, links both users, and removes them from the roommate search pool. |
 | PUT | `/api/v1/roommates/reject/{receiverId}/{requestId}` | Rejects a pending roommate request. |

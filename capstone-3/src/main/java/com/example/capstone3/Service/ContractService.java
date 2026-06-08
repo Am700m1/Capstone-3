@@ -2,11 +2,9 @@ package com.example.capstone3.Service;
 
 import com.example.capstone3.Api.ApiException;
 import com.example.capstone3.DTO.In.ContractDTOIn;
-import com.example.capstone3.DTO.In.ContractNegotiationDTOIn;
 import com.example.capstone3.DTO.Out.ContractDTOOut;
 import com.example.capstone3.Enums.ApartmentStatus;
 import com.example.capstone3.Enums.ContractStatus;
-import com.example.capstone3.Enums.NegotiationStatus;
 import com.example.capstone3.Enums.RenewalStatus;
 import com.example.capstone3.Enums.ReservationStatus;
 import com.example.capstone3.Models.*;
@@ -191,11 +189,6 @@ public class ContractService {
         contractDTOOut.setSigned(contract.getSigned());
         contractDTOOut.setSignedDate(contract.getSignedDate());
         contractDTOOut.setContractStatus(contract.getContractStatus());
-        contractDTOOut.setNegotiationStatus(contract.getNegotiationStatus());
-        contractDTOOut.setRequestedRent(contract.getRequestedRent());
-        contractDTOOut.setCounterOfferRent(contract.getCounterOfferRent());
-        contractDTOOut.setNegotiationMessage(contract.getNegotiationMessage());
-        contractDTOOut.setNegotiationUpdatedAt(contract.getNegotiationUpdatedAt());
         contractDTOOut.setTerminationReason(contract.getTerminationReason());
         contractDTOOut.setRenewalRequestedMonths(contract.getRenewalRequestedMonths());
         contractDTOOut.setRenewalStatus(contract.getRenewalStatus());
@@ -222,190 +215,6 @@ public class ContractService {
     //^^^^^^^CRUD^^^^^^^^
 
     @Transactional
-    public void requestNegotiation(
-            Integer userId,
-            Integer contractId,
-            ContractNegotiationDTOIn negotiationDTOIn) {
-        User user = userRepository.findUserById(userId);
-        if (user == null) {
-            throw new ApiException("User not found!");
-        }
-
-        Contract contract = contractRepository.findContractById(contractId);
-        if (contract == null) {
-            throw new ApiException("Contract not found!");
-        }
-        if (!userId.equals(contract.getReservation().getUser().getId())) {
-            throw new ApiException("You are not authorized to negotiate this contract");
-        }
-        if (contract.getContractStatus() != ContractStatus.PENDING) {
-            throw new ApiException("Negotiation is allowed only while the contract is pending");
-        }
-        if (contract.getNegotiationStatus() == NegotiationStatus.PENDING
-                || contract.getNegotiationStatus() == NegotiationStatus.COUNTERED) {
-            throw new ApiException("This contract already has an active negotiation");
-        }
-        if (negotiationDTOIn.getRequestedRent() == null
-                || negotiationDTOIn.getRequestedRent() <= 0) {
-            throw new ApiException("Requested rent must be provided and greater than zero");
-        }
-
-        contract.setRequestedRent(negotiationDTOIn.getRequestedRent());
-        contract.setCounterOfferRent(null);
-        contract.setNegotiationMessage(negotiationDTOIn.getNegotiationMessage());
-        contract.setNegotiationStatus(NegotiationStatus.PENDING);
-        contract.setNegotiationUpdatedAt(LocalDateTime.now());
-        contractRepository.save(contract);
-    }
-
-    @Transactional
-    public void acceptNegotiation(Integer ownerId, Integer contractId) {
-        Owner owner = ownerRepository.findOwnerById(ownerId);
-        if (owner == null) {
-            throw new ApiException("Owner not found!");
-        }
-
-        Contract contract = contractRepository.findContractById(contractId);
-        if (contract == null) {
-            throw new ApiException("Contract not found!");
-        }
-        if (!ownerId.equals(contract.getReservation().getApartment().getOwner().getId())) {
-            throw new ApiException("You are not authorized to negotiate this contract");
-        }
-        if (contract.getContractStatus() != ContractStatus.PENDING) {
-            throw new ApiException("Negotiation is allowed only while the contract is pending");
-        }
-        if (contract.getNegotiationStatus() != NegotiationStatus.PENDING) {
-            throw new ApiException("Only a pending negotiation can be accepted");
-        }
-        if (contract.getRequestedRent() == null) {
-            throw new ApiException("Requested rent was not found");
-        }
-
-        contract.setMonthlyRent(contract.getRequestedRent());
-        contract.setNegotiationStatus(NegotiationStatus.ACCEPTED);
-        contract.setNegotiationUpdatedAt(LocalDateTime.now());
-        contractRepository.save(contract);
-    }
-
-    @Transactional
-    public void rejectNegotiation(Integer ownerId, Integer contractId) {
-        Owner owner = ownerRepository.findOwnerById(ownerId);
-        if (owner == null) {
-            throw new ApiException("Owner not found!");
-        }
-
-        Contract contract = contractRepository.findContractById(contractId);
-        if (contract == null) {
-            throw new ApiException("Contract not found!");
-        }
-        if (!ownerId.equals(contract.getReservation().getApartment().getOwner().getId())) {
-            throw new ApiException("You are not authorized to negotiate this contract");
-        }
-        if (contract.getContractStatus() != ContractStatus.PENDING) {
-            throw new ApiException("Negotiation is allowed only while the contract is pending");
-        }
-        if (contract.getNegotiationStatus() != NegotiationStatus.PENDING) {
-            throw new ApiException("Only a pending negotiation can be rejected");
-        }
-
-        contract.setNegotiationStatus(NegotiationStatus.REJECTED);
-        contract.setNegotiationUpdatedAt(LocalDateTime.now());
-        contractRepository.save(contract);
-    }
-
-    @Transactional
-    public void counterOffer(
-            Integer ownerId,
-            Integer contractId,
-            ContractNegotiationDTOIn negotiationDTOIn) {
-        Owner owner = ownerRepository.findOwnerById(ownerId);
-        if (owner == null) {
-            throw new ApiException("Owner not found!");
-        }
-
-        Contract contract = contractRepository.findContractById(contractId);
-        if (contract == null) {
-            throw new ApiException("Contract not found!");
-        }
-        if (!ownerId.equals(contract.getReservation().getApartment().getOwner().getId())) {
-            throw new ApiException("You are not authorized to negotiate this contract");
-        }
-        if (contract.getContractStatus() != ContractStatus.PENDING) {
-            throw new ApiException("Negotiation is allowed only while the contract is pending");
-        }
-        if (contract.getNegotiationStatus() != NegotiationStatus.PENDING) {
-            throw new ApiException("Only a pending negotiation can receive a counter-offer");
-        }
-        if (negotiationDTOIn.getCounterOfferRent() == null
-                || negotiationDTOIn.getCounterOfferRent() <= 0) {
-            throw new ApiException("Counter-offer rent must be provided and greater than zero");
-        }
-
-        contract.setCounterOfferRent(negotiationDTOIn.getCounterOfferRent());
-        contract.setNegotiationStatus(NegotiationStatus.COUNTERED);
-        contract.setNegotiationUpdatedAt(LocalDateTime.now());
-        contractRepository.save(contract);
-    }
-
-    @Transactional
-    public void acceptCounterOffer(Integer userId, Integer contractId) {
-        User user = userRepository.findUserById(userId);
-        if (user == null) {
-            throw new ApiException("User not found!");
-        }
-
-        Contract contract = contractRepository.findContractById(contractId);
-        if (contract == null) {
-            throw new ApiException("Contract not found!");
-        }
-        if (!userId.equals(contract.getReservation().getUser().getId())) {
-            throw new ApiException("You are not authorized to negotiate this contract");
-        }
-        if (contract.getContractStatus() != ContractStatus.PENDING) {
-            throw new ApiException("Negotiation is allowed only while the contract is pending");
-        }
-        if (contract.getNegotiationStatus() != NegotiationStatus.COUNTERED) {
-            throw new ApiException("Only a countered negotiation can be accepted");
-        }
-        if (contract.getCounterOfferRent() == null) {
-            throw new ApiException("Counter-offer rent was not found");
-        }
-
-        contract.setMonthlyRent(contract.getCounterOfferRent());
-        contract.setNegotiationStatus(NegotiationStatus.ACCEPTED);
-        contract.setNegotiationUpdatedAt(LocalDateTime.now());
-        contractRepository.save(contract);
-    }
-
-    @Transactional
-    public void rejectCounterOffer(Integer userId, Integer contractId) {
-        User user = userRepository.findUserById(userId);
-        if (user == null) {
-            throw new ApiException("User not found!");
-        }
-
-        Contract contract = contractRepository.findContractById(contractId);
-        if (contract == null) {
-            throw new ApiException("Contract not found!");
-        }
-        if (!userId.equals(contract.getReservation().getUser().getId())) {
-            throw new ApiException("You are not authorized to negotiate this contract");
-        }
-        if (contract.getContractStatus() != ContractStatus.PENDING) {
-            throw new ApiException("Negotiation is allowed only while the contract is pending");
-        }
-        if (contract.getNegotiationStatus() != NegotiationStatus.COUNTERED) {
-            throw new ApiException("Only a countered negotiation can be rejected");
-        }
-
-        contract.setNegotiationStatus(NegotiationStatus.REJECTED);
-        contract.setNegotiationUpdatedAt(LocalDateTime.now());
-        contractRepository.save(contract);
-    }
-
-
-    @Transactional
     public void acceptContract(Integer userId, Integer contractId){
         User user = userRepository.findUserById(userId);
         Contract contract = contractRepository.findContractById(contractId);
@@ -423,10 +232,6 @@ public class ContractService {
         }
         if (contract.getContractStatus() != ContractStatus.PENDING) {
             throw new ApiException("Only pending contracts can be accepted");
-        }
-        if (contract.getNegotiationStatus() == NegotiationStatus.PENDING
-                || contract.getNegotiationStatus() == NegotiationStatus.COUNTERED) {
-            throw new ApiException("Resolve the active negotiation before accepting the contract");
         }
         LocalDate today = LocalDate.now();
         if (today.isBefore(contract.getStartDate())) {
