@@ -62,21 +62,9 @@ The table below excludes basic get-all, get-by-ID, create, update, and delete en
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/api/v1/apartment/get/underpriced` | Returns apartments identified as underpriced. |
-| GET | `/api/v1/apartment/low-rated/{ownerId}/{buildingId}` | Returns low-rated apartments in an owner's building with an AI-generated issue summary. |
 | GET | `/api/v1/apartment/dashboard/{ownerId}` | Returns apartment performance information for an owner dashboard. |
 | GET | `/api/v1/apartment/search` | Searches available apartments using optional rent, bedroom, district, and furnished filters. |
-| PUT | `/api/v1/apartment/available/{ownerId}/{apartmentId}` | Returns an apartment from maintenance status to available status. |
-| PUT | `/api/v1/apartment/toggle-maintenance/{ownerId}/{apartmentId}` | Moves an available apartment into maintenance status. |
-| GET | `/api/v1/apartment/next-available/{apartmentId}` | Explains when an apartment is expected to become available. |
-| GET | `/api/v1/apartment/available-on/{apartmentId}/{date}` | Checks whether an apartment is available on a specific date. |
-| GET | `/api/v1/apartment/flagged/{ownerId}` | Returns an owner's apartments flagged for unusual cancellation activity. |
 
-### RecommendationController
-
-| Method | Path | Purpose |
-|---|---|---|
-| GET | `/api/v1/recommendation/recommend/{userId}` | Filters, scores, and ranks apartments, then uses OpenAI to explain the backend ranking. Supports `radiusMetres` and `language`. |
 
 ### AiApartmentController
 
@@ -84,8 +72,6 @@ The table below excludes basic get-all, get-by-ID, create, update, and delete en
 |---|---|---|
 | GET | `/api/v1/ai/apartments/review-summary/{apartmentId}` | Generates an AI summary of an apartment's reviews. |
 | GET | `/api/v1/ai/apartments/neighborhood-summary/{apartmentId}` | Generates an AI neighborhood summary using apartment and nearby-service data. |
-| GET | `/api/v1/ai/owners/reputation-summary/{ownerId}` | Generates an AI summary of an owner's reputation from tenant reviews. |
-| GET | `/api/v1/ai/apartments/compare/{id1}/{id2}` | Generates a human-readable comparison of two different apartments. |
 
 AI endpoints accept the optional `language` query parameter with `EN` as the default and `AR` for Arabic output.
 
@@ -102,91 +88,19 @@ AI endpoints accept the optional `language` query parameter with `EN` as the def
 
 ### ContractController
 
-| Method | Path | Purpose |
-|---|---|---|
-| PUT | `/api/v1/contract/accept/{contractId}/{userId}` | Accepts a pending contract and activates the rental. |
-| PUT | `/api/v1/contract/reject/{contractId}/{userId}` | Rejects a pending contract and cancels the related rental flow. |
-| GET | `/api/v1/contract/user/{userId}` | Returns contracts belonging to a user. |
-| GET | `/api/v1/contract/owner/{ownerId}` | Returns contracts for apartments belonging to an owner. |
-| PUT | `/api/v1/contract/end/{contractId}/{ownerId}` | Officially ends an active contract after rental completion. |
-| PUT | `/api/v1/contract/terminate/{contractId}/{ownerId}` | Terminates an active contract early. |
-| PUT | `/api/v1/contract/renew/{contractId}/{userId}` | Extends an active contract using the required `extraMonths` query parameter. |
-| GET | `/api/v1/contract/analyze/{contractId}/{userId}` | Generates an AI analysis of a contract. Supports `language`. |
-| POST | `/api/v1/contract/{contractId}/send-pdf` | Generates the contract PDF and sends it by email. |
-
-### MaintenanceRequestController
-
-| Method | Path | Purpose |
-|---|---|---|
-| GET | `/api/v1/maintenance-request/user/{userId}` | Returns maintenance requests submitted by a user. |
-| GET | `/api/v1/maintenance-request/apartment/{apartmentId}` | Returns maintenance history for an apartment. |
-| GET | `/api/v1/maintenance-request/building-summary/{buildingId}` | Generates a concise AI summary of maintenance activity in a building. |
-| POST | `/api/v1/maintenance-request/add/{userId}/{apartmentId}` | Creates a tenant maintenance request and uses AI to classify its category and priority. |
-| PUT | `/api/v1/maintenance-request/start/{ownerId}/{requestId}` | Moves a pending maintenance request to in-progress status. |
-| PUT | `/api/v1/maintenance-request/complete/{ownerId}/{requestId}` | Completes an in-progress maintenance request. |
-
-### ReviewController
-
-| Method | Path | Purpose |
-|---|---|---|
-| GET | `/api/v1/reviews/get/apartment/{apartmentId}` | Returns reviews for an apartment. |
-| GET | `/api/v1/reviews/get/user/{userId}` | Returns reviews written by a user. |
-| GET | `/api/v1/reviews/get/owner/{ownerId}` | Returns reviews across an owner's apartments. |
-| GET | `/api/v1/reviews/get/owner-analysis/{ownerId}` | Generates an AI analysis of reviews across an owner's apartments. |
-
-### ConversationController
-
-| Method | Path | Purpose |
-|---|---|---|
-| GET | `/api/v1/conversation/user/{userId}` | Returns the conversation inbox for a user. |
-| GET | `/api/v1/conversation/owner/{ownerId}` | Returns the conversation inbox for an owner. |
-
-### MessageController
-
-| Method | Path | Purpose |
-|---|---|---|
-| GET | `/api/v1/message/conversation/{conversationId}` | Returns the complete message thread for a conversation. |
-| POST | `/api/v1/message/add/user/{userId}/{ownerId}/{apartmentId}` | Sends a message as a user and creates or reuses the apartment conversation. |
-| POST | `/api/v1/message/add/owner/{ownerId}/{userId}/{apartmentId}` | Sends a message as an owner and creates or reuses the apartment conversation. |
-
-Message update and delete operations require `senderId` and `senderRole` query parameters so only the original sender can modify the message.
-
-### UserPreferenceController
-
-Both `/api/v1/user-preference` and `/api/v1/user-preferences` are valid controller base paths.
-
-| Method | Path | Purpose |
-|---|---|---|
-| GET | `/api/v1/user-preferences/user/{userId}` | Returns the preference record associated with a user. |
-| PUT | `/api/v1/user-preferences/add-workplace/{userId}` | Uses Nominatim to resolve a workplace name and saves its coordinates in the user's preferences. |
+| Method | Path | Purpose                                                                       |
+|---|---|-------------------------------------------------------------------------------|
+| PUT | `/api/v1/contract/renew/{contractId}/{userId}` | Send a request contract renwal to the owner.                                  |
+| PUT | `/api/v1/contract/renew/approve/{contractId}/{ownerId}` | Approve a pending renew contract request and cancels the related rental flow. |
+| PUT | `/api/v1/contract/renew/reject/{contractId}/{ownerId}` | Rejects a pending renew contract request and cancels the related rental flow. |
+| GET | `/api/v1/contract/analyze/{contractId}/{userId}` | Generates an AI analysis of a contract. Supports `language`.                  |
 
 ### RoommateController
 
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/api/v1/roommates/matches/{userId}` | Uses backend eligibility rules and OpenAI ranking to return compatible roommate matches. |
-| GET | `/api/v1/roommates/requests/{userId}` | Returns all sent and received roommate requests for the selected user. |
-| POST | `/api/v1/roommates/request/{senderId}/{receiverId}` | Sends a roommate request while preventing duplicate and reverse-duplicate pending requests. |
-| PUT | `/api/v1/roommates/accept/{receiverId}/{requestId}` | Accepts a request, links both users, and removes them from the roommate search pool. |
-| PUT | `/api/v1/roommates/reject/{receiverId}/{requestId}` | Rejects a pending roommate request. |
-| PUT | `/api/v1/roommates/dissolve/{userId}` | Dissolves the current roommate relationship and restores roommate availability. |
 
-### LocationAnalysisController
-
-| Method | Path | Purpose |
-|---|---|---|
-| GET | `/api/v1/location/analyze` | Uses Overpass to count nearby services around `latitude` and `longitude`; accepts an optional `radiusMetres`. |
-
-## Person 1 Extra Endpoint Count
-
-| Controller | Extra endpoints |
-|---|---:|
-| ApartmentController | 7 |
-| RecommendationController | 1 |
-| AiApartmentController | 4 |
-| UserPreferenceController | 2 |
-| LocationAnalysisController | 1 |
-| **Person 1 Total** | **15** |
 
 ## External Integration Summary
 
